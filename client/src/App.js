@@ -8,6 +8,7 @@ import TVShows from './pages/TVShows';
 import Books from './pages/Books';
 import MyLibrary from './pages/MyLibrary';
 import Details from './pages/Details';
+import Top100 from './pages/Top100';
 import Login from './pages/Login';
 
 function ProtectedRoute({ children }) {
@@ -39,6 +40,7 @@ function App() {
               <Route path="/movies" element={<Movies />} />
               <Route path="/tv" element={<TVShows />} />
               <Route path="/books" element={<Books />} />
+              <Route path="/top100" element={<Top100 />} />
               <Route path="/library" element={<ProtectedRoute><MyLibrary /></ProtectedRoute>} />
               <Route path="/details/:mediaType/:id" element={<Details />} />
               <Route path="*" element={<Navigate to="/" />} />

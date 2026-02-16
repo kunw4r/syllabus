@@ -59,9 +59,10 @@ function MediaCard({ item, mediaType = 'movie' }) {
       )}
 
       {rating > 0 && (
-        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-semibold">
+        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-semibold">
           <Star size={11} className="text-gold fill-gold" />
           {Number(rating).toFixed(1)}
+          {type !== 'book' && <span className="text-[8px] text-white/30 ml-0.5">TMDB</span>}
         </div>
       )}
 

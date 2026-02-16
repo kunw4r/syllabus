@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Library, TrendingUp, Film, BookOpen, Tv } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import ScrollRow from '../components/ScrollRow';
+import { SkeletonRow } from '../components/SkeletonCard';
 import SearchBar from '../components/SearchBar';
 import { useAuth } from '../context/AuthContext';
 import { getTrendingMovies, getTrendingTV, getTrendingBooks, multiSearch, getLibrary, getMoviesByGenre } from '../services/api';
@@ -16,24 +17,25 @@ function Home() {
   const [searchResults, setSearchResults] = useState(null);
   const [library, setLibrary] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [booksLoaded, setBooksLoaded] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
-        const promises = [getTrendingMovies(), getTrendingTV(), getTrendingBooks()];
+        // Phase 1: Load movies + TV fast (TMDB is fast)
+        const promises = [getTrendingMovies(), getTrendingTV()];
         if (user) promises.push(getLibrary());
 
         const results = await Promise.all(promises);
         setTrendingMovies(results[0].slice(0, 20));
         setTrendingTV(results[1].slice(0, 20));
-        setTrendingBooks(results[2].slice(0, 20));
+        setInitialLoaded(true);
 
-        if (user && results[3]) {
-          setLibrary(results[3]);
-          // Recommend based on library genres
+        if (user && results[2]) {
+          setLibrary(results[2]);
           const genreIds = new Set();
-          results[3].forEach(item => {
+          results[2].forEach(item => {
             if (item.genres) {
               item.genres.split(',').forEach(g => {
                 const id = Number(g.trim());
@@ -44,25 +46,36 @@ function Home() {
           if (genreIds.size > 0) {
             const topGenres = [...genreIds].slice(0, 3);
             const recs = await Promise.all(topGenres.map(id => getMoviesByGenre(id)));
-            // Filter out items already in library
-            const libraryIds = new Set(results[3].map(i => i.tmdb_id));
+            const libraryIds = new Set(results[2].map(i => i.tmdb_id));
             setRecommendations(recs.flat().filter(m => !libraryIds.has(m.id)).slice(0, 20));
           }
         }
-      } catch (err) { console.error(err); }
-      setLoading(false);
+
+        // Phase 2: Load books after main content is rendered
+        const books = await getTrendingBooks();
+        setTrendingBooks(books.slice(0, 20));
+        setBooksLoaded(true);
+      } catch (err) { console.error(err); setInitialLoaded(true); }
     }
     load();
   }, [user]);
 
   const handleSearch = async (query) => {
-    setLoading(true);
     const results = await multiSearch(query);
     setSearchResults(results);
-    setLoading(false);
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
+  if (!initialLoaded) return (
+    <div>
+      <div className="mb-10">
+        <div className="bg-dark-700 rounded h-8 w-48 mb-2 animate-pulse" />
+        <div className="bg-dark-700 rounded h-4 w-72 animate-pulse" />
+      </div>
+      <SkeletonRow title />
+      <SkeletonRow title />
+      <SkeletonRow title />
+    </div>
+  );
 
   const watching = library.filter(i => i.status === 'watching');
   const wantList = library.filter(i => i.status === 'want');
@@ -161,9 +174,13 @@ function Home() {
             {trendingTV.map(t => <div key={t.id} className="flex-shrink-0 w-[150px]"><MediaCard item={t} mediaType="tv" /></div>)}
           </ScrollRow>
 
-          <ScrollRow title="Trending Books">
-            {trendingBooks.map((b, i) => <div key={b.key || i} className="flex-shrink-0 w-[150px]"><MediaCard item={b} mediaType="book" /></div>)}
-          </ScrollRow>
+          {!booksLoaded ? (
+            <SkeletonRow title="Trending Books" />
+          ) : trendingBooks.length > 0 && (
+            <ScrollRow title="Trending Books">
+              {trendingBooks.map((b, i) => <div key={b.key || i} className="flex-shrink-0 w-[150px]"><MediaCard item={b} mediaType="book" /></div>)}
+            </ScrollRow>
+          )}
         </>
       )}
     </div>

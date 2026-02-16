@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
-const OL_BASE = 'https://openlibrary.org';
+const GB_BASE = 'https://www.googleapis.com/books/v1/volumes';
 
 // ─── In-memory cache (5-minute TTL) ───
 const cache = new Map();
@@ -105,57 +105,72 @@ export function getAnimationTV() {
   return tmdbCached('/discover/tv', '&with_genres=16&without_original_language=ja&sort_by=popularity.desc&vote_count.gte=20').then(d => d.results || []);
 }
 
-// ─── Books (Open Library) ───
+// ─── Top 100 (TMDB — 5 pages × 20 = 100) ───
 
-function mapOLBook(book) {
+export function getTop100Movies() {
+  return cached('top100:movies', async () => {
+    const pages = await Promise.all(
+      [1, 2, 3, 4, 5].map(p => tmdb('/movie/top_rated', `&page=${p}`))
+    );
+    return pages.flatMap(p => p.results || []);
+  });
+}
+
+export function getTop100TV() {
+  return cached('top100:tv', async () => {
+    const pages = await Promise.all(
+      [1, 2, 3, 4, 5].map(p => tmdb('/tv/top_rated', `&page=${p}`))
+    );
+    return pages.flatMap(p => p.results || []);
+  });
+}
+
+// ─── Books (Google Books API — fast, huge catalog) ───
+
+function mapGoogleBook(item) {
+  const v = item.volumeInfo || {};
   return {
-    key: book.key,
-    title: book.title,
-    author: book.author_name?.[0] || book.authors?.[0]?.name || 'Unknown',
-    cover_id: book.cover_i || book.cover_id,
-    poster_path: (book.cover_i || book.cover_id)
-      ? `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg`
-      : null,
-    first_publish_year: book.first_publish_year,
-    rating: book.ratings_average ? Math.round(book.ratings_average * 20) / 10 : null, // scale to /10
-    ratings_count: book.ratings_count || 0,
-    subject: book.subject?.slice(0, 3) || [],
+    key: item.id,
+    title: v.title || 'Untitled',
+    author: v.authors?.[0] || 'Unknown',
+    authors: v.authors || [],
+    poster_path: v.imageLinks?.thumbnail?.replace('http://', 'https://') || null,
+    first_publish_year: v.publishedDate?.slice(0, 4) || '',
+    rating: v.averageRating || null,
+    ratings_count: v.ratingsCount || 0,
+    description: v.description || '',
+    categories: v.categories || [],
+    pageCount: v.pageCount,
+    media_type: 'book',
   };
 }
 
 export function getTrendingBooks() {
-  return cached('ol:trending', async () => {
+  return cached('gb:trending', async () => {
     try {
-      const res = await fetch(`${OL_BASE}/trending/daily.json?limit=20`);
+      const res = await fetch(`${GB_BASE}?q=subject:fiction&orderBy=newest&maxResults=20`);
       const data = await res.json();
-      return (data.works || []).map(mapOLBook);
+      return (data.items || []).map(mapGoogleBook).filter(b => b.poster_path);
     } catch { return []; }
   });
 }
 
 export function getBooksBySubject(subject) {
-  return cached(`ol:subject:${subject}`, async () => {
+  return cached(`gb:subject:${subject}`, async () => {
     try {
-      const res = await fetch(`${OL_BASE}/subjects/${subject}.json?limit=20`);
+      const res = await fetch(`${GB_BASE}?q=subject:${encodeURIComponent(subject)}&orderBy=relevance&maxResults=20`);
       const data = await res.json();
-      return (data.works || []).map(w => ({
-        key: w.key,
-        title: w.title,
-        author: w.authors?.[0]?.name || 'Unknown',
-        cover_id: w.cover_id,
-        poster_path: w.cover_id ? `https://covers.openlibrary.org/b/id/${w.cover_id}-M.jpg` : null,
-        first_publish_year: w.first_publish_year,
-        rating: null,
-        subject: [subject],
-      }));
+      return (data.items || []).map(mapGoogleBook).filter(b => b.poster_path);
     } catch { return []; }
   });
 }
 
 export async function searchBooks(query) {
-  const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=20&fields=key,title,author_name,cover_i,first_publish_year,ratings_average,ratings_count,subject`);
-  const data = await res.json();
-  return (data.docs || []).map(mapOLBook);
+  try {
+    const res = await fetch(`${GB_BASE}?q=${encodeURIComponent(query)}&maxResults=20`);
+    const data = await res.json();
+    return (data.items || []).map(mapGoogleBook);
+  } catch { return []; }
 }
 
 // ─── Multi-search ───
@@ -163,17 +178,11 @@ export async function searchBooks(query) {
 export async function multiSearch(query) {
   const [tmdbData, booksRes] = await Promise.all([
     tmdb('/search/multi', `&query=${encodeURIComponent(query)}`),
-    fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=5`).then(r => r.json()),
+    fetch(`${GB_BASE}?q=${encodeURIComponent(query)}&maxResults=5`).then(r => r.json()).catch(() => ({ items: [] })),
   ]);
 
   const media = (tmdbData.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv');
-  const books = (booksRes.docs || []).slice(0, 5).map(book => ({
-    media_type: 'book',
-    key: book.key,
-    title: book.title,
-    author: book.author_name?.[0],
-    poster_path: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg` : null,
-  }));
+  const books = (booksRes.items || []).map(mapGoogleBook);
 
   return [...media, ...books];
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Film, Tv, BookOpen, Library, LogOut, LogIn } from 'lucide-react';
+import { Home, Film, Tv, BookOpen, Trophy, Library, LogOut, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
@@ -12,6 +12,7 @@ function Navbar() {
     { to: '/movies', icon: Film, label: 'Movies' },
     { to: '/tv', icon: Tv, label: 'TV Shows' },
     { to: '/books', icon: BookOpen, label: 'Books' },
+    { to: '/top100', icon: Trophy, label: 'Top 100' },
     ...(user ? [{ to: '/library', icon: Library, label: 'Library' }] : []),
   ];
 

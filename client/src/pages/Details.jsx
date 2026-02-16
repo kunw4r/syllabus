@@ -89,13 +89,18 @@ function Details() {
           </p>
 
           {data.vote_average > 0 && (
-            <div className="flex items-center gap-2 mb-6">
-              <Star size={18} className="text-gold fill-gold" />
-              <span className="text-lg font-semibold">{data.vote_average.toFixed(1)}</span>
-              <span className="text-white/30 text-sm">/ 10</span>
-              {data.vote_count && (
-                <span className="text-white/20 text-xs ml-1">({data.vote_count.toLocaleString()} votes)</span>
-              )}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5">
+                <Star size={18} className="text-gold fill-gold" />
+                <span className="text-lg font-semibold">{data.vote_average.toFixed(1)}</span>
+                <span className="text-white/30 text-sm">/ 10</span>
+              </div>
+              <div className="text-xs text-white/30">
+                <p className="font-medium text-white/50">TMDB Rating</p>
+                {data.vote_count && (
+                  <p>{data.vote_count.toLocaleString()} votes</p>
+                )}
+              </div>
             </div>
           )}
 
