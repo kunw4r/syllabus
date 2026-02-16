@@ -42,7 +42,7 @@ async function omdbFetch(params) {
 // ─── In-memory cache (configurable TTL) ───
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;       // default 5 min
-const BOOK_CACHE_TTL = 30 * 60 * 1000; // books 30 min (OL is slow)
+const BOOK_CACHE_TTL = 60 * 60 * 1000; // books 1h (OL data is stable)
 
 function cached(key, fetcher, ttl = CACHE_TTL) {
   const entry = cache.get(key);
@@ -557,25 +557,57 @@ export function getMALRating(title) {
   });
 }
 
-// ─── Books (Open Library — free, unlimited, reliable) ───
+// ─── Books (Open Library) ──────────────────────────────────────
 
-function mapOLWork(w) {
-  const coverId = w.cover_i || w.cover_id;
-  // Cover fallback chain: cover_id → ISBN → edition key → null
-  let posterPath = null;
-  if (coverId) {
-    posterPath = `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
-  } else if (w.isbn?.[0]) {
-    posterPath = `https://covers.openlibrary.org/b/isbn/${w.isbn[0]}-L.jpg`;
-  } else if (w.cover_edition_key) {
-    posterPath = `https://covers.openlibrary.org/b/olid/${w.cover_edition_key}-L.jpg`;
+const OL_COVERS = 'https://covers.openlibrary.org';
+const OL_SEARCH_FIELDS = [
+  'key', 'title', 'author_name', 'cover_i', 'cover_edition_key',
+  'isbn', 'first_publish_year', 'ratings_average', 'ratings_count',
+  'edition_count', 'subject',
+].join(',');
+
+/**
+ * Build an ordered array of candidate cover URLs for a book.
+ * The UI component (BookCover) tries each in sequence until one loads.
+ * @param {Object} work — search result or trending item
+ * @param {'M'|'L'} size — M for cards/lists, L for detail pages
+ */
+function buildCoverUrls(work, size = 'M') {
+  const urls = [];
+
+  // 1. Cover ID — most reliable when present
+  const coverId = work.cover_i || work.cover_id;
+  if (coverId && Number(coverId) > 0) {
+    urls.push(`${OL_COVERS}/b/id/${coverId}-${size}.jpg`);
   }
+
+  // 2. ISBNs — try up to 3 unique ISBNs (different editions have different covers)
+  const seen = new Set();
+  for (const isbn of [...(work.isbn || []), ...(work.isbn_13 || []), ...(work.isbn_10 || [])]) {
+    if (!seen.has(isbn)) {
+      seen.add(isbn);
+      urls.push(`${OL_COVERS}/b/isbn/${isbn}-${size}.jpg`);
+    }
+    if (seen.size >= 3) break;
+  }
+
+  // 3. Edition OLID
+  if (work.cover_edition_key) {
+    urls.push(`${OL_COVERS}/b/olid/${work.cover_edition_key}-${size}.jpg`);
+  }
+
+  return urls;
+}
+
+/** Map an Open Library search/trending result to our standard book shape. */
+function mapOLBook(w) {
+  const coverUrls = buildCoverUrls(w, 'M');
   return {
     key: w.key,
     title: w.title,
     author: w.author_name?.[0] || w.authors?.[0]?.name || 'Unknown',
-    cover_id: coverId,
-    poster_path: posterPath,
+    poster_path: coverUrls[0] || null,
+    cover_urls: coverUrls,
     first_publish_year: w.first_publish_year,
     rating: w.ratings_average ? Math.round(w.ratings_average * 20) / 10 : null,
     ratings_count: w.ratings_count || 0,
@@ -583,42 +615,77 @@ function mapOLWork(w) {
     already_read: w.already_read_count || 0,
     currently_reading: w.currently_reading_count || 0,
     edition_count: w.edition_count || 0,
-    subject: w.subject?.slice(0, 5) || [],
+    subject: (w.subject || []).slice(0, 5),
     media_type: 'book',
   };
 }
 
+/** Map a subjects-API work (different response shape: cover_id, authors array). */
+function mapSubjectWork(w) {
+  const coverUrls = [];
+  if (w.cover_id && Number(w.cover_id) > 0) {
+    coverUrls.push(`${OL_COVERS}/b/id/${w.cover_id}-M.jpg`);
+  }
+  if (w.cover_edition_key) {
+    coverUrls.push(`${OL_COVERS}/b/olid/${w.cover_edition_key}-M.jpg`);
+  }
+  return {
+    key: w.key,
+    title: w.title,
+    author: w.authors?.[0]?.name || 'Unknown',
+    poster_path: coverUrls[0] || null,
+    cover_urls: coverUrls,
+    first_publish_year: w.first_publish_year,
+    edition_count: w.edition_count || 0,
+    media_type: 'book',
+  };
+}
+
+/** Trending books this week (weekly is more stable than daily). */
 export function getTrendingBooks() {
   return cached('ol:trending', async () => {
     try {
-      const res = await fetch(`${OL_BASE}/trending/daily.json?limit=20`);
+      const res = await fetch(`${OL_BASE}/trending/weekly.json?limit=30`);
+      if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      return (data.works || []).map(mapOLWork);
+      return (data.works || [])
+        .map(mapOLBook)
+        .filter(b => b.cover_urls.length > 0)
+        .slice(0, 20);
     } catch { return []; }
   }, BOOK_CACHE_TTL);
 }
 
-const OL_BOOK_FIELDS = 'key,title,author_name,cover_i,cover_edition_key,isbn,first_publish_year,ratings_average,ratings_count,edition_count,subject';
-
+/** Browse books by subject — uses the subjects API (faster than search). */
 export function getBooksBySubject(subject) {
-  return cached(`ol:subject:${subject}`, async () => {
+  const slug = subject.toLowerCase().replace(/\s+/g, '_');
+  return cached(`ol:subject:${slug}`, async () => {
     try {
-      const res = await fetch(`${OL_BASE}/search.json?subject=${encodeURIComponent(subject)}&limit=20&fields=${OL_BOOK_FIELDS}`);
+      const res = await fetch(
+        `${OL_BASE}/subjects/${encodeURIComponent(slug)}.json?limit=24&details=false`
+      );
+      if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      return (data.docs || []).map(mapOLWork);
+      return (data.works || [])
+        .map(mapSubjectWork)
+        .filter(b => b.cover_urls.length > 0);
     } catch { return []; }
   }, BOOK_CACHE_TTL);
 }
 
+/** Search books by title/author/ISBN. */
 export async function searchBooks(query) {
   try {
-    const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=20&fields=${OL_BOOK_FIELDS},want_to_read_count,already_read_count,currently_reading_count`);
+    const res = await fetch(
+      `${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=24&fields=${OL_SEARCH_FIELDS}`
+    );
+    if (!res.ok) throw new Error(res.status);
     const data = await res.json();
-    return (data.docs || []).map(mapOLWork);
+    return (data.docs || []).map(mapOLBook);
   } catch { return []; }
 }
 
-// ─── Book Detail (Open Library work + ratings + bookshelves + editions) ───
+// ─── Book Detail (work + ratings + bookshelves + editions) ───
 
 export function getBookDetails(workKey) {
   const key = workKey.startsWith('/works/') ? workKey : `/works/${workKey}`;
@@ -628,53 +695,58 @@ export function getBookDetails(workKey) {
         fetch(`${OL_BASE}${key}.json`).then(r => r.json()),
         fetch(`${OL_BASE}${key}/ratings.json`).then(r => r.json()).catch(() => null),
         fetch(`${OL_BASE}${key}/bookshelves.json`).then(r => r.json()).catch(() => null),
-        fetch(`${OL_BASE}${key}/editions.json?limit=5`).then(r => r.json()).catch(() => null),
+        fetch(`${OL_BASE}${key}/editions.json?limit=10`).then(r => r.json()).catch(() => null),
       ]);
 
-      // Resolve authors
-      let authors = [];
-      if (work.authors && work.authors.length > 0) {
-        const authorKeys = work.authors
-          .map(a => a.author?.key || a.key)
-          .filter(Boolean);
-        const authorResults = await Promise.all(
-          authorKeys.slice(0, 5).map(aKey =>
-            fetch(`${OL_BASE}${aKey}.json`).then(r => r.json()).catch(() => null)
-          )
-        );
-        authors = authorResults.filter(Boolean).map(a => ({
-          name: a.name || a.personal_name || 'Unknown',
-          key: a.key,
-          photo: a.photos?.[0] ? `https://covers.openlibrary.org/a/id/${a.photos[0]}-M.jpg` : null,
-          bio: typeof a.bio === 'string' ? a.bio : a.bio?.value || '',
-        }));
-      }
+      // Resolve authors (up to 5, parallel)
+      const authorKeys = (work.authors || [])
+        .map(a => a.author?.key || a.key)
+        .filter(Boolean)
+        .slice(0, 5);
 
-      const coverId = work.covers?.[0];
-      // Cover fallback chain: cover_id → edition covers → edition ISBN → edition OLID → null
-      let posterPath = null;
-      if (coverId) {
-        posterPath = `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
-      } else if (editions?.entries?.length) {
-        // Try each edition until we find a cover source
-        for (const ed of editions.entries) {
-          if (ed.covers?.[0]) { posterPath = `https://covers.openlibrary.org/b/id/${ed.covers[0]}-L.jpg`; break; }
-          const isbn = ed.isbn_13?.[0] || ed.isbn_10?.[0];
-          if (isbn) { posterPath = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`; break; }
-          const olid = ed.key?.replace('/books/', '');
-          if (olid) { posterPath = `https://covers.openlibrary.org/b/olid/${olid}-L.jpg`; break; }
-        }
+      const authorResults = await Promise.all(
+        authorKeys.map(k =>
+          fetch(`${OL_BASE}${k}.json`).then(r => r.json()).catch(() => null)
+        )
+      );
+      const authors = authorResults.filter(Boolean).map(a => ({
+        name: a.name || a.personal_name || 'Unknown',
+        key: a.key,
+        photo: a.photos?.[0] ? `${OL_COVERS}/a/id/${a.photos[0]}-M.jpg` : null,
+        bio: typeof a.bio === 'string' ? a.bio : a.bio?.value || '',
+      }));
+
+      // Build cover URL chain (L size for detail view)
+      const coverUrls = [];
+      for (const coverId of (work.covers || []).slice(0, 3)) {
+        if (coverId > 0) coverUrls.push(`${OL_COVERS}/b/id/${coverId}-L.jpg`);
       }
-      const desc = typeof work.description === 'string' ? work.description : work.description?.value || '';
+      for (const ed of (editions?.entries || []).slice(0, 10)) {
+        for (const coverId of (ed.covers || []).slice(0, 2)) {
+          if (coverId > 0) coverUrls.push(`${OL_COVERS}/b/id/${coverId}-L.jpg`);
+        }
+        const isbn = ed.isbn_13?.[0] || ed.isbn_10?.[0];
+        if (isbn) coverUrls.push(`${OL_COVERS}/b/isbn/${isbn}-L.jpg`);
+        const olid = ed.key?.replace('/books/', '');
+        if (olid) coverUrls.push(`${OL_COVERS}/b/olid/${olid}-L.jpg`);
+      }
+      const uniqueCovers = [...new Set(coverUrls)];
+
+      const desc = typeof work.description === 'string'
+        ? work.description
+        : work.description?.value || '';
+
       return {
         key: work.key,
         title: work.title,
         description: desc,
-        cover_id: coverId,
-        poster_path: posterPath,
+        poster_path: uniqueCovers[0] || null,
+        cover_urls: uniqueCovers,
         first_publish_date: work.first_publish_date || '',
         subjects: (work.subjects || []).slice(0, 8),
-        rating: ratings?.summary?.average ? Math.round(ratings.summary.average * 20) / 10 : null,
+        rating: ratings?.summary?.average
+          ? Math.round(ratings.summary.average * 20) / 10
+          : null,
         ratings_count: ratings?.summary?.count || 0,
         want_to_read: shelves?.counts?.want_to_read || 0,
         currently_reading: shelves?.counts?.currently_reading || 0,
@@ -687,16 +759,24 @@ export function getBookDetails(workKey) {
   }, BOOK_CACHE_TTL);
 }
 
-// ─── Top 100 Books (by rating, filtered by min votes) ───
+// ─── Top 100 Books (by rating, minimum 20 votes for quality) ───
 
 export function getTop100Books(subject = null) {
   const key = subject ? `top100:books:${subject}` : 'top100:books';
   return cached(key, async () => {
     try {
-      const q = subject ? `subject:${subject}` : 'subject:fiction OR subject:literature';
-      const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(q)}&sort=rating&limit=100&fields=${OL_BOOK_FIELDS},want_to_read_count,already_read_count,currently_reading_count`);
+      const q = subject
+        ? `subject:${subject}`
+        : 'subject:fiction OR subject:literature';
+      const res = await fetch(
+        `${OL_BASE}/search.json?q=${encodeURIComponent(q)}&sort=rating&limit=100` +
+        `&fields=${OL_SEARCH_FIELDS},want_to_read_count,already_read_count,currently_reading_count`
+      );
+      if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      return (data.docs || []).filter(d => (d.ratings_count || 0) >= 10).map(mapOLWork);
+      return (data.docs || [])
+        .filter(d => (d.ratings_count || 0) >= 20)
+        .map(mapOLBook);
     } catch { return []; }
   }, BOOK_CACHE_TTL);
 }
@@ -706,12 +786,12 @@ export function getTop100Books(subject = null) {
 export async function multiSearch(query) {
   const [tmdbData, booksRes] = await Promise.all([
     tmdb('/search/multi', `&query=${encodeURIComponent(query)}`),
-    fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=5&fields=key,title,author_name,cover_i,first_publish_year`)
+    fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=5&fields=key,title,author_name,cover_i,cover_edition_key,isbn,first_publish_year`)
       .then(r => r.json()).catch(() => ({ docs: [] })),
   ]);
 
   const media = (tmdbData.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv');
-  const books = (booksRes.docs || []).slice(0, 5).map(mapOLWork);
+  const books = (booksRes.docs || []).slice(0, 5).map(mapOLBook);
 
   return [...media, ...books];
 }

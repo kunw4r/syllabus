@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ChevronLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X, Sparkles, Lightbulb } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
+import BookCover from '../components/BookCover';
 import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, computeUnifiedRating, setSyllabusScore, getSyllabusScore, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -301,14 +302,13 @@ function BookDetails({ workKey, navigate }) {
   const toast = useToast();
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const key = workKey.startsWith('/works/') ? workKey : `/works/${workKey}`;
-      const result = await getBookDetails(key);
-      setData(result);
-      setLoading(false);
-    }
-    load();
+    let cancelled = false;
+    setLoading(true);
+    const key = workKey.startsWith('/works/') ? workKey : `/works/${workKey}`;
+    getBookDetails(key).then(result => {
+      if (!cancelled) { setData(result); setLoading(false); }
+    });
+    return () => { cancelled = true; };
   }, [workKey]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
@@ -316,11 +316,10 @@ function BookDetails({ workKey, navigate }) {
 
   const totalReaders = (data.want_to_read || 0) + (data.currently_reading || 0) + (data.already_read || 0);
   const searchQ = encodeURIComponent(`${data.title} book`);
-  const [coverBroken, setCoverBroken] = useState(false);
 
   return (
     <div>
-      {/* Gradient backdrop for books */}
+      {/* Gradient backdrop */}
       <div className="absolute top-0 left-0 w-full h-80 -z-10 overflow-hidden">
         <div className="w-full h-full bg-gradient-to-br from-accent/15 via-dark-800 to-dark-900" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-900" />
@@ -331,31 +330,29 @@ function BookDetails({ workKey, navigate }) {
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Cover */}
-        {data.poster_path && !coverBroken ? (
-          <img src={data.poster_path} alt={data.title} className="w-48 sm:w-56 md:w-64 max-h-[400px] rounded-2xl shadow-2xl shadow-black/50 flex-shrink-0 bg-dark-700 object-contain"
-            onError={() => setCoverBroken(true)}
-            onLoad={e => { if (e.target.naturalWidth <= 1) setCoverBroken(true); }}
-          />
-        ) : (
+        {/* Cover — uses BookCover for automatic fallback chain */}
+        <BookCover
+          urls={data.cover_urls || (data.poster_path ? [data.poster_path] : [])}
+          alt={data.title}
+          className="w-48 sm:w-56 md:w-64 max-h-[400px] rounded-2xl shadow-2xl shadow-black/50 flex-shrink-0 bg-dark-700 object-contain"
+        >
           <div className="w-48 sm:w-56 md:w-64 aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/30 text-sm flex-shrink-0">
             <BookOpen size={48} className="text-white/10" />
           </div>
-        )}
+        </BookCover>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">{data.title}</h1>
 
-          {/* Author(s) */}
+          {/* Authors */}
           {data.authors?.length > 0 && (
             <div className="flex flex-wrap items-center gap-3 mb-3">
               {data.authors.map((author, i) => (
                 <a
                   key={author.key || i}
                   href={`https://www.google.com/search?q=${encodeURIComponent(author.name + ' author')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 hover:text-accent transition-colors"
                 >
                   {author.photo ? (
@@ -365,9 +362,7 @@ function BookDetails({ workKey, navigate }) {
                       {author.name?.charAt(0)}
                     </div>
                   )}
-                  <span className="text-sm text-white/60 hover:text-accent transition-colors">
-                    {author.name}
-                  </span>
+                  <span className="text-sm text-white/60">{author.name}</span>
                   <ExternalLink size={12} className="text-white/20" />
                 </a>
               ))}
@@ -417,14 +412,14 @@ function BookDetails({ workKey, navigate }) {
 
           {/* Reader breakdown */}
           {totalReaders > 0 && (
-            <div className="flex flex-wrap gap-4 text-xs text-white/40 mb-4">
-              {data.want_to_read > 0 && <span className="flex items-center gap-1.5"><BookMarked size={14} className="text-accent/70" /> {data.want_to_read.toLocaleString()} want to read</span>}
-              {data.currently_reading > 0 && <span className="flex items-center gap-1.5"><Eye size={14} className="text-blue-400/70" /> {data.currently_reading.toLocaleString()} reading now</span>}
-              {data.already_read > 0 && <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-400/70" /> {data.already_read.toLocaleString()} have read</span>}
-            </div>
-          )}
-          {totalReaders > 0 && (
-            <p className="text-[10px] text-white/20 mb-6">Reader data via Open Library</p>
+            <>
+              <div className="flex flex-wrap gap-4 text-xs text-white/40 mb-4">
+                {data.want_to_read > 0 && <span className="flex items-center gap-1.5"><BookMarked size={14} className="text-accent/70" /> {data.want_to_read.toLocaleString()} want to read</span>}
+                {data.currently_reading > 0 && <span className="flex items-center gap-1.5"><Eye size={14} className="text-blue-400/70" /> {data.currently_reading.toLocaleString()} reading now</span>}
+                {data.already_read > 0 && <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-400/70" /> {data.already_read.toLocaleString()} have read</span>}
+              </div>
+              <p className="text-[10px] text-white/20 mb-6">Reader data via Open Library</p>
+            </>
           )}
 
           {/* Description */}
@@ -433,7 +428,7 @@ function BookDetails({ workKey, navigate }) {
           )}
 
           {/* Subjects */}
-          {data.subjects.length > 0 && (
+          {data.subjects?.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
               {data.subjects.map(s => (
                 <span key={s} className="text-xs bg-white/[0.04] border border-white/[0.06] rounded-full px-3 py-1 text-white/50">{s}</span>
@@ -441,7 +436,7 @@ function BookDetails({ workKey, navigate }) {
             </div>
           )}
 
-          {/* Buy / Read Links */}
+          {/* Where to Get */}
           <div className="mb-8">
             <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider">Where to Get</h3>
             <div className="flex flex-wrap gap-2">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Star } from 'lucide-react';
+import BookCover from './BookCover';
 import { addToLibrary, getSyllabusScore } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -55,13 +56,24 @@ function MediaCard({ item, mediaType = 'movie' }) {
   };
 
   const [imgBroken, setImgBroken] = useState(false);
+  const isBook = type === 'book';
 
   return (
     <div
       className="group relative rounded-2xl overflow-hidden bg-dark-700/50 border border-white/5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_8px_30px_rgba(233,69,96,0.12)] hover:border-white/10"
       onClick={handleClick}
     >
-      {poster && !imgBroken ? (
+      {isBook ? (
+        <BookCover
+          urls={item.cover_urls || (poster ? [poster] : [])}
+          alt={title}
+          className="w-full aspect-[2/3] object-cover"
+        >
+          <div className="w-full aspect-[2/3] bg-dark-600 flex items-center justify-center text-white/30 text-xs p-4 text-center">
+            {title}
+          </div>
+        </BookCover>
+      ) : poster && !imgBroken ? (
         <img src={poster} alt={title} loading="lazy" className="w-full aspect-[2/3] object-cover"
           onError={() => setImgBroken(true)}
           onLoad={e => { if (e.target.naturalWidth <= 1) setImgBroken(true); }}

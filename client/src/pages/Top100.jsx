@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Star, Trophy, Film, Tv, BookOpen, Users } from 'lucide-react';
 import { SkeletonRow } from '../components/SkeletonCard';
+import BookCover from '../components/BookCover';
 import {
   getTop100Movies, getTop100TV, getTop100Books,
   enrichChart, applyStoredScores,
@@ -314,7 +315,17 @@ function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
       </span>
 
       {/* Poster */}
-      {poster && !imgBroken ? (
+      {isBook ? (
+        <BookCover
+          urls={item.cover_urls || (poster ? [poster] : [])}
+          alt={title}
+          className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform object-cover aspect-[2/3]"
+        >
+          <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-dark-600 flex-shrink-0 flex items-center justify-center aspect-[2/3]">
+            <BookOpen size={16} className="text-white/20" />
+          </div>
+        </BookCover>
+      ) : poster && !imgBroken ? (
         <img src={poster} alt={title} className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform object-cover aspect-[2/3]"
           onError={() => setImgBroken(true)}
           onLoad={e => { if (e.target.naturalWidth <= 1) setImgBroken(true); }}
