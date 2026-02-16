@@ -140,15 +140,17 @@ async function fetchTMDBCatalog() {
 
   if (!TV_ONLY) {
     log('📽  Fetching TMDB movies...');
-    const [topRated, popular, nowPlaying, trending] = await Promise.all([
+    const [topRated, popular, nowPlaying, trending, topVoted] = await Promise.all([
       tmdbPages('/movie/top_rated', 10),      // 200 movies
       tmdbPages('/movie/popular', 5),          // 100 movies
       tmdbPages('/movie/now_playing', 3),      // 60 movies
       tmdbPages('/trending/movie/week', 3),    // 60 movies
+      // Top 100 source: discover sorted by vote_average — ensures coverage
+      tmdbPages('/discover/movie', 5, '&sort_by=vote_average.desc&vote_count.gte=1000'), // 100 movies
     ]);
     // Deduplicate by ID
     const seen = new Set();
-    [...topRated, ...popular, ...nowPlaying, ...trending].forEach(m => {
+    [...topRated, ...popular, ...nowPlaying, ...trending, ...topVoted].forEach(m => {
       if (!seen.has(m.id)) { seen.add(m.id); catalog.movie.push(m); }
     });
     log(`   Found ${catalog.movie.length} unique movies`);
@@ -156,13 +158,15 @@ async function fetchTMDBCatalog() {
 
   if (!MOVIES_ONLY) {
     log('📺  Fetching TMDB TV shows...');
-    const [topRated, popular, trending] = await Promise.all([
+    const [topRated, popular, trending, topVoted] = await Promise.all([
       tmdbPages('/tv/top_rated', 10),          // 200 shows
       tmdbPages('/tv/popular', 5),             // 100 shows
       tmdbPages('/trending/tv/week', 3),       // 60 shows
+      // Top 100 source: discover sorted by vote_average — ensures coverage
+      tmdbPages('/discover/tv', 5, '&sort_by=vote_average.desc&vote_count.gte=500'), // 100 shows
     ]);
     const seen = new Set();
-    [...topRated, ...popular, ...trending].forEach(s => {
+    [...topRated, ...popular, ...trending, ...topVoted].forEach(s => {
       if (!seen.has(s.id)) { seen.add(s.id); catalog.tv.push(s); }
     });
     log(`   Found ${catalog.tv.length} unique TV shows`);

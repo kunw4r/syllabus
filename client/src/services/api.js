@@ -183,10 +183,22 @@ loadStaticScoreDB();
 const CHART_STORE_KEY = 'syllabus_charts';
 const CHART_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
+// Chart cache version — increment to bust stale caches when the data source changes.
+const CHART_VERSION = 2; // v2: switched from popular to vote_average.desc source
+
 let _chartCache = null;
 function getChartStore() {
   if (!_chartCache) {
-    try { _chartCache = JSON.parse(localStorage.getItem(CHART_STORE_KEY) || '{}'); } catch { _chartCache = {}; }
+    try {
+      const raw = JSON.parse(localStorage.getItem(CHART_STORE_KEY) || '{}');
+      // Bust cache if version changed (data source switched)
+      if (raw._v !== CHART_VERSION) {
+        _chartCache = { _v: CHART_VERSION };
+        try { localStorage.setItem(CHART_STORE_KEY, JSON.stringify(_chartCache)); } catch { /* quota */ }
+      } else {
+        _chartCache = raw;
+      }
+    } catch { _chartCache = { _v: CHART_VERSION }; }
   }
   return _chartCache;
 }
@@ -194,6 +206,7 @@ function getChartStore() {
 function saveChart(chartKey, items) {
   const store = getChartStore();
   store[chartKey] = { items, ts: Date.now() };
+  store._v = CHART_VERSION;
   try { localStorage.setItem(CHART_STORE_KEY, JSON.stringify(store)); } catch { /* quota */ }
 }
 
@@ -303,36 +316,36 @@ export function getAnimationTV() {
 export function getTop100Movies(genreId = null) {
   const key = genreId ? `top100:movies:${genreId}` : 'top100:movies';
   return cached(key, async () => {
-    if (genreId) {
-      const pages = await Promise.all(
-        [1, 2, 3, 4, 5].map(p => tmdb('/discover/movie', `&sort_by=popularity.desc&vote_count.gte=200&with_genres=${genreId}&page=${p}`))
-      );
-      const seen = new Set();
-      return pages.flatMap(p => p.results || []).filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
-    }
-    // Default: most popular movies (enrichChart re-sorts by Syllabus Score)
+    // Use discover sorted by vote_average (descending) with high minimum votes
+    // to ensure only genuinely well-rated films appear in the Top 100.
+    const genreParam = genreId ? `&with_genres=${genreId}` : '';
+    const minVotes = genreId ? 500 : 1000; // lower threshold for genres (smaller pools)
     const pages = await Promise.all(
-      [1, 2, 3, 4, 5].map(p => tmdb('/movie/popular', `&page=${p}`))
+      [1, 2, 3, 4, 5].map(p =>
+        tmdb('/discover/movie', `&sort_by=vote_average.desc&vote_count.gte=${minVotes}${genreParam}&page=${p}`)
+      )
     );
-    return pages.flatMap(p => p.results || []);
+    const seen = new Set();
+    return pages.flatMap(p => p.results || []).filter(m => {
+      if (seen.has(m.id)) return false; seen.add(m.id); return true;
+    });
   });
 }
 
 export function getTop100TV(genreId = null) {
   const key = genreId ? `top100:tv:${genreId}` : 'top100:tv';
   return cached(key, async () => {
-    if (genreId) {
-      const pages = await Promise.all(
-        [1, 2, 3, 4, 5].map(p => tmdb('/discover/tv', `&sort_by=popularity.desc&vote_count.gte=100&with_genres=${genreId}&page=${p}`))
-      );
-      const seen = new Set();
-      return pages.flatMap(p => p.results || []).filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
-    }
-    // Default: most popular TV shows (enrichChart re-sorts by Syllabus Score)
+    const genreParam = genreId ? `&with_genres=${genreId}` : '';
+    const minVotes = genreId ? 200 : 500;
     const pages = await Promise.all(
-      [1, 2, 3, 4, 5].map(p => tmdb('/tv/popular', `&page=${p}`))
+      [1, 2, 3, 4, 5].map(p =>
+        tmdb('/discover/tv', `&sort_by=vote_average.desc&vote_count.gte=${minVotes}${genreParam}&page=${p}`)
+      )
     );
-    return pages.flatMap(p => p.results || []);
+    const seen = new Set();
+    return pages.flatMap(p => p.results || []).filter(s => {
+      if (seen.has(s.id)) return false; seen.add(s.id); return true;
+    });
   });
 }
 
