@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X, Sparkles, Lightbulb } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
-import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
+import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, computeUnifiedRating, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -556,16 +556,16 @@ function MovieTVDetails({ mediaType, id, navigate }) {
       setLoading(false);
 
       const imdbId = result.external_ids?.imdb_id || result.imdb_id;
+      const resultTitle = result.name || result.title;
       if (imdbId) {
-        getOMDbRatings(imdbId).then(r => setExtRatings(r));
+        getOMDbRatings(imdbId, resultTitle, mediaType).then(r => setExtRatings(r));
       }
 
       // Fetch MAL rating for anime
       const anime = result.original_language === 'ja' &&
         result.genres?.some(g => g.id === 16);
       if (anime) {
-        const t = result.name || result.title;
-        getMALRating(t).then(r => setMalData(r));
+        getMALRating(resultTitle).then(r => setMalData(r));
       }
     }
     load();
@@ -605,25 +605,8 @@ function MovieTVDetails({ mediaType, id, navigate }) {
   // Detect anime for Crunchyroll link + MAL
   const isAnime = data.original_language === 'ja' && data.genres?.some(g => g.id === 16);
 
-  // Average: anime = IMDb + MAL, non-anime = IMDb + RT
-  const computeAverage = () => {
-    const scores = [];
-    if (extRatings?.imdb?.score) {
-      const v = parseFloat(extRatings.imdb.score);
-      if (!isNaN(v)) scores.push(v);
-    }
-    if (isAnime) {
-      if (malData?.score) scores.push(malData.score);
-    } else {
-      if (extRatings?.rt?.score) {
-        const v = parseInt(extRatings.rt.score);
-        if (!isNaN(v)) scores.push(v / 10);
-      }
-    }
-    if (scores.length < 2) return null;
-    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
-  };
-  const avgScore = computeAverage();
+  // Unified rating: avg(IMDb + RT) or avg(IMDb + MAL) for anime
+  const avgScore = computeUnifiedRating(extRatings, malData, isAnime);
 
   return (
     <div>

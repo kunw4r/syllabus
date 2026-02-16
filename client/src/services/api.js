@@ -142,31 +142,130 @@ export function getTop100TV(genreId = null) {
 
 // ─── OMDb (IMDb + Rotten Tomatoes + Metacritic) ───
 
-export function getOMDbRatings(imdbId) {
+function parseOMDbResponse(data) {
+  if (!data || data.Response === 'False') return null;
+  const ratings = { imdb_id: data.imdbID };
+  (data.Ratings || []).forEach(r => {
+    if (r.Source === 'Internet Movie Database') {
+      ratings.imdb = { score: r.Value, votes: data.imdbVotes };
+    } else if (r.Source === 'Rotten Tomatoes') {
+      ratings.rt = { score: r.Value };
+    } else if (r.Source === 'Metacritic') {
+      ratings.metacritic = { score: r.Value };
+    }
+  });
+  if (data.Director && data.Director !== 'N/A') ratings.director = data.Director;
+  if (data.Writer && data.Writer !== 'N/A') ratings.writer = data.Writer;
+  if (data.Awards && data.Awards !== 'N/A') ratings.awards = data.Awards;
+  if (data.BoxOffice && data.BoxOffice !== 'N/A') ratings.boxOffice = data.BoxOffice;
+  if (data.Rated && data.Rated !== 'N/A') ratings.rated = data.Rated;
+  if (data.Country && data.Country !== 'N/A') ratings.country = data.Country;
+  return ratings;
+}
+
+export function getOMDbRatings(imdbId, title = null, type = null) {
   if (!imdbId) return Promise.resolve(null);
   return cached(`omdb:${imdbId}`, async () => {
     try {
       const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_KEY}`);
       const data = await res.json();
-      if (data.Response === 'False') return null;
-      const ratings = { imdb_id: imdbId };
-      (data.Ratings || []).forEach(r => {
-        if (r.Source === 'Internet Movie Database') {
-          ratings.imdb = { score: r.Value, votes: data.imdbVotes };
-        } else if (r.Source === 'Rotten Tomatoes') {
-          ratings.rt = { score: r.Value };
-        } else if (r.Source === 'Metacritic') {
-          ratings.metacritic = { score: r.Value };
+      const ratings = parseOMDbResponse(data);
+      if (!ratings) return null;
+
+      // If no RT score and we have a title, try searching by title as fallback
+      // (OMDb sometimes returns RT for title search but not by IMDb ID, especially for TV)
+      if (!ratings.rt && title) {
+        const omdbType = type === 'tv' ? 'series' : type === 'movie' ? 'movie' : '';
+        let url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_KEY}`;
+        if (omdbType) url += `&type=${omdbType}`;
+        const fallbackRes = await fetch(url);
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.Response !== 'False') {
+          (fallbackData.Ratings || []).forEach(r => {
+            if (r.Source === 'Rotten Tomatoes' && !ratings.rt) {
+              ratings.rt = { score: r.Value };
+            }
+          });
         }
-      });
-      if (data.Director && data.Director !== 'N/A') ratings.director = data.Director;
-      if (data.Writer && data.Writer !== 'N/A') ratings.writer = data.Writer;
-      if (data.Awards && data.Awards !== 'N/A') ratings.awards = data.Awards;
-      if (data.BoxOffice && data.BoxOffice !== 'N/A') ratings.boxOffice = data.BoxOffice;
-      if (data.Rated && data.Rated !== 'N/A') ratings.rated = data.Rated;
-      if (data.Country && data.Country !== 'N/A') ratings.country = data.Country;
+      }
+
       return ratings;
     } catch { return null; }
+  });
+}
+
+// ─── OMDb by title (used for Top 100 enrichment where we lack IMDb IDs) ───
+
+export function getOMDbByTitle(title, year, type = 'movie') {
+  if (!title) return Promise.resolve(null);
+  const omdbType = type === 'tv' ? 'series' : 'movie';
+  const key = `omdb:t:${title}:${year || ''}:${omdbType}`;
+  return cached(key, async () => {
+    try {
+      let url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&type=${omdbType}&apikey=${OMDB_KEY}`;
+      if (year) url += `&y=${year}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return parseOMDbResponse(data);
+    } catch { return null; }
+  });
+}
+
+// ─── Unified Rating: avg(IMDb, RT/10) or avg(IMDb, MAL) for anime ───
+// Returns a single /10 score or null if no data at all
+
+export function computeUnifiedRating(omdbData, malData, isAnime) {
+  const scores = [];
+  if (omdbData?.imdb?.score) {
+    const v = parseFloat(omdbData.imdb.score);
+    if (!isNaN(v)) scores.push(v);
+  }
+  if (isAnime) {
+    if (malData?.score) scores.push(malData.score);
+  } else {
+    if (omdbData?.rt?.score) {
+      const v = parseInt(omdbData.rt.score);
+      if (!isNaN(v)) scores.push(v / 10);
+    }
+  }
+  if (scores.length === 0) return null;
+  return parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1));
+}
+
+// ─── Batch enrich items with unified ratings (for Top 100) ───
+
+export function enrichItemsWithRatings(items, mediaType) {
+  const key = `enriched:${mediaType}:${items.map(i => i.id || i.key).join(',')}`;
+  return cached(key, async () => {
+    const enriched = items.map(i => ({ ...i }));
+    const batchSize = 10;
+
+    for (let i = 0; i < enriched.length; i += batchSize) {
+      const batch = enriched.slice(i, i + batchSize);
+      await Promise.all(batch.map(async (item) => {
+        const title = item.title || item.name;
+        const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+        const isAnime = item.original_language === 'ja' &&
+          (item.genre_ids?.includes(16) || item.genres?.some(g => g.id === 16));
+
+        const omdb = await getOMDbByTitle(title, year, mediaType);
+        let mal = null;
+        if (isAnime) {
+          try { mal = await getMALRating(title); } catch { /* ignore */ }
+        }
+
+        item.unified_rating = computeUnifiedRating(omdb, mal, isAnime);
+      }));
+    }
+
+    // Sort by unified rating (fallback to vote_average/rating)
+    enriched.sort((a, b) => {
+      const ra = a.unified_rating ?? a.vote_average ?? a.rating ?? 0;
+      const rb = b.unified_rating ?? b.vote_average ?? b.rating ?? 0;
+      return rb - ra;
+    });
+
+    return enriched;
   });
 }
 

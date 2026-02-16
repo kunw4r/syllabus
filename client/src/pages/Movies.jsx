@@ -4,7 +4,7 @@ import { Star, Search, X, Plus, Play } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import ScrollRow from '../components/ScrollRow';
 import { SkeletonRow, SkeletonHero } from '../components/SkeletonCard';
-import { getTrendingMovies, getNowPlayingMovies, getTopRatedMovies, getMoviesByGenre, searchMovies, addToLibrary, getMovieDetails } from '../services/api';
+import { getTrendingMovies, getNowPlayingMovies, getTopRatedMovies, getMoviesByGenre, searchMovies, addToLibrary, getMovieDetails, getOMDbByTitle, computeUnifiedRating } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
@@ -26,6 +26,7 @@ function Movies() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [hero, setHero] = useState(null);
+  const [heroRating, setHeroRating] = useState(null);
   const [trending, setTrending] = useState([]);
   const [nowPlaying, setNowPlaying] = useState([]);
   const [topRated, setTopRated] = useState([]);
@@ -36,13 +37,20 @@ function Movies() {
   const [searching, setSearching] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
-  // Fetch hero details (for trailer)
+  // Fetch hero details (for trailer) + unified rating
   useEffect(() => {
     if (!hero?.id) return;
     getMovieDetails(hero.id).then(d => {
       setHero(prev => ({ ...prev, videos: d.videos }));
     }).catch(() => {});
-  }, [hero?.id]);
+    // Fetch unified rating for hero
+    const title = hero.title;
+    const year = (hero.release_date || '').slice(0, 4);
+    getOMDbByTitle(title, year, 'movie').then(omdb => {
+      const unified = computeUnifiedRating(omdb, null, false);
+      setHeroRating(unified);
+    }).catch(() => {});
+  }, [hero?.id, hero?.title, hero?.release_date]);
 
   // Phase 1: Load hero + trending + now playing (fast initial paint)
   useEffect(() => {
@@ -162,7 +170,7 @@ function Movies() {
               <div className="absolute bottom-6 sm:bottom-10 left-4 sm:left-6 lg:left-10 max-w-lg pr-4">
                 <h1 className="text-2xl sm:text-3xl lg:text-5xl font-black mb-2 sm:mb-3 leading-tight">{hero.title}</h1>
                 <div className="flex items-center gap-3 text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">
-                  <span className="flex items-center gap-1 text-gold"><Star size={14} className="fill-gold" /> {hero.vote_average?.toFixed(1)}</span>
+                  <span className="flex items-center gap-1 text-gold"><Star size={14} className="fill-gold" /> {(heroRating ?? hero.vote_average)?.toFixed(1)}</span>
                   <span>{hero.release_date?.slice(0, 4)}</span>
                 </div>
                 <p className="text-white/50 text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 mb-4 sm:mb-5">{hero.overview}</p>

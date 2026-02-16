@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Star, Trophy, Film, Tv, BookOpen, Users } from 'lucide-react';
 import { SkeletonRow } from '../components/SkeletonCard';
-import { getTop100Movies, getTop100TV, getTop100Books } from '../services/api';
+import { getTop100Movies, getTop100TV, getTop100Books, enrichItemsWithRatings } from '../services/api';
 
 // TMDB genre IDs
 const MOVIE_GENRES = [
@@ -76,6 +76,12 @@ function Top100() {
     if (t === 'movies') result = await getTop100Movies(g);
     else if (t === 'shows') result = await getTop100TV(g);
     else result = await getTop100Books(g);
+
+    // Enrich movies/TV with OMDb unified ratings and re-sort
+    if (t !== 'books') {
+      result = await enrichItemsWithRatings(result, t === 'movies' ? 'movie' : 'tv');
+    }
+
     setItems(result);
     setLoading(false);
   }, []);
@@ -192,8 +198,8 @@ function Top100() {
 function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
   const rankColor = rank === 1 ? 'text-gold' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-white/20';
   const isBook = mediaType === 'book';
-  const rating = isBook ? item.rating : item.vote_average;
-  const ratingLabel = isBook ? '' : 'TMDB';
+  const rating = isBook ? item.rating : (item.unified_rating ?? item.vote_average);
+  const ratingLabel = isBook ? '' : (item.unified_rating != null ? '' : 'TMDB');
 
   const handleClick = () => {
     if (isBook) {
