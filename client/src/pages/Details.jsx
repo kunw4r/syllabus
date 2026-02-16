@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X } from 'lucide-react';
+import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X, Sparkles, Lightbulb } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
-import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary } from '../services/api';
+import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -91,6 +91,7 @@ function LibraryPanel({ mediaId, addPayload }) {
       setStatus(chosenStatus);
       setExpanded(true);
       toast(`Added to library!`, 'success');
+      logActivity({ action: 'added', title: addPayload.title, media_type: addPayload.media_type, media_id: addPayload.tmdb_id || addPayload.openlibrary_key, poster_url: addPayload.poster_url }).catch(() => {});
     } catch (err) {
       toast(err?.message === 'Already in your library' ? 'Already in your library' : 'Could not add', 'error');
     }
@@ -104,6 +105,9 @@ function LibraryPanel({ mediaId, addPayload }) {
         setLibItem(prev => ({ ...prev, status: newStatus }));
         const labels = { want: 'Wishlist', watching: 'In Progress', finished: 'Finished' };
         toast(`Moved to ${labels[newStatus]}`, 'info');
+        if (newStatus === 'finished') {
+          logActivity({ action: 'finished', title: addPayload.title, media_type: addPayload.media_type, media_id: addPayload.tmdb_id || addPayload.openlibrary_key, poster_url: addPayload.poster_url }).catch(() => {});
+        }
       } catch { toast('Failed to update status', 'error'); }
     }
   };
@@ -119,6 +123,12 @@ function LibraryPanel({ mediaId, addPayload }) {
       });
       setLibItem(updated);
       toast('Saved!', 'success');
+      if (rating) {
+        logActivity({ action: 'rated', title: addPayload.title, media_type: addPayload.media_type, media_id: addPayload.tmdb_id || addPayload.openlibrary_key, poster_url: addPayload.poster_url, rating }).catch(() => {});
+      }
+      if (review) {
+        logActivity({ action: 'reviewed', title: addPayload.title, media_type: addPayload.media_type, media_id: addPayload.tmdb_id || addPayload.openlibrary_key, poster_url: addPayload.poster_url, review }).catch(() => {});
+      }
     } catch (err) {
       console.error('Save failed:', err);
       toast(err?.message || 'Failed to save — try again', 'error');
@@ -457,6 +467,44 @@ function BookDetails({ workKey, navigate }) {
               </a>
             </div>
           </div>
+
+          {/* Fun Facts */}
+          {(() => {
+            const facts = [];
+            if (data.edition_count >= 50) facts.push(`📚 Published in ${data.edition_count} editions worldwide — a true global phenomenon.`);
+            else if (data.edition_count >= 10) facts.push(`📖 Available in ${data.edition_count} different editions.`);
+            if (data.already_read > 10000) facts.push(`🏆 Over ${Math.floor(data.already_read / 1000) * 1000} readers have finished this book on Open Library alone.`);
+            if (data.currently_reading > 1000) facts.push(`👀 ${data.currently_reading.toLocaleString()} people are reading this right now!`);
+            if (data.want_to_read > 50000) facts.push(`🔥 More than ${Math.floor(data.want_to_read / 1000)}k people have this on their reading list.`);
+            if (data.ratings_count > 1000) facts.push(`⭐ Rated by ${data.ratings_count.toLocaleString()} readers with an average of ${data.rating}/10.`);
+            if (data.first_publish_date) {
+              const yearMatch = data.first_publish_date.match(/\d{4}/);
+              if (yearMatch) {
+                const age = new Date().getFullYear() - parseInt(yearMatch[0]);
+                if (age > 100) facts.push(`🕰️ First published ${age} years ago — a true classic that has stood the test of time.`);
+                else if (age > 50) facts.push(`📅 Published over ${age} years ago and still widely read today.`);
+                else if (age <= 2) facts.push(`✨ A brand new release — one of the latest books to hit shelves.`);
+              }
+            }
+            if (data.subjects?.some(s => s.toLowerCase().includes('new york times'))) facts.push(`📰 A New York Times bestseller.`);
+            if (data.subjects?.some(s => s.toLowerCase().includes('pulitzer'))) facts.push(`🏅 Pulitzer Prize-related work.`);
+            if (data.authors?.length > 2) facts.push(`✍️ A collaborative work by ${data.authors.length} authors.`);
+            return facts.length > 0 ? (
+              <div className="mb-8">
+                <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <Lightbulb size={14} className="text-gold" /> Fun Facts
+                </h3>
+                <div className="space-y-2">
+                  {facts.slice(0, 4).map((fact, i) => (
+                    <div key={i} className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
+                      <Sparkles size={14} className="text-accent mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-white/60 leading-relaxed">{fact}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+          })()}
 
           <LibraryPanel
             mediaId={{ openlibrary_key: data.key }}
@@ -908,7 +956,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               title: data.title || data.name,
               poster_path: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
               overview: data.overview,
-              external_rating: data.vote_average,
+              external_rating: avgScore ? parseFloat(avgScore) : data.vote_average,
               genres: data.genres?.map(g => g.name).join(', '),
               release_date: data.release_date || data.first_air_date,
             }}

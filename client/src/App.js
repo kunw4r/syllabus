@@ -9,6 +9,8 @@ import Books from './pages/Books';
 import MyLibrary from './pages/MyLibrary';
 import Details from './pages/Details';
 import Top100 from './pages/Top100';
+import Profile from './pages/Profile';
+import Social from './pages/Social';
 import Login from './pages/Login';
 
 function ProtectedRoute({ children }) {
@@ -34,7 +36,7 @@ function App() {
       <Route path="*" element={
         <div className="flex min-h-screen overflow-x-hidden">
           <Navbar />
-          <main className="flex-1 ml-0 lg:ml-60 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-10 lg:pb-10 overflow-x-hidden">
+          <main className="flex-1 ml-0 lg:ml-60 pt-14 p-4 pb-24 sm:pt-14 sm:p-6 sm:pb-24 lg:pt-10 lg:p-10 lg:pb-10 overflow-x-hidden">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/movies" element={<Movies />} />
@@ -42,6 +44,9 @@ function App() {
               <Route path="/books" element={<Books />} />
               <Route path="/top100" element={<Top100 />} />
               <Route path="/library" element={<ProtectedRoute><MyLibrary /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/profile/:userId" element={<Profile />} />
+              <Route path="/social" element={<ProtectedRoute><Social /></ProtectedRoute>} />
               <Route path="/details/:mediaType/:id" element={<Details />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

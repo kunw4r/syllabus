@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Film, Tv, BookOpen, Trophy, Library, LogOut, LogIn } from 'lucide-react';
+import { Home, Film, Tv, BookOpen, Trophy, Library, LogOut, LogIn, User, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
@@ -13,7 +13,11 @@ function Navbar() {
     { to: '/tv', icon: Tv, label: 'TV Shows' },
     { to: '/books', icon: BookOpen, label: 'Books' },
     { to: '/top100', icon: Trophy, label: 'Top 100' },
-    ...(user ? [{ to: '/library', icon: Library, label: 'Library' }] : []),
+    ...(user ? [
+      { to: '/library', icon: Library, label: 'Library' },
+      { to: '/social', icon: Users, label: 'Social' },
+      { to: '/profile', icon: User, label: 'Profile' },
+    ] : []),
   ];
 
   const mobileItems = [

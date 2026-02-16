@@ -10,7 +10,7 @@ function SearchBar({ onSearch, placeholder = 'Search movies, TV shows, books...'
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-3 max-w-lg mb-8 pr-20 lg:pr-0">
+    <form onSubmit={handleSubmit} className="flex items-center gap-3 max-w-lg mb-8">
       <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 flex-1">
         <Search size={18} className="text-white/30 shrink-0" />
         <input

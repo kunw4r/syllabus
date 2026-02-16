@@ -585,3 +585,267 @@ export async function getSmartRecommendations(libraryItems) {
 
   return unique.slice(0, 20);
 }
+
+// ═══════════════════════════════════════════════════════
+//  SOCIAL: Profiles, Follows, Activity, Blends
+// ═══════════════════════════════════════════════════════
+
+// Preset avatar options
+export const AVATAR_PRESETS = [
+  'https://api.dicebear.com/7.x/glass/svg?seed=cinema',
+  'https://api.dicebear.com/7.x/glass/svg?seed=popcorn',
+  'https://api.dicebear.com/7.x/glass/svg?seed=director',
+  'https://api.dicebear.com/7.x/glass/svg?seed=film',
+  'https://api.dicebear.com/7.x/glass/svg?seed=drama',
+  'https://api.dicebear.com/7.x/glass/svg?seed=action',
+  'https://api.dicebear.com/7.x/glass/svg?seed=comedy',
+  'https://api.dicebear.com/7.x/glass/svg?seed=thriller',
+  'https://api.dicebear.com/7.x/glass/svg?seed=horror',
+  'https://api.dicebear.com/7.x/glass/svg?seed=romance',
+  'https://api.dicebear.com/7.x/glass/svg?seed=scifi',
+  'https://api.dicebear.com/7.x/glass/svg?seed=anime',
+  'https://api.dicebear.com/7.x/glass/svg?seed=book',
+  'https://api.dicebear.com/7.x/glass/svg?seed=music',
+  'https://api.dicebear.com/7.x/glass/svg?seed=game',
+  'https://api.dicebear.com/7.x/glass/svg?seed=chill',
+];
+
+// ─── Profiles ───
+
+export async function getProfile(userId) {
+  const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  return data;
+}
+
+export async function getMyProfile() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  return data;
+}
+
+export async function updateProfile(updates) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+  const { data, error } = await supabase.from('profiles')
+    .upsert({ id: user.id, ...updates, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function searchUsers(query) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data } = await supabase.from('profiles')
+    .select('*')
+    .ilike('username', `%${query}%`)
+    .limit(20);
+  return (data || []).filter(p => p.id !== user?.id);
+}
+
+// ─── Follows ───
+
+export async function followUser(followingId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+  const { error } = await supabase.from('follows')
+    .insert({ follower_id: user.id, following_id: followingId });
+  if (error) throw error;
+
+  // Log activity
+  const target = await getProfile(followingId);
+  await logActivity({
+    action: 'followed',
+    title: target?.username || 'someone',
+  });
+}
+
+export async function unfollowUser(followingId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+  const { error } = await supabase.from('follows')
+    .delete()
+    .eq('follower_id', user.id)
+    .eq('following_id', followingId);
+  if (error) throw error;
+}
+
+export async function getFollowing(userId) {
+  const { data } = await supabase.from('follows')
+    .select('following_id, profiles!follows_following_id_fkey(*)')
+    .eq('follower_id', userId);
+  return (data || []).map(d => d.profiles).filter(Boolean);
+}
+
+export async function getFollowers(userId) {
+  const { data } = await supabase.from('follows')
+    .select('follower_id, profiles!follows_follower_id_fkey(*)')
+    .eq('following_id', userId);
+  return (data || []).map(d => d.profiles).filter(Boolean);
+}
+
+export async function isFollowing(followingId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase.from('follows')
+    .select('id')
+    .eq('follower_id', user.id)
+    .eq('following_id', followingId)
+    .maybeSingle();
+  return !!data;
+}
+
+// ─── Activity Feed ───
+
+export async function logActivity(entry) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('activity').insert({ user_id: user.id, ...entry }).select();
+}
+
+export async function getFriendActivity(limit = 50) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // Get who I follow
+  const { data: follows } = await supabase.from('follows')
+    .select('following_id')
+    .eq('follower_id', user.id);
+  const followingIds = (follows || []).map(f => f.following_id);
+  if (followingIds.length === 0) return [];
+  // Get their activity
+  const { data } = await supabase.from('activity')
+    .select('*, profiles!activity_user_id_fkey(username, avatar_url)')
+    .in('user_id', followingIds)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
+export async function getMyActivity(limit = 20) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data } = await supabase.from('activity')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
+// ─── Blends (Spotify-style: shared taste between two users) ───
+
+export async function getBlend(friendId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // Get both libraries
+  const [myLib, friendLib] = await Promise.all([
+    supabase.from('library').select('*').eq('user_id', user.id).then(r => r.data || []),
+    supabase.from('library').select('*').eq('user_id', friendId).then(r => r.data || []),
+  ]);
+
+  // Find shared items
+  const myIds = new Set(myLib.map(i => i.tmdb_id || i.openlibrary_key).filter(Boolean));
+  const shared = friendLib.filter(i => myIds.has(i.tmdb_id || i.openlibrary_key));
+
+  // Score overlap by genre
+  const myGenres = {};
+  myLib.forEach(i => (i.genres || '').split(',').forEach(g => {
+    const t = g.trim();
+    if (t) myGenres[t] = (myGenres[t] || 0) + 1;
+  }));
+  const friendGenres = {};
+  friendLib.forEach(i => (i.genres || '').split(',').forEach(g => {
+    const t = g.trim();
+    if (t) friendGenres[t] = (friendGenres[t] || 0) + 1;
+  }));
+
+  // Shared genres sorted by overlap
+  const sharedGenres = Object.keys(myGenres)
+    .filter(g => friendGenres[g])
+    .map(g => ({ genre: g, overlap: Math.min(myGenres[g], friendGenres[g]) }))
+    .sort((a, b) => b.overlap - a.overlap)
+    .slice(0, 5);
+
+  // Compatibility score (0-100)
+  const totalPossible = Math.max(myLib.length, friendLib.length, 1);
+  const compatibility = Math.min(100, Math.round((shared.length / totalPossible) * 100 + sharedGenres.length * 5));
+
+  // Generate recommendations based on shared genres
+  let blendRecs = [];
+  if (sharedGenres.length > 0) {
+    const topGenre = sharedGenres[0].genre;
+    // Try to find the TMDB genre ID
+    const genreMap = { 'Action': 28, 'Comedy': 35, 'Drama': 18, 'Horror': 27, 'Romance': 10749, 'Thriller': 53, 'Sci-Fi': 878, 'Animation': 16, 'Crime': 80, 'Documentary': 99, 'Adventure': 12, 'Fantasy': 14, 'Mystery': 9648, 'Science Fiction': 878 };
+    const genreId = genreMap[topGenre];
+    if (genreId) {
+      const recs = await getMoviesByGenre(genreId);
+      const bothIds = new Set([...myLib, ...friendLib].map(i => i.tmdb_id).filter(Boolean));
+      blendRecs = recs.filter(r => !bothIds.has(r.id)).slice(0, 10);
+    }
+  }
+
+  return {
+    shared,
+    sharedGenres,
+    compatibility,
+    blendRecs,
+    myCount: myLib.length,
+    friendCount: friendLib.length,
+  };
+}
+
+// ─── Discover Weekly (personalized recs refreshed weekly) ───
+
+export async function getDiscoverWeekly() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const library = await getLibrary();
+  if (library.length < 3) return [];
+
+  // Use top-rated + recently added as seeds
+  const seeds = [...library]
+    .sort((a, b) => (b.user_rating || b.external_rating || 0) - (a.user_rating || a.external_rating || 0))
+    .slice(0, 5)
+    .filter(i => i.tmdb_id);
+
+  if (seeds.length === 0) return [];
+
+  // Fetch recs from TMDB for each seed
+  const allRecs = await Promise.all(
+    seeds.map(async (seed) => {
+      try {
+        const mt = seed.media_type === 'tv' ? 'tv' : 'movie';
+        const data = await tmdb(`/${mt}/${seed.tmdb_id}/recommendations`);
+        return (data.results || []).map(r => ({ ...r, media_type: mt }));
+      } catch { return []; }
+    })
+  );
+
+  // Deduplicate & remove existing library items
+  const libIds = new Set(library.map(i => String(i.tmdb_id)));
+  const seen = new Set();
+  const unique = allRecs.flat().filter(r => {
+    const key = `${r.media_type}-${r.id}`;
+    if (seen.has(key) || libIds.has(String(r.id))) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Score and sort
+  unique.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+
+  return unique.slice(0, 20);
+}
+
+// ─── Friend's Library (public view) ───
+
+export async function getFriendLibrary(userId) {
+  const { data } = await supabase.from('library')
+    .select('*')
+    .eq('user_id', userId)
+    .order('added_at', { ascending: false });
+  return data || [];
+}
