@@ -647,7 +647,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
           )}
 
           {/* ── Quick Facts card ── */}
-          <div className="hidden md:block mt-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
+          <div className="mt-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
             {data.tagline && (
               <p className="text-xs italic text-white/40 leading-relaxed">"{data.tagline}"</p>
             )}
@@ -957,6 +957,76 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               </div>
             </div>
           )}
+
+          {/* ── Fun Facts ── */}
+          {(() => {
+            const facts = [];
+            const releaseYear = parseInt((data.release_date || data.first_air_date || '').slice(0, 4));
+            const age = releaseYear ? new Date().getFullYear() - releaseYear : 0;
+
+            // Budget & revenue facts
+            if (data.budget > 0 && data.revenue > 0) {
+              const ratio = (data.revenue / data.budget).toFixed(0);
+              if (data.revenue > data.budget * 10) facts.push(`💰 Made ${ratio}x its budget — earning $${(data.revenue / 1e6).toFixed(0)}M from a $${(data.budget / 1e6).toFixed(0)}M budget.`);
+              else if (data.revenue > data.budget * 3) facts.push(`📈 Earned $${(data.revenue / 1e6).toFixed(0)}M against a $${(data.budget / 1e6).toFixed(0)}M budget — a ${ratio}x return.`);
+              else if (data.revenue < data.budget) facts.push(`📉 Only earned $${(data.revenue / 1e6).toFixed(0)}M against a $${(data.budget / 1e6).toFixed(0)}M budget — a box office underperformer.`);
+            } else if (data.budget > 200e6) {
+              facts.push(`🎬 Had a massive $${(data.budget / 1e6).toFixed(0)}M production budget.`);
+            }
+
+            // Awards
+            if (extRatings?.awards) {
+              const oscars = extRatings.awards.match(/Won (\d+) Oscar/);
+              const noms = extRatings.awards.match(/Nominated for (\d+) Oscar/);
+              if (oscars) facts.push(`🏆 Won ${oscars[1]} Academy Award${parseInt(oscars[1]) > 1 ? 's' : ''}.`);
+              else if (noms) facts.push(`🎖️ Nominated for ${noms[1]} Academy Award${parseInt(noms[1]) > 1 ? 's' : ''}.`);
+              else if (extRatings.awards.includes('win')) facts.push(`🏅 ${extRatings.awards}`);
+            }
+
+            // Age & classic status
+            if (age > 50) facts.push(`🕰️ Released ${age} years ago and still beloved — a true classic.`);
+            else if (age > 25) facts.push(`📅 Over ${age} years old and still highly regarded.`);
+            else if (age <= 1 && releaseYear) facts.push(`✨ A brand new release from ${releaseYear}.`);
+
+            // Popularity & votes
+            if (data.vote_count > 20000) facts.push(`🌍 Rated by over ${Math.floor(data.vote_count / 1000)}k people on TMDB — one of the most-reviewed titles.`);
+            else if (data.vote_count > 5000) facts.push(`⭐ Rated by ${data.vote_count.toLocaleString()} users on TMDB.`);
+
+            // Runtime
+            if (data.runtime > 180) facts.push(`⏱️ At ${data.runtime} minutes, this is an epic-length film — bring snacks.`);
+            else if (data.runtime && data.runtime < 90) facts.push(`⚡ At just ${data.runtime} minutes, it's a quick but impactful watch.`);
+
+            // TV-specific
+            if (data.number_of_seasons > 10) facts.push(`📺 A long-running series spanning ${data.number_of_seasons} seasons and ${data.number_of_episodes || 'many'} episodes.`);
+            else if (data.number_of_seasons === 1 && data.status === 'Ended') facts.push(`🎯 A complete story told in just one season — ${data.number_of_episodes || 'a few'} episodes.`);
+            if (data.number_of_episodes > 500) facts.push(`📊 Over ${data.number_of_episodes} episodes have aired!`);
+
+            // Language / country
+            if (data.original_language && data.original_language !== 'en') {
+              const langNames = { ja: 'Japanese', ko: 'Korean', fr: 'French', es: 'Spanish', de: 'German', it: 'Italian', pt: 'Portuguese', zh: 'Chinese', hi: 'Hindi', ar: 'Arabic', ru: 'Russian', sv: 'Swedish', da: 'Danish', th: 'Thai', tl: 'Tagalog', pl: 'Polish', nl: 'Dutch', tr: 'Turkish' };
+              const lang = langNames[data.original_language] || data.original_language.toUpperCase();
+              facts.push(`🌐 Originally produced in ${lang}.`);
+            }
+
+            // Production companies
+            if (data.production_companies?.length > 3) facts.push(`🏢 A joint production between ${data.production_companies.length} studios.`);
+
+            return facts.length > 0 ? (
+              <div className="mb-8">
+                <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <Lightbulb size={14} className="text-gold" /> Fun Facts
+                </h3>
+                <div className="space-y-2">
+                  {facts.slice(0, 5).map((fact, i) => (
+                    <div key={i} className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
+                      <Sparkles size={14} className="text-accent mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-white/60 leading-relaxed">{fact}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+          })()}
 
           <LibraryPanel
             mediaId={{ tmdb_id: data.id }}
