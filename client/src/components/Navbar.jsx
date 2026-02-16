@@ -94,24 +94,15 @@ function Navbar() {
 
       {/* ─── Mobile top bar ─── */}
       <header className="fixed top-0 left-0 right-0 z-50 lg:hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-dark-900/80 backdrop-blur-xl border-b border-white/5">
+        <div className="flex items-center px-4 py-2.5 bg-dark-900/80 backdrop-blur-xl border-b border-white/5">
           <NavLink to="/" className="shrink-0">
             <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-7" />
           </NavLink>
-          {user && (
-            <button
-              onClick={signOut}
-              className="text-white/30 hover:text-white/60 transition-colors p-1"
-              title="Sign Out"
-            >
-              <LogOut size={18} strokeWidth={1.6} />
-            </button>
-          )}
         </div>
       </header>
 
       {/* ─── Mobile bottom tab bar (5 tabs max) ─── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t border-white/5 bg-dark-900/90 backdrop-blur-xl safe-area-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex flex-row lg:hidden border-t border-white/5 bg-dark-900/90 backdrop-blur-xl safe-area-bottom">
         {mobileTabs.map(({ to, icon: Icon, label }) => {
           if (to === '#explore') {
             return (

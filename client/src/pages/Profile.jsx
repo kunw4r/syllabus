@@ -8,7 +8,7 @@ import {
 import {
   User, Settings, Users, Heart, Star, Film, Tv, BookOpen, Library,
   CheckCircle2, Eye, Clock, TrendingUp, Edit3, X, Check, UserPlus,
-  UserMinus, Activity, Sparkles, Shuffle, ChevronRight, ExternalLink,
+  UserMinus, Activity, Sparkles, Shuffle, ChevronRight, ExternalLink, LogOut,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,7 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 /* ═══════════════════ PROFILE PAGE ═══════════════════ */
 export default function Profile() {
   const { userId } = useParams();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -262,14 +262,22 @@ export default function Profile() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {isOwnProfile ? (
-              <button
-                onClick={() => { setEditing(true); setEditForm({ ...profile }); }}
-                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-              >
-                <Settings size={16} /> Edit Profile
-              </button>
+              <>
+                <button
+                  onClick={() => { setEditing(true); setEditForm({ ...profile }); }}
+                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                >
+                  <Settings size={16} /> Edit Profile
+                </button>
+                <button
+                  onClick={signOut}
+                  className="bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-white/40 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                >
+                  <LogOut size={16} /> Sign Out
+                </button>
+              </>
             ) : user ? (
               iFollow ? (
                 <button
