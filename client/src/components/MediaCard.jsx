@@ -46,8 +46,8 @@ function MediaCard({ item, mediaType = 'movie' }) {
         release_date: item.release_date || item.first_air_date || '',
       });
       toast(`Added "${title}" to your library!`, 'success');
-    } catch {
-      toast('Could not add — might already be in your library.', 'error');
+    } catch (err) {
+      toast(err?.message === 'Already in your library' ? `"${title}" is already in your library` : 'Could not add to library', 'error');
     }
   };
 

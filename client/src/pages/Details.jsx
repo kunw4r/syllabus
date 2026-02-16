@@ -73,7 +73,8 @@ function BookDetails({ workKey, navigate }) {
         external_rating: data.rating,
       });
       setAdded(true);
-    } catch { toast('Could not add — might already be in your library.', 'error'); }
+      toast(`Added "${data.title}" to your library!`, 'success');
+    } catch (err) { toast(err?.message === 'Already in your library' ? `"${data.title}" is already in your library` : 'Could not add to library', 'error'); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
@@ -308,8 +309,9 @@ function MovieTVDetails({ mediaType, id, navigate }) {
         release_date: data.release_date || data.first_air_date,
       });
       setAdded(true);
-    } catch {
-      toast('Could not add — might already be in your library.', 'error');
+      toast(`Added "${title}" to your library!`, 'success');
+    } catch (err) {
+      toast(err?.message === 'Already in your library' ? `"${title}" is already in your library` : 'Could not add to library', 'error');
     }
   };
 

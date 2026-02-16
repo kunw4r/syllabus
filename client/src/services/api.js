@@ -352,8 +352,17 @@ export async function getLibrary(filters = {}) {
 export async function addToLibrary(item) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not logged in');
+
+  // ─ Duplicate check ─
+  let dupeQuery = supabase.from('library').select('id').eq('user_id', user.id);
+  if (item.tmdb_id) dupeQuery = dupeQuery.eq('tmdb_id', item.tmdb_id);
+  else if (item.openlibrary_key) dupeQuery = dupeQuery.eq('openlibrary_key', item.openlibrary_key);
+  const { data: existing } = await dupeQuery;
+  if (existing && existing.length > 0) throw new Error('Already in your library');
+
   const { data, error } = await supabase.from('library').insert({
     user_id: user.id,
+    status: 'watching',
     ...item,
   }).select().single();
   if (error) throw error;
@@ -373,6 +382,121 @@ export async function updateLibraryItem(id, updates) {
 export async function removeFromLibrary(id) {
   const { error } = await supabase.from('library').delete().eq('id', id);
   if (error) throw error;
+}
+
+// ─── Curated Picks (high quality, well-rated) ───
+
+const GENRE_MAP = {
+  all: '',
+  action: '28', comedy: '35', drama: '18', scifi: '878',
+  thriller: '53', romance: '10749', horror: '27', animation: '16',
+  documentary: '99', crime: '80', fantasy: '14', family: '10751',
+};
+
+export async function getCuratedPicks(genre = 'all', page = 1) {
+  const genreParam = GENRE_MAP[genre] ? `&with_genres=${GENRE_MAP[genre]}` : '';
+  const data = await tmdb('/discover/movie', `&sort_by=vote_average.desc&vote_count.gte=500&vote_average.gte=6${genreParam}&page=${page}`);
+  return data.results || [];
+}
+
+// ─── AI Scenario Search ───
+
+const SCENARIO_KEYWORDS = {
+  'date night': { genres: '10749,35', keywords: '' },
+  'date': { genres: '10749,35', keywords: '' },
+  'romantic': { genres: '10749', keywords: '' },
+  'family': { genres: '10751,16', keywords: '' },
+  'kids': { genres: '10751,16', keywords: '' },
+  'children': { genres: '10751,16', keywords: '' },
+  'scary': { genres: '27', keywords: '' },
+  'horror': { genres: '27', keywords: '' },
+  'funny': { genres: '35', keywords: '' },
+  'laugh': { genres: '35', keywords: '' },
+  'comedy': { genres: '35', keywords: '' },
+  'cry': { genres: '18,10749', keywords: '' },
+  'emotional': { genres: '18,10749', keywords: '' },
+  'sad': { genres: '18', keywords: '' },
+  'action': { genres: '28', keywords: '' },
+  'adrenaline': { genres: '28,53', keywords: '' },
+  'escape': { genres: '14,12,878', keywords: '' },
+  'mind off': { genres: '28,12,35', keywords: '' },
+  'take my mind': { genres: '28,12,35,14', keywords: '' },
+  'relax': { genres: '35,10751,10402', keywords: '' },
+  'chill': { genres: '35,10402', keywords: '' },
+  'thriller': { genres: '53,9648', keywords: '' },
+  'suspense': { genres: '53,9648', keywords: '' },
+  'mystery': { genres: '9648', keywords: '' },
+  'mind bending': { genres: '878,9648', keywords: '' },
+  'trippy': { genres: '878,9648', keywords: '' },
+  'sci-fi': { genres: '878', keywords: '' },
+  'space': { genres: '878', keywords: '1612' },
+  'war': { genres: '10752,18', keywords: '' },
+  'history': { genres: '36', keywords: '' },
+  'true story': { genres: '18,36', keywords: '9672' },
+  'based on': { genres: '18', keywords: '9672' },
+  'superhero': { genres: '28,878', keywords: '9715' },
+  'animated': { genres: '16', keywords: '' },
+  'anime': { genres: '16', keywords: '' },
+  'documentary': { genres: '99', keywords: '' },
+  'learn': { genres: '99,36', keywords: '' },
+  'inspiring': { genres: '18', keywords: '9748' },
+  'motivat': { genres: '18', keywords: '9748' },
+  'adventure': { genres: '12,28', keywords: '' },
+  'fantasy': { genres: '14', keywords: '' },
+  'magic': { genres: '14', keywords: '' },
+  'zombie': { genres: '27', keywords: '12377' },
+  'survival': { genres: '28,53', keywords: '10349' },
+  'heist': { genres: '80,53', keywords: '10051' },
+  'feel good': { genres: '35,10751,10749', keywords: '' },
+  'wholesome': { genres: '35,10751', keywords: '' },
+  'coming of age': { genres: '18', keywords: '10683' },
+  'teen': { genres: '18,35', keywords: '10683' },
+  'western': { genres: '37', keywords: '' },
+  'music': { genres: '10402', keywords: '' },
+  'sport': { genres: '18', keywords: '6075' },
+  'revenge': { genres: '28,53', keywords: '10084' },
+};
+
+export async function searchByScenario(query) {
+  const q = query.toLowerCase().trim();
+  let genres = '';
+  let keywords = '';
+
+  // Match scenario keywords (longest first for multi-word matches)
+  const sorted = Object.entries(SCENARIO_KEYWORDS).sort((a, b) => b[0].length - a[0].length);
+  for (const [phrase, config] of sorted) {
+    if (q.includes(phrase)) {
+      genres = config.genres;
+      keywords = config.keywords;
+      break;
+    }
+  }
+
+  if (!genres) {
+    // Fallback: TMDB keyword search
+    const kwRes = await tmdb('/search/keyword', `&query=${encodeURIComponent(q)}`);
+    const kwIds = (kwRes.results || []).slice(0, 3).map(k => k.id).join('|');
+    if (kwIds) {
+      const data = await tmdb('/discover/movie', `&with_keywords=${kwIds}&sort_by=vote_average.desc&vote_count.gte=100`);
+      return (data.results || []).map(r => ({ ...r, media_type: 'movie' }));
+    }
+    // Last resort: regular search
+    const data = await tmdb('/search/movie', `&query=${encodeURIComponent(query)}`);
+    return (data.results || []).map(r => ({ ...r, media_type: 'movie' }));
+  }
+
+  const kwParam = keywords ? `&with_keywords=${keywords}` : '';
+  const [movies, tv] = await Promise.all([
+    tmdb('/discover/movie', `&with_genres=${genres}${kwParam}&sort_by=vote_average.desc&vote_count.gte=200&page=${Math.floor(Math.random() * 3) + 1}`),
+    tmdb('/discover/tv', `&with_genres=${genres.replace('10752','10768').replace('10751','10751')}${kwParam}&sort_by=vote_average.desc&vote_count.gte=200&page=${Math.floor(Math.random() * 2) + 1}`),
+  ]);
+
+  const combined = [
+    ...(movies.results || []).map(r => ({ ...r, media_type: 'movie' })),
+    ...(tv.results || []).map(r => ({ ...r, media_type: 'tv' })),
+  ].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+
+  return combined.slice(0, 20);
 }
 
 // ─── TMDB Discover by Mood ───
