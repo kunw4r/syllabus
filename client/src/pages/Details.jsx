@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info } from 'lucide-react';
+import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
-import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary } from '../services/api';
+import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w780';
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/original';
@@ -43,12 +44,241 @@ function getProviderUrl(providerName, title, fallbackLink) {
 }
 
 /* ─────────────────────────────────────────────────── */
+/*  Library Panel — inline status / rate / review       */
+/* ─────────────────────────────────────────────────── */
+function LibraryPanel({ mediaId, addPayload }) {
+  const [libItem, setLibItem] = useState(null);          // null = not in lib, object = in lib
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState('watching');
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const toast = useToast();
+  const { user } = useAuth();
+
+  const lookup = useCallback(async () => {
+    if (!user) { setLoading(false); return; }
+    const item = await getLibraryItemByMediaId(mediaId);
+    if (item) {
+      setLibItem(item);
+      setStatus(item.status || 'watching');
+      setRating(item.user_rating || 0);
+      setReview(item.review || '');
+      setExpanded(true);
+    }
+    setLoading(false);
+  }, [mediaId, user]);
+
+  useEffect(() => { lookup(); }, [lookup]);
+
+  const handleAdd = async (chosenStatus) => {
+    if (!user) return toast('Please log in first', 'error');
+    try {
+      const newItem = await addToLibrary({ ...addPayload, status: chosenStatus });
+      setLibItem(newItem);
+      setStatus(chosenStatus);
+      setExpanded(true);
+      toast(`Added to library!`, 'success');
+    } catch (err) {
+      toast(err?.message === 'Already in your library' ? 'Already in your library' : 'Could not add', 'error');
+      // Re-check in case it's already there
+      lookup();
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    setStatus(newStatus);
+    if (libItem) {
+      try {
+        await updateLibraryItem(libItem.id, { status: newStatus });
+        setLibItem(prev => ({ ...prev, status: newStatus }));
+        const labels = { want: 'Wishlist', watching: 'In Progress', finished: 'Finished' };
+        toast(`Moved to ${labels[newStatus]}`, 'info');
+      } catch { toast('Failed to update status', 'error'); }
+    }
+  };
+
+  const handleSave = async () => {
+    if (!libItem) return;
+    setSaving(true);
+    try {
+      const updated = await updateLibraryItem(libItem.id, {
+        user_rating: rating || null,
+        review: review || null,
+        status,
+      });
+      setLibItem(updated);
+      toast('Saved!', 'success');
+    } catch (err) {
+      console.error('Save failed:', err);
+      toast('Failed to save — try again', 'error');
+    }
+    setSaving(false);
+  };
+
+  const handleRemove = async () => {
+    if (!libItem) return;
+    try {
+      await removeFromLibrary(libItem.id);
+      setLibItem(null);
+      setStatus('watching');
+      setRating(0);
+      setReview('');
+      setExpanded(false);
+      toast('Removed from library', 'success');
+    } catch { toast('Failed to remove', 'error'); }
+  };
+
+  const getRatingColor = (val) => {
+    if (val <= 3) return 'from-red-500 to-red-600';
+    if (val <= 5) return 'from-orange-500 to-amber-500';
+    if (val <= 7) return 'from-yellow-500 to-lime-500';
+    if (val <= 9) return 'from-green-400 to-emerald-500';
+    return 'from-emerald-400 to-cyan-400';
+  };
+
+  const getRatingLabel = (val) => {
+    if (!val || val === 0) return '';
+    if (val <= 2) return 'Terrible';
+    if (val <= 4) return 'Not great';
+    if (val <= 5) return 'Okay';
+    if (val <= 6.5) return 'Decent';
+    if (val <= 7.5) return 'Good';
+    if (val <= 8.5) return 'Great';
+    if (val <= 9.5) return 'Amazing';
+    return 'Masterpiece';
+  };
+
+  if (loading) return <div className="h-12 w-48 bg-dark-700 rounded-xl animate-pulse mt-2" />;
+  if (!user) return (
+    <p className="text-xs text-white/30 mt-4">Log in to add to your library</p>
+  );
+
+  // ─── Not in library: show add buttons ───
+  if (!libItem) {
+    return (
+      <div className="mt-6">
+        <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Add to Library</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'watching', icon: Eye, label: 'Watching', cls: 'bg-blue-500 hover:bg-blue-600' },
+            { key: 'want', icon: Clock, label: 'Wishlist', cls: 'bg-purple-500 hover:bg-purple-600' },
+            { key: 'finished', icon: CheckCircle2, label: 'Finished', cls: 'bg-green-500 hover:bg-green-600' },
+          ].map(s => (
+            <button key={s.key} onClick={() => handleAdd(s.key)}
+              className={`${s.cls} text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-95`}>
+              <s.icon size={16} />
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── In library: full control panel ───
+  return (
+    <div className="mt-6 bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2">
+          <Check size={16} className="text-green-400" />
+          <span className="text-sm font-medium text-white/70">In Your Library</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setExpanded(e => !e)}
+            className="text-xs text-white/30 hover:text-white/60 px-2 py-1 rounded-lg hover:bg-white/5 transition-all">
+            {expanded ? 'Collapse' : 'Edit'}
+          </button>
+          <button onClick={handleRemove}
+            className="text-white/20 hover:text-red-400 p-1 rounded-lg hover:bg-white/5 transition-all" title="Remove">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Status buttons (always visible) */}
+      <div className="px-4 py-3 flex gap-2">
+        {[
+          { key: 'want', icon: Clock, label: 'Wishlist', active: 'bg-purple-500 text-white border-purple-400' },
+          { key: 'watching', icon: Eye, label: 'In Progress', active: 'bg-blue-500 text-white border-blue-400' },
+          { key: 'finished', icon: CheckCircle2, label: 'Finished', active: 'bg-green-500 text-white border-green-400' },
+        ].map(s => (
+          <button key={s.key} onClick={() => handleStatusChange(s.key)}
+            className={`flex-1 py-2 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all duration-200 ${
+              status === s.key ? s.active : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/70'
+            }`}>
+            <s.icon size={13} />
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Expanded: rating + review */}
+      {expanded && (
+        <div className="px-4 pb-4 space-y-4">
+          {/* Rating */}
+          <div>
+            <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-2">Your Rating</label>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <input type="range" min="0" max="10" step="0.1" value={rating}
+                  onChange={e => setRating(parseFloat(e.target.value))}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-dark-600
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-lg
+                    [&::-webkit-slider-thumb]:shadow-accent/30 [&::-webkit-slider-thumb]:cursor-pointer
+                    [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20" />
+                <div className="flex justify-between mt-1">
+                  <span className="text-[9px] text-white/15">0</span>
+                  <span className="text-[9px] text-white/15">5</span>
+                  <span className="text-[9px] text-white/15">10</span>
+                </div>
+              </div>
+              <div className="text-right min-w-[60px]">
+                <span className={`text-2xl font-black bg-gradient-to-r ${rating > 0 ? getRatingColor(rating) : 'from-white/20 to-white/20'} bg-clip-text text-transparent`}>
+                  {rating > 0 ? Number(rating).toFixed(1) : '—'}
+                </span>
+                {rating > 0 && <p className="text-[9px] text-white/30">{getRatingLabel(rating)}</p>}
+              </div>
+            </div>
+            {/* Quick picks */}
+            <div className="flex gap-1 mt-2">
+              {[5, 6, 7, 7.5, 8, 8.5, 9, 9.5, 10].map(n => (
+                <button key={n} onClick={() => setRating(n)}
+                  className={`flex-1 py-1 rounded text-[9px] font-bold transition-all ${
+                    rating === n ? 'bg-accent text-white' : 'bg-dark-700 text-white/25 hover:bg-dark-600 hover:text-white/50'
+                  }`}>{n}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Review */}
+          <div>
+            <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-2">Your Thoughts</label>
+            <textarea value={review} onChange={e => setReview(e.target.value)}
+              placeholder="What did you think? (optional)" rows={2}
+              className="w-full bg-dark-700/50 border border-white/[0.06] rounded-xl px-3 py-2.5 text-sm text-white/80 placeholder-white/20 focus:outline-none focus:border-accent/40 resize-none transition-colors" />
+          </div>
+
+          {/* Save */}
+          <button onClick={handleSave} disabled={saving}
+            className="w-full btn-primary py-2.5 text-sm font-semibold disabled:opacity-50 transition-all">
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────── */
 /*  Book Detail View                                    */
 /* ─────────────────────────────────────────────────── */
 function BookDetails({ workKey, navigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [added, setAdded] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -61,21 +291,6 @@ function BookDetails({ workKey, navigate }) {
     }
     load();
   }, [workKey]);
-
-  const handleAdd = async () => {
-    try {
-      await addToLibrary({
-        openlibrary_key: data.key,
-        media_type: 'book',
-        title: data.title,
-        poster_path: data.poster_path,
-        overview: data.description?.slice(0, 500) || '',
-        external_rating: data.rating,
-      });
-      setAdded(true);
-      toast(`Added "${data.title}" to your library!`, 'success');
-    } catch (err) { toast(err?.message === 'Already in your library' ? `"${data.title}" is already in your library` : 'Could not add to library', 'error'); }
-  };
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
   if (!data) return <div className="text-center py-20 text-white/40"><h3 className="text-lg">Book not found</h3></div>;
@@ -234,12 +449,17 @@ function BookDetails({ workKey, navigate }) {
             </div>
           </div>
 
-          <button onClick={handleAdd} disabled={added}
-            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-              added ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'btn-primary'
-            }`}>
-            {added ? <><Check size={18} /> Added to Library</> : <><Plus size={18} /> Add to Library</>}
-          </button>
+          <LibraryPanel
+            mediaId={{ openlibrary_key: data.key }}
+            addPayload={{
+              openlibrary_key: data.key,
+              media_type: 'book',
+              title: data.title,
+              poster_path: data.poster_path,
+              overview: data.description?.slice(0, 500) || '',
+              external_rating: data.rating,
+            }}
+          />
         </div>
       </div>
     </div>
@@ -264,7 +484,6 @@ function Details() {
 function MovieTVDetails({ mediaType, id, navigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [added, setAdded] = useState(false);
   const [extRatings, setExtRatings] = useState(null);
   const [malData, setMalData] = useState(null);
   const toast = useToast();
@@ -294,26 +513,6 @@ function MovieTVDetails({ mediaType, id, navigate }) {
     }
     load();
   }, [mediaType, id]);
-
-  const handleAdd = async () => {
-    const title = data.title || data.name;
-    try {
-      await addToLibrary({
-        tmdb_id: data.id,
-        media_type: mediaType,
-        title,
-        poster_path: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
-        overview: data.overview,
-        external_rating: data.vote_average,
-        genres: data.genres?.map(g => g.name).join(', '),
-        release_date: data.release_date || data.first_air_date,
-      });
-      setAdded(true);
-      toast(`Added "${title}" to your library!`, 'success');
-    } catch (err) {
-      toast(err?.message === 'Already in your library' ? `"${title}" is already in your library` : 'Could not add to library', 'error');
-    }
-  };
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
   if (!data) return <div className="text-center py-20 text-white/40"><h3 className="text-lg">Not found</h3></div>;
@@ -692,12 +891,19 @@ function MovieTVDetails({ mediaType, id, navigate }) {
             </div>
           )}
 
-          <button onClick={handleAdd} disabled={added}
-            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-              added ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'btn-primary'
-            }`}>
-            {added ? <><Check size={18} /> Added to Library</> : <><Plus size={18} /> Add to Library</>}
-          </button>
+          <LibraryPanel
+            mediaId={{ tmdb_id: data.id }}
+            addPayload={{
+              tmdb_id: data.id,
+              media_type: mediaType,
+              title: data.title || data.name,
+              poster_path: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
+              overview: data.overview,
+              external_rating: data.vote_average,
+              genres: data.genres?.map(g => g.name).join(', '),
+              release_date: data.release_date || data.first_air_date,
+            }}
+          />
         </div>
       </div>
 

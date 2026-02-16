@@ -384,6 +384,18 @@ export async function removeFromLibrary(id) {
   if (error) throw error;
 }
 
+// Look up a library item by tmdb_id or openlibrary_key for the current user
+export async function getLibraryItemByMediaId({ tmdb_id, openlibrary_key }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  let query = supabase.from('library').select('*').eq('user_id', user.id);
+  if (tmdb_id) query = query.eq('tmdb_id', tmdb_id);
+  else if (openlibrary_key) query = query.eq('openlibrary_key', openlibrary_key);
+  else return null;
+  const { data } = await query.maybeSingle();
+  return data || null;
+}
+
 // ─── Curated Picks (high quality, well-rated) ───
 
 const GENRE_MAP = {

@@ -495,14 +495,19 @@ function MyLibrary() {
   };
 
   const saveReview = async () => {
-    await updateLibraryItem(reviewItem.id, {
-      user_rating: userRating || null,
-      review: reviewText,
-      status: reviewStatus,
-    });
-    toast('Saved!', 'success');
-    setReviewItem(null);
-    loadLibrary();
+    try {
+      await updateLibraryItem(reviewItem.id, {
+        user_rating: userRating || null,
+        review: reviewText,
+        status: reviewStatus,
+      });
+      toast('Saved!', 'success');
+      setReviewItem(null);
+      loadLibrary();
+    } catch (err) {
+      console.error('Save failed:', err);
+      toast('Failed to save — please try again', 'error');
+    }
   };
 
   const toggleSort = (field) => {
