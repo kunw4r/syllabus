@@ -193,6 +193,7 @@ function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
   const rankColor = rank === 1 ? 'text-gold' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-white/20';
   const isBook = mediaType === 'book';
   const rating = isBook ? item.rating : item.vote_average;
+  const ratingLabel = isBook ? '' : 'TMDB';
 
   const handleClick = () => {
     if (isBook) {
@@ -238,10 +239,13 @@ function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
 
       {/* Rating */}
       {rating > 0 && (
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <Star size={14} className="text-gold fill-gold" />
-          <span className="text-sm font-bold">{Number(rating).toFixed(1)}</span>
-          <span className="text-[10px] text-white/20 hidden sm:inline">/ 10</span>
+        <div className="flex flex-col items-end flex-shrink-0">
+          <div className="flex items-center gap-1.5">
+            <Star size={14} className="text-gold fill-gold" />
+            <span className="text-sm font-bold">{Number(rating).toFixed(1)}</span>
+            <span className="text-[10px] text-white/20 hidden sm:inline">/ 10</span>
+          </div>
+          {ratingLabel && <span className="text-[9px] text-white/15 mt-0.5">{ratingLabel}</span>}
         </div>
       )}
     </div>

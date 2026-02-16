@@ -319,6 +319,11 @@ function MovieTVDetails({ mediaType, id, navigate }) {
   const recommendations = data.recommendations?.results?.slice(0, 10) || [];
   const imdbId = extRatings?.imdb_id || data.external_ids?.imdb_id;
 
+  // Extract directors & writers from TMDB crew (with profile photos)
+  const crew = data.credits?.crew || [];
+  const directors = crew.filter(c => c.job === 'Director').slice(0, 3);
+  const writers = crew.filter(c => c.department === 'Writing').slice(0, 4);
+
   // Find best trailer (prefer Official Trailer, then any Trailer, then Teaser)
   const trailer = (() => {
     const vids = (data.videos?.results || []).filter(v => v.site === 'YouTube');
@@ -391,24 +396,56 @@ function MovieTVDetails({ mediaType, id, navigate }) {
             {data.tagline && (
               <p className="text-xs italic text-white/40 leading-relaxed">"{data.tagline}"</p>
             )}
-            {extRatings?.director && (
-              <div className="flex items-start gap-2.5">
-                <Clapperboard size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Director</p>
-                  <p className="text-xs text-white/70">{extRatings.director}</p>
+
+            {/* Director(s) with profile photos */}
+            {directors.length > 0 && (
+              <div>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Director</p>
+                <div className="space-y-2">
+                  {directors.map(d => (
+                    <a key={d.id} href={`https://www.google.com/search?q=${encodeURIComponent(d.name + ' filmmaker')}`}
+                      target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -m-1 transition-colors">
+                      {d.profile_path ? (
+                        <img src={`${TMDB_PROFILE}${d.profile_path}`} alt={d.name}
+                          className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
+                          {d.name?.charAt(0)}
+                        </div>
+                      )}
+                      <span className="text-xs text-white/70 group-hover/crew:text-accent transition-colors">{d.name}</span>
+                    </a>
+                  ))}
                 </div>
               </div>
             )}
-            {extRatings?.writer && (
-              <div className="flex items-start gap-2.5">
-                <PenLine size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Writer</p>
-                  <p className="text-xs text-white/70">{extRatings.writer}</p>
+
+            {/* Writer(s) with profile photos */}
+            {writers.length > 0 && (
+              <div>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Writer</p>
+                <div className="space-y-2">
+                  {writers.map(w => (
+                    <a key={w.id + w.job} href={`https://www.google.com/search?q=${encodeURIComponent(w.name + ' writer')}`}
+                      target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -m-1 transition-colors">
+                      {w.profile_path ? (
+                        <img src={`${TMDB_PROFILE}${w.profile_path}`} alt={w.name}
+                          className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
+                          {w.name?.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-xs text-white/70 group-hover/crew:text-accent transition-colors block">{w.name}</span>
+                        <span className="text-[10px] text-white/25">{w.job}</span>
+                      </div>
+                    </a>
+                  ))}
                 </div>
               </div>
             )}
+
             {extRatings?.rated && (
               <div className="flex items-start gap-2.5">
                 <Film size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
@@ -476,10 +513,10 @@ function MovieTVDetails({ mediaType, id, navigate }) {
           </p>
 
           {/* ── Ratings ── */}
-          <div className="flex flex-wrap items-start gap-3 mb-6">
+          <div className="flex flex-wrap items-stretch gap-3 mb-6">
             {/* Average Score */}
             {avgScore && (
-              <div className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[80px]">
+              <div className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <Star size={16} className="text-gold fill-gold" />
                   <span className="text-xl font-black">{avgScore}</span>
@@ -492,8 +529,8 @@ function MovieTVDetails({ mediaType, id, navigate }) {
             {/* IMDb — links to IMDb page */}
             {extRatings?.imdb && (
               <a href={`https://www.imdb.com/title/${imdbId}/`} target="_blank" rel="noopener noreferrer"
-                className="bg-[#f5c518]/[0.08] border border-[#f5c518]/20 rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-[#f5c518]/[0.15] transition-colors cursor-pointer">
-                <p className="text-lg font-bold text-[#f5c518]">{extRatings.imdb.score}</p>
+                className="bg-[#f5c518]/[0.08] border border-[#f5c518]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#f5c518]/[0.15] transition-colors cursor-pointer flex flex-col justify-center">
+                <p className="text-xl font-black text-[#f5c518]">{extRatings.imdb.score}</p>
                 <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">IMDb <ExternalLink size={8} /></p>
                 {extRatings.imdb.votes && (
                   <p className="text-[9px] text-white/20">{extRatings.imdb.votes} votes</p>
@@ -504,8 +541,8 @@ function MovieTVDetails({ mediaType, id, navigate }) {
             {/* Rotten Tomatoes — links to RT search */}
             {extRatings?.rt && (
               <a href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(title)}`} target="_blank" rel="noopener noreferrer"
-                className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-white/[0.08] transition-colors cursor-pointer">
-                <p className="text-lg font-bold">
+                className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-white/[0.08] transition-colors cursor-pointer flex flex-col justify-center">
+                <p className="text-xl font-black">
                   <span className={parseInt(extRatings.rt.score) >= 60 ? 'text-red-400' : 'text-green-400'}>
                     🍅 {extRatings.rt.score}
                   </span>
@@ -517,8 +554,8 @@ function MovieTVDetails({ mediaType, id, navigate }) {
             {/* MAL (anime only) */}
             {isAnime && malData?.score && (
               <a href={malData.url} target="_blank" rel="noopener noreferrer"
-                className="bg-[#2e51a2]/10 border border-[#2e51a2]/20 rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-[#2e51a2]/20 transition-colors">
-                <p className="text-lg font-bold text-[#2e51a2]">{malData.score}</p>
+                className="bg-[#2e51a2]/10 border border-[#2e51a2]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#2e51a2]/20 transition-colors flex flex-col justify-center">
+                <p className="text-xl font-black text-[#2e51a2]">{malData.score}</p>
                 <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">MAL <ExternalLink size={8} /></p>
                 {malData.scored_by && (
                   <p className="text-[9px] text-white/20">{malData.scored_by.toLocaleString()} votes</p>
@@ -529,15 +566,15 @@ function MovieTVDetails({ mediaType, id, navigate }) {
             {/* Crunchyroll (anime only) */}
             {isAnime && (
               <a href={`https://www.crunchyroll.com/search?q=${encodeURIComponent(title)}`} target="_blank" rel="noopener noreferrer"
-                className="bg-[#f47521]/10 border border-[#f47521]/20 rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-[#f47521]/20 transition-colors">
-                <p className="text-lg font-bold text-[#f47521]">CR</p>
+                className="bg-[#f47521]/10 border border-[#f47521]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#f47521]/20 transition-colors flex flex-col justify-center">
+                <p className="text-xl font-black text-[#f47521]">CR</p>
                 <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">Crunchyroll <ExternalLink size={8} /></p>
               </a>
             )}
 
             {/* Loading shimmer */}
             {!extRatings && data.external_ids?.imdb_id && (
-              <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 text-center min-w-[80px] animate-pulse">
+              <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 text-center min-w-[90px] animate-pulse flex flex-col justify-center">
                 <div className="h-5 w-12 bg-dark-600 rounded mx-auto mb-1" />
                 <div className="h-2 w-8 bg-dark-600 rounded mx-auto" />
               </div>
