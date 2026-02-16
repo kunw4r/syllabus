@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w780';
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/original';
@@ -48,6 +49,7 @@ function BookDetails({ workKey, navigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     async function load() {
@@ -71,7 +73,7 @@ function BookDetails({ workKey, navigate }) {
         external_rating: data.rating,
       });
       setAdded(true);
-    } catch { alert('Could not add — might already be in your library.'); }
+    } catch { toast('Could not add — might already be in your library.', 'error'); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
@@ -264,6 +266,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
   const [added, setAdded] = useState(false);
   const [extRatings, setExtRatings] = useState(null);
   const [malData, setMalData] = useState(null);
+  const toast = useToast();
 
   useEffect(() => {
     async function load() {
@@ -306,7 +309,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
       });
       setAdded(true);
     } catch {
-      alert('Could not add — might already be in your library.');
+      toast('Could not add — might already be in your library.', 'error');
     }
   };
 

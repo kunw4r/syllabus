@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Star } from 'lucide-react';
 import { addToLibrary } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w780';
 
 function MediaCard({ item, mediaType = 'movie' }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
   const title = item.title || item.name;
   const poster = item.poster_path
@@ -30,7 +32,7 @@ function MediaCard({ item, mediaType = 'movie' }) {
 
   const handleAdd = async (e) => {
     e.stopPropagation();
-    if (!user) return alert('Please log in first');
+    if (!user) return toast('Please log in first', 'error');
     try {
       await addToLibrary({
         tmdb_id: type !== 'book' ? item.id : null,
@@ -43,9 +45,9 @@ function MediaCard({ item, mediaType = 'movie' }) {
         genres: item.genre_ids ? item.genre_ids.join(',') : '',
         release_date: item.release_date || item.first_air_date || '',
       });
-      alert(`Added "${title}" to your library!`);
+      toast(`Added "${title}" to your library!`, 'success');
     } catch {
-      alert('Could not add — might already be in your library.');
+      toast('Could not add — might already be in your library.', 'error');
     }
   };
 
