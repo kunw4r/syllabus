@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Film, Tv, BookOpen, Trophy, Library, LogOut, LogIn, User, Users, Compass, Search, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import {
+  HomeIcon, CompassIcon, LibraryIcon, SocialIcon, ProfileIcon,
+  TrophyIcon, FilmIcon, TvIcon, BookIcon, LogInIcon, LogOutIcon, XIcon,
+} from './NavIcons';
 
 function Navbar() {
   const { user, signOut } = useAuth();
@@ -9,29 +12,28 @@ function Navbar() {
   const [exploreOpen, setExploreOpen] = useState(false);
 
   const navItems = [
-    { to: '/', icon: Home, label: 'Home' },
-    { to: '/movies', icon: Film, label: 'Movies' },
-    { to: '/tv', icon: Tv, label: 'TV Shows' },
-    { to: '/books', icon: BookOpen, label: 'Books' },
-    { to: '/top100', icon: Trophy, label: 'Top 100' },
+    { to: '/', Icon: HomeIcon, label: 'Home' },
+    { to: '/movies', Icon: FilmIcon, label: 'Movies' },
+    { to: '/tv', Icon: TvIcon, label: 'TV Shows' },
+    { to: '/books', Icon: BookIcon, label: 'Books' },
+    { to: '/top100', Icon: TrophyIcon, label: 'Top 100' },
     ...(user ? [
-      { to: '/library', icon: Library, label: 'Library' },
-      { to: '/social', icon: Users, label: 'Social' },
-      { to: '/profile', icon: User, label: 'Profile' },
+      { to: '/library', Icon: LibraryIcon, label: 'Library' },
+      { to: '/social', Icon: SocialIcon, label: 'Social' },
+      { to: '/profile', Icon: ProfileIcon, label: 'Profile' },
     ] : []),
   ];
 
-  // Mobile: 4-5 core tabs only (like Spotify/Netflix)
   const mobileTabs = [
-    { to: '/', icon: Home, label: 'Home' },
-    { to: '#explore', icon: Compass, label: 'Explore' },
+    { to: '/', Icon: HomeIcon, label: 'Home' },
+    { to: '#explore', Icon: CompassIcon, label: 'Explore' },
     ...(user ? [
-      { to: '/library', icon: Library, label: 'Library' },
-      { to: '/social', icon: Users, label: 'Social' },
-      { to: '/profile', icon: User, label: 'Profile' },
+      { to: '/library', Icon: LibraryIcon, label: 'Library' },
+      { to: '/social', Icon: SocialIcon, label: 'Social' },
+      { to: '/profile', Icon: ProfileIcon, label: 'Profile' },
     ] : [
-      { to: '/top100', icon: Trophy, label: 'Top 100' },
-      { to: '/login', icon: LogIn, label: 'Sign In' },
+      { to: '/top100', Icon: TrophyIcon, label: 'Top 100' },
+      { to: '/login', Icon: LogInIcon, label: 'Sign In' },
     ]),
   ];
 
@@ -46,7 +48,7 @@ function Navbar() {
         </div>
 
         <ul className="flex flex-1 flex-col gap-1 px-3">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {navItems.map(({ to, Icon, label }) => (
             <li key={to}>
               <NavLink
                 to={to}
@@ -61,7 +63,7 @@ function Navbar() {
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={20} strokeWidth={1.5} className={isActive ? 'fill-accent/20' : ''} />
+                    <Icon size={20} active={isActive} />
                     {label}
                   </>
                 )}
@@ -80,7 +82,7 @@ function Navbar() {
                 onClick={signOut}
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-white/50 transition-all hover:bg-white/5 hover:text-white"
               >
-                <LogOut size={20} strokeWidth={1.5} />
+                <LogOutIcon size={20} />
                 Sign Out
               </button>
             </>
@@ -89,7 +91,7 @@ function Navbar() {
               onClick={() => navigate('/login')}
               className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-accent transition-all hover:bg-accent/10"
             >
-              <LogIn size={20} strokeWidth={1.5} />
+              <LogInIcon size={20} />
               Sign In
             </button>
           )}
@@ -105,17 +107,17 @@ function Navbar() {
         </div>
       </header>
 
-      {/* ─── Mobile bottom tab bar (5 tabs max) ─── */}
+      {/* ─── Mobile bottom tab bar ─── */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex flex-row lg:hidden border-t border-white/5 bg-dark-900/90 backdrop-blur-xl safe-area-bottom">
-        {mobileTabs.map(({ to, icon: Icon, label }) => {
+        {mobileTabs.map(({ to, Icon, label }) => {
           if (to === '#explore') {
             return (
               <button
                 key="explore"
                 onClick={() => setExploreOpen(true)}
-                className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors text-white/30 active:text-white"
+                className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors text-white/40 active:text-white"
               >
-                <Icon size={24} strokeWidth={1.5} />
+                <CompassIcon size={26} active={false} />
                 {label}
               </button>
             );
@@ -127,13 +129,13 @@ function Navbar() {
               end={to === '/'}
               className={({ isActive }) =>
                 `flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors ${
-                  isActive ? 'text-accent' : 'text-white/30 active:text-white'
+                  isActive ? 'text-accent' : 'text-white/40 active:text-white'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={24} strokeWidth={1.5} className={isActive ? 'fill-accent/20' : ''} />
+                  <Icon size={26} active={isActive} />
                   {label}
                 </>
               )}
@@ -142,12 +144,10 @@ function Navbar() {
         })}
       </nav>
 
-      {/* ─── Explore sheet (slides up from bottom) ─── */}
+      {/* ─── Explore sheet ─── */}
       {exploreOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setExploreOpen(false)}>
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          {/* Sheet */}
           <div
             className="absolute bottom-0 left-0 right-0 bg-dark-800 rounded-t-3xl border-t border-white/10 p-6 pb-10 animate-slide-up"
             onClick={e => e.stopPropagation()}
@@ -155,16 +155,16 @@ function Navbar() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-white">Explore</h3>
               <button onClick={() => setExploreOpen(false)} className="text-white/40 hover:text-white p-1">
-                <X size={22} strokeWidth={1.5} />
+                <XIcon size={22} />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { to: '/movies', icon: Film, label: 'Movies', color: 'from-rose-500/20 to-rose-600/10' },
-                { to: '/tv', icon: Tv, label: 'TV Shows', color: 'from-cyan-500/20 to-cyan-600/10' },
-                { to: '/books', icon: BookOpen, label: 'Books', color: 'from-amber-500/20 to-amber-600/10' },
-                { to: '/top100', icon: Trophy, label: 'Top 100', color: 'from-purple-500/20 to-purple-600/10' },
-              ].map(({ to, icon: Icon, label, color }) => (
+                { to: '/movies', Icon: FilmIcon, label: 'Movies', color: 'from-rose-500/20 to-rose-600/10' },
+                { to: '/tv', Icon: TvIcon, label: 'TV Shows', color: 'from-cyan-500/20 to-cyan-600/10' },
+                { to: '/books', Icon: BookIcon, label: 'Books', color: 'from-amber-500/20 to-amber-600/10' },
+                { to: '/top100', Icon: TrophyIcon, label: 'Top 100', color: 'from-purple-500/20 to-purple-600/10' },
+              ].map(({ to, Icon, label, color }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -173,7 +173,7 @@ function Navbar() {
                   style={{ backgroundImage: `linear-gradient(to bottom right, var(--tw-gradient-stops))` }}
                 >
                   <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
-                    <Icon size={22} className="text-white" strokeWidth={1.5} />
+                    <Icon size={22} active />
                   </div>
                   <span className="text-sm font-medium text-white">{label}</span>
                 </NavLink>

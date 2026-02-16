@@ -318,22 +318,28 @@ export default function Profile() {
                 <Sparkles size={14} className="text-accent" /> AI Avatar Generator
               </p>
               {(() => {
-                const generateAvatar = async (promptText) => {
+                const generateAvatar = (promptText) => {
                   if (!promptText?.trim()) return;
                   setEditForm(f => ({ ...f, _aiGenerating: true, _aiError: false }));
-                  try {
-                    const prompt = encodeURIComponent(`profile avatar portrait, ${promptText.trim()}, centered face, clean background, high quality, digital art`);
-                    const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error('Generation failed');
-                    const blob = await res.blob();
-                    const reader = new FileReader();
-                    reader.onloadend = () => setEditForm(f => ({ ...f, avatar_url: reader.result, _aiGenerating: false }));
-                    reader.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false, _aiError: true }));
-                    reader.readAsDataURL(blob);
-                  } catch {
-                    setEditForm(f => ({ ...f, _aiGenerating: false, _aiError: true }));
-                  }
+                  const prompt = encodeURIComponent(`profile avatar portrait, ${promptText.trim()}, centered face, clean background, high quality, digital art`);
+                  const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
+                  const img = new Image();
+                  img.crossOrigin = 'anonymous';
+                  img.onload = () => {
+                    try {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = img.naturalWidth;
+                      canvas.height = img.naturalHeight;
+                      canvas.getContext('2d').drawImage(img, 0, 0);
+                      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                      setEditForm(f => ({ ...f, avatar_url: dataUrl, _aiGenerating: false }));
+                    } catch {
+                      // If canvas tainted, use the URL directly
+                      setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: false }));
+                    }
+                  };
+                  img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false, _aiError: true }));
+                  img.src = url;
                 };
                 return (
                   <>
