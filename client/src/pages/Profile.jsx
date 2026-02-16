@@ -143,7 +143,9 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     try {
-      const updated = await updateProfile(editForm);
+      // Strip temporary AI fields before saving
+      const { _aiPrompt, _aiGenerating, ...cleanForm } = editForm;
+      const updated = await updateProfile(cleanForm);
       setProfile(updated);
       setEditing(false);
       toast('Profile updated!', 'success');
@@ -302,17 +304,81 @@ export default function Profile() {
         {showAvatarPicker && (
           <div className="relative mt-6 pt-6 border-t border-white/10">
             <h3 className="text-sm font-semibold text-white/50 mb-4">Choose an avatar</h3>
-            {/* Style sections */}
-            {[
-              { label: 'Characters', start: 0, end: 6 },
-              { label: 'Portraits', start: 6, end: 12 },
-              { label: 'Personas', start: 12, end: 18 },
-              { label: 'Minimal', start: 18, end: 24 },
-            ].map(section => (
-              <div key={section.label} className="mb-4">
-                <p className="text-xs text-white/30 mb-2 uppercase tracking-wider">{section.label}</p>
+
+            {/* AI Avatar Generator */}
+            <div className="mb-5 p-4 bg-gradient-to-r from-accent/10 to-purple-500/10 border border-accent/20 rounded-xl">
+              <p className="text-xs text-white/50 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles size={12} className="text-accent" /> AI Avatar Generator
+              </p>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white/70 text-xs focus:outline-none focus:border-accent"
+                  placeholder="Describe your avatar... e.g. anime warrior with blue hair"
+                  value={editForm._aiPrompt || ''}
+                  onChange={e => setEditForm(f => ({ ...f, _aiPrompt: e.target.value }))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && editForm._aiPrompt?.trim()) {
+                      const prompt = encodeURIComponent(`profile avatar portrait, ${editForm._aiPrompt.trim()}, centered face, clean background, high quality, digital art`);
+                      const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
+                      setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: true }));
+                      // Pre-load image
+                      const img = new Image();
+                      img.onload = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
+                      img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
+                      img.src = url;
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (!editForm._aiPrompt?.trim()) return;
+                    const prompt = encodeURIComponent(`profile avatar portrait, ${editForm._aiPrompt.trim()}, centered face, clean background, high quality, digital art`);
+                    const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
+                    setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: true }));
+                    const img = new Image();
+                    img.onload = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
+                    img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
+                    img.src = url;
+                  }}
+                  disabled={!editForm._aiPrompt?.trim()}
+                  className="bg-accent hover:bg-accent/80 disabled:opacity-30 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors"
+                >
+                  Generate
+                </button>
+              </div>
+              {editForm._aiGenerating && (
+                <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
+                  <div className="w-3 h-3 border-2 border-white/20 border-t-accent rounded-full animate-spin" />
+                  Generating your avatar...
+                </div>
+              )}
+              {editForm.avatar_url?.includes('pollinations.ai') && !editForm._aiGenerating && (
+                <div className="mt-2 flex items-center gap-3">
+                  <img src={editForm.avatar_url} alt="AI avatar" className="w-16 h-16 rounded-full object-cover border-2 border-accent/40" />
+                  <button
+                    onClick={() => {
+                      const prompt = encodeURIComponent(`profile avatar portrait, ${editForm._aiPrompt?.trim()}, centered face, clean background, high quality, digital art`);
+                      const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
+                      setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: true }));
+                      const img = new Image();
+                      img.onload = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
+                      img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
+                      img.src = url;
+                    }}
+                    className="text-xs text-accent hover:text-accent/80 transition-colors"
+                  >
+                    Regenerate
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Preset sections */}
+            {Object.entries(AVATAR_PRESETS).map(([label, urls]) => (
+              <div key={label} className="mb-4">
+                <p className="text-xs text-white/30 mb-2 uppercase tracking-wider">{label}</p>
                 <div className="flex gap-2 flex-wrap">
-                  {AVATAR_PRESETS.slice(section.start, section.end).map((url, i) => (
+                  {urls.map((url, i) => (
                     <button
                       key={i}
                       onClick={() => setEditForm(f => ({ ...f, avatar_url: url }))}

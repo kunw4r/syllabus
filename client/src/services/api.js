@@ -792,37 +792,58 @@ export async function getSmartRecommendations(libraryItems) {
 //  SOCIAL: Profiles, Follows, Activity, Blends
 // ═══════════════════════════════════════════════════════
 
-// Preset avatar options — character-style (like Crunchyroll / Spotify)
-export const AVATAR_PRESETS = [
-  // Adventurer style (cartoon characters)
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Neo',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Trinity',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Ripley',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Goku',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Totoro',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Yoda',
-  // Lorelei style (stylish portraits)
-  'https://api.dicebear.com/7.x/lorelei/svg?seed=Sora',
-  'https://api.dicebear.com/7.x/lorelei/svg?seed=Luna',
-  'https://api.dicebear.com/7.x/lorelei/svg?seed=Kai',
-  'https://api.dicebear.com/7.x/lorelei/svg?seed=Ember',
-  'https://api.dicebear.com/7.x/lorelei/svg?seed=Storm',
-  'https://api.dicebear.com/7.x/lorelei/svg?seed=Phoenix',
-  // Personas style (full character avatars)
-  'https://api.dicebear.com/7.x/personas/svg?seed=Hero',
-  'https://api.dicebear.com/7.x/personas/svg?seed=Villain',
-  'https://api.dicebear.com/7.x/personas/svg?seed=Sage',
-  'https://api.dicebear.com/7.x/personas/svg?seed=Rebel',
-  'https://api.dicebear.com/7.x/personas/svg?seed=Ghost',
-  'https://api.dicebear.com/7.x/personas/svg?seed=Ninja',
-  // Notionists style (minimalist character portraits)
-  'https://api.dicebear.com/7.x/notionists/svg?seed=Ace',
-  'https://api.dicebear.com/7.x/notionists/svg?seed=Maverick',
-  'https://api.dicebear.com/7.x/notionists/svg?seed=Raven',
-  'https://api.dicebear.com/7.x/notionists/svg?seed=Atlas',
-  'https://api.dicebear.com/7.x/notionists/svg?seed=Echo',
-  'https://api.dicebear.com/7.x/notionists/svg?seed=Cipher',
-];
+// Preset avatar options — diverse styles via DiceBear API
+export const AVATAR_PRESETS = {
+  'Adventurer': [
+    'Neo', 'Trinity', 'Ripley', 'Goku', 'Totoro', 'Yoda',
+    'Athena', 'Zephyr', 'Cosmo', 'Pixel', 'Blaze', 'Orbit',
+  ].map(s => `https://api.dicebear.com/7.x/adventurer/svg?seed=${s}`),
+
+  'Portraits': [
+    'Sora', 'Luna', 'Kai', 'Ember', 'Storm', 'Phoenix',
+    'Aurora', 'Vesper', 'Cleo', 'Nyx', 'Zenith', 'Opal',
+  ].map(s => `https://api.dicebear.com/7.x/lorelei/svg?seed=${s}`),
+
+  'Personas': [
+    'Hero', 'Villain', 'Sage', 'Rebel', 'Ghost', 'Ninja',
+    'Druid', 'Rogue', 'Titan', 'Oracle', 'Drift', 'Hex',
+  ].map(s => `https://api.dicebear.com/7.x/personas/svg?seed=${s}`),
+
+  'Minimal': [
+    'Ace', 'Maverick', 'Raven', 'Atlas', 'Echo', 'Cipher',
+    'Nova', 'Flux', 'Prism', 'Quasar', 'Onyx', 'Aero',
+  ].map(s => `https://api.dicebear.com/7.x/notionists/svg?seed=${s}`),
+
+  'Pixel Art': [
+    'Mario', 'Zelda', 'Link', 'Samus', 'Kirby', 'Fox',
+    'Pikachu', 'Cloud', 'Sonic', 'Megaman', 'Pac', 'Snake',
+  ].map(s => `https://api.dicebear.com/7.x/pixel-art/svg?seed=${s}`),
+
+  'Big Smile': [
+    'Joy', 'Sunny', 'Breeze', 'Coral', 'Daisy', 'Mint',
+    'Fern', 'Copper', 'Sienna', 'Jade', 'Willow', 'Ivy',
+  ].map(s => `https://api.dicebear.com/7.x/big-smile/svg?seed=${s}`),
+
+  'Fun Emoji': [
+    'Happy', 'Cool', 'Chill', 'Zen', 'Fire', 'Sparkle',
+    'Wave', 'Star', 'Moon', 'Rain', 'Snow', 'Thunder',
+  ].map(s => `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${s}`),
+
+  'Thumbs': [
+    'Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot',
+    'Golf', 'Hotel', 'India', 'Juliet', 'Kilo', 'Lima',
+  ].map(s => `https://api.dicebear.com/7.x/thumbs/svg?seed=${s}`),
+
+  'Bottts': [
+    'Robo1', 'Mech', 'Droid', 'Bolt', 'Gear', 'Chip',
+    'Wire', 'Core', 'Node', 'Byte', 'Data', 'Grid',
+  ].map(s => `https://api.dicebear.com/7.x/bottts/svg?seed=${s}`),
+
+  'Shapes': [
+    'Ruby', 'Emerald', 'Sapphire', 'Diamond', 'Topaz', 'Amethyst',
+    'Pearl', 'Garnet', 'Citrine', 'Peridot', 'Tanzanite', 'Aqua',
+  ].map(s => `https://api.dicebear.com/7.x/shapes/svg?seed=${s}`),
+};
 
 // ─── Profiles ───
 
