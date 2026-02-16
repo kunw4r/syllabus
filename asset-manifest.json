@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/syllabus/static/css/main.2cbf132b.css",
-    "main.js": "/syllabus/static/js/main.7352d121.js",
+    "main.css": "/syllabus/static/css/main.8f53f9f1.css",
+    "main.js": "/syllabus/static/js/main.2151c9a3.js",
     "index.html": "/syllabus/index.html",
-    "main.2cbf132b.css.map": "/syllabus/static/css/main.2cbf132b.css.map",
-    "main.7352d121.js.map": "/syllabus/static/js/main.7352d121.js.map"
+    "main.8f53f9f1.css.map": "/syllabus/static/css/main.8f53f9f1.css.map",
+    "main.2151c9a3.js.map": "/syllabus/static/js/main.2151c9a3.js.map"
   },
   "entrypoints": [
-    "static/css/main.2cbf132b.css",
-    "static/js/main.7352d121.js"
+    "static/css/main.8f53f9f1.css",
+    "static/js/main.2151c9a3.js"
   ]
 }
