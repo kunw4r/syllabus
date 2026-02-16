@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Search, X, Plus } from 'lucide-react';
+import { Star, Search, X, Plus, Play } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import ScrollRow from '../components/ScrollRow';
 import { SkeletonRow, SkeletonHero } from '../components/SkeletonCard';
-import { getTrendingMovies, getNowPlayingMovies, getTopRatedMovies, getMoviesByGenre, searchMovies, addToLibrary } from '../services/api';
+import { getTrendingMovies, getNowPlayingMovies, getTopRatedMovies, getMoviesByGenre, searchMovies, addToLibrary, getMovieDetails } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
@@ -35,6 +35,14 @@ function Movies() {
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+
+  // Fetch hero details (for trailer)
+  useEffect(() => {
+    if (!hero?.id) return;
+    getMovieDetails(hero.id).then(d => {
+      setHero(prev => ({ ...prev, videos: d.videos }));
+    }).catch(() => {});
+  }, [hero?.id]);
 
   // Phase 1: Load hero + trending + now playing (fast initial paint)
   useEffect(() => {
@@ -93,6 +101,12 @@ function Movies() {
   };
 
   const clearSearch = () => { setResults(null); setQuery(''); };
+
+  // Find hero trailer
+  const heroTrailer = (() => {
+    const vids = (hero?.videos?.results || []).filter(v => v.site === 'YouTube');
+    return vids.find(v => v.type === 'Trailer') || vids.find(v => v.type === 'Teaser') || vids[0] || null;
+  })();
 
   const handleHeroAdd = async () => {
     if (!user) return navigate('/login');
@@ -154,6 +168,12 @@ function Movies() {
                 <p className="text-white/50 text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 mb-4 sm:mb-5">{hero.overview}</p>
                 <div className="flex gap-2 sm:gap-3">
                   <button onClick={() => navigate(`/details/movie/${hero.id}`)} className="bg-white text-black font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm hover:bg-white/90 transition-colors">More Info</button>
+                  {heroTrailer && (
+                    <a href={`https://www.youtube.com/watch?v=${heroTrailer.key}`} target="_blank" rel="noopener noreferrer"
+                      className="bg-white/10 backdrop-blur-md border border-white/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2">
+                      <Play size={16} /> Trailer
+                    </a>
+                  )}
                   <button onClick={handleHeroAdd} className="bg-white/10 backdrop-blur-md border border-white/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"><Plus size={16} /> Library</button>
                 </div>
               </div>

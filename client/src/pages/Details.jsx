@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2 } from 'lucide-react';
+import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary } from '../services/api';
 
@@ -319,6 +319,16 @@ function MovieTVDetails({ mediaType, id, navigate }) {
   const recommendations = data.recommendations?.results?.slice(0, 10) || [];
   const imdbId = extRatings?.imdb_id || data.external_ids?.imdb_id;
 
+  // Find best trailer (prefer Official Trailer, then any Trailer, then Teaser)
+  const trailer = (() => {
+    const vids = (data.videos?.results || []).filter(v => v.site === 'YouTube');
+    return vids.find(v => v.type === 'Trailer' && v.name.toLowerCase().includes('official'))
+      || vids.find(v => v.type === 'Trailer')
+      || vids.find(v => v.type === 'Teaser')
+      || vids[0]
+      || null;
+  })();
+
   // Streaming providers (AU first, fallback to US)
   const wpData = data['watch/providers']?.results;
   const providers = wpData?.AU || wpData?.US || null;
@@ -455,6 +465,25 @@ function MovieTVDetails({ mediaType, id, navigate }) {
           </div>
 
           <p className="text-white/60 leading-relaxed mb-6 max-w-2xl">{data.overview}</p>
+
+          {/* ── Trailer ── */}
+          {trailer && (
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider flex items-center gap-2">
+                <Play size={14} /> Trailer
+              </h3>
+              <div className="relative w-full max-w-2xl aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
+                <iframe
+                  src={`https://www.youtube.com/embed/${trailer.key}?rel=0&modestbranding=1`}
+                  title={trailer.name}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+              <p className="text-[10px] text-white/20 mt-2">{trailer.name}</p>
+            </div>
+          )}
 
           {/* ── Cast ── */}
           {data.credits?.cast?.length > 0 && (

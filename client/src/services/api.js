@@ -44,7 +44,7 @@ export async function searchMovies(query) {
 }
 
 export function getMovieDetails(id) {
-  return tmdbCached(`/movie/${id}`, '&append_to_response=recommendations,credits,watch/providers,external_ids');
+  return tmdbCached(`/movie/${id}`, '&append_to_response=recommendations,credits,watch/providers,external_ids,videos');
 }
 
 // ─── TV Shows ───
@@ -63,7 +63,7 @@ export async function searchTV(query) {
 }
 
 export function getTVDetails(id) {
-  return tmdbCached(`/tv/${id}`, '&append_to_response=recommendations,credits,watch/providers,external_ids');
+  return tmdbCached(`/tv/${id}`, '&append_to_response=recommendations,credits,watch/providers,external_ids,videos');
 }
 
 // ─── Movie Discovery ───
