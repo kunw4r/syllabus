@@ -378,9 +378,9 @@ function MovieTVDetails({ mediaType, id, navigate }) {
         {/* Poster */}
         {data.poster_path ? (
           <img src={`${TMDB_IMG}${data.poster_path}`} alt={title}
-            className="w-48 sm:w-56 md:w-64 rounded-2xl shadow-2xl shadow-black/50 flex-shrink-0 aspect-[2/3] object-cover" />
+            className="w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 rounded-2xl shadow-2xl shadow-black/50 flex-shrink-0 self-start aspect-[2/3] object-cover" />
         ) : (
-          <div className="w-48 sm:w-56 md:w-64 aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/30 text-sm flex-shrink-0">
+          <div className="w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/30 text-sm flex-shrink-0 self-start">
             No Poster
           </div>
         )}
@@ -565,12 +565,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
                     </div>
                   </div>
                 )}
-                {providers?.link && (
-                  <a href={providers.link} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-accent/60 hover:text-accent transition-colors mt-1">
-                    View all watch options <ExternalLink size={10} />
-                  </a>
-                )}
+
               </div>
             </div>
           )}
