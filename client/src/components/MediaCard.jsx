@@ -4,7 +4,7 @@ import { Plus, Star } from 'lucide-react';
 import { addToLibrary } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w780';
 
 function MediaCard({ item, mediaType = 'movie' }) {
   const navigate = useNavigate();
@@ -19,7 +19,11 @@ function MediaCard({ item, mediaType = 'movie' }) {
   const type = item.media_type || mediaType;
 
   const handleClick = () => {
-    if (type === 'book') return;
+    if (type === 'book') {
+      const workKey = item.key?.replace('/works/', '') || '';
+      if (workKey) navigate(`/details/book/${workKey}`);
+      return;
+    }
     const id = item.id || item.tmdb_id;
     navigate(`/details/${type}/${id}`);
   };
@@ -62,7 +66,6 @@ function MediaCard({ item, mediaType = 'movie' }) {
         <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-semibold">
           <Star size={11} className="text-gold fill-gold" />
           {Number(rating).toFixed(1)}
-          {type !== 'book' && <span className="text-[8px] text-white/30 ml-0.5">TMDB</span>}
         </div>
       )}
 

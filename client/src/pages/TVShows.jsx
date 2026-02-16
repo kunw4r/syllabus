@@ -32,6 +32,7 @@ function TVShows() {
   const [loadedGenres, setLoadedGenres] = useState(new Set());
   const [results, setResults] = useState(null);
   const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
   useEffect(() => {
@@ -84,10 +85,10 @@ function TVShows() {
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
-    setLoading(true);
+    setSearching(true);
     const data = await searchTV(query);
     setResults(data);
-    setLoading(false);
+    setSearching(false);
   };
 
   const clearSearch = () => { setResults(null); setQuery(''); };
@@ -121,6 +122,10 @@ function TVShows() {
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search TV shows..."
             className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors" />
         </div>
+        <button type="submit" disabled={searching} className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2">
+          {searching ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={14} />}
+          Search
+        </button>
         {results && <button type="button" onClick={clearSearch} className="text-white/40 hover:text-white"><X size={18} /></button>}
       </form>
 
@@ -161,7 +166,7 @@ function TVShows() {
               {trending.slice(0, 10).map((item, i) => (
                 <div key={item.id} className="flex-shrink-0 flex items-end cursor-pointer group/card" onClick={() => navigate(`/details/tv/${item.id}`)}>
                   <span className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
-                  {item.poster_path && <img src={`${TMDB_IMG}/w300${item.poster_path}`} alt={item.name} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300" />}
+                  {item.poster_path && <img src={`${TMDB_IMG}/w500${item.poster_path}`} alt={item.name} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
                 </div>
               ))}
             </div>

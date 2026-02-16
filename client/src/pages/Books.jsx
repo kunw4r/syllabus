@@ -93,6 +93,9 @@ function Books() {
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search books by title, author..."
             className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors" />
         </div>
+        <button type="submit" className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2">
+          <Search size={14} /> Search
+        </button>
         {results && <button type="button" onClick={clearSearch} className="text-white/40 hover:text-white"><X size={18} /></button>}
       </form>
 
@@ -118,7 +121,7 @@ function Books() {
               <div className="absolute inset-0 flex items-end">
                 <div className="flex items-end gap-6 p-6 sm:p-10 w-full">
                   {hero.poster_path && (
-                    <img src={hero.poster_path} alt={hero.title} className="h-36 sm:h-48 rounded-xl shadow-2xl flex-shrink-0" />
+                    <img src={hero.poster_path} alt={hero.title} className="h-36 sm:h-48 rounded-xl shadow-2xl flex-shrink-0 object-cover aspect-[2/3]" />
                   )}
                   <div className="min-w-0 pb-1">
                     <div className="flex items-center gap-2 text-accent text-xs font-semibold mb-2">
