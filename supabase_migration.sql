@@ -22,12 +22,11 @@ CREATE TABLE IF NOT EXISTS follows (
 CREATE TABLE IF NOT EXISTS activity (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  action text NOT NULL, -- 'added', 'rated', 'finished', 'reviewed'
+  action text NOT NULL, -- 'added', 'rated', 'finished', 'reviewed', 'followed'
   media_type text,
+  media_id text,
   title text,
-  poster_path text,
-  tmdb_id int,
-  openlibrary_key text,
+  poster_url text,
   rating numeric,
   review text,
   created_at timestamptz DEFAULT now()
