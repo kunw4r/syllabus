@@ -21,20 +21,16 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUp = async (email, password, username) => {
-    // First try normal signup
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username } },
+      options: {
+        data: { username },
+        emailRedirectTo: 'https://kunw4r.github.io/syllabus/',
+      },
     });
-    if (error) {
-      // If a database trigger is blocking signup, show a clearer message
-      if (error.message?.includes('Database error')) {
-        return { data: null, error: { message: 'Account setup issue — please try again in a moment, or contact support.' } };
-      }
-      return { data, error };
-    }
-    // Create profile row (handles case where trigger doesn't exist)
+    if (error) return { data, error };
+    // Create profile row after signup
     if (data?.user) {
       await supabase.from('profiles').upsert(
         { id: data.user.id, username },
