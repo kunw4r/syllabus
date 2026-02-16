@@ -1,13 +1,35 @@
 {
   "files": {
-    "main.css": "/syllabus/static/css/main.a84e6fe1.css",
-    "main.js": "/syllabus/static/js/main.48975695.js",
+    "main.css": "/syllabus/static/css/main.e068be13.css",
+    "main.js": "/syllabus/static/js/main.0d6bb90d.js",
+    "static/js/632.f179ce46.chunk.js": "/syllabus/static/js/632.f179ce46.chunk.js",
+    "static/js/174.91cccdce.chunk.js": "/syllabus/static/js/174.91cccdce.chunk.js",
+    "static/js/121.47dd5bba.chunk.js": "/syllabus/static/js/121.47dd5bba.chunk.js",
+    "static/js/939.4dbaaa41.chunk.js": "/syllabus/static/js/939.4dbaaa41.chunk.js",
+    "static/js/600.a6806e8c.chunk.js": "/syllabus/static/js/600.a6806e8c.chunk.js",
+    "static/js/107.dd6192be.chunk.js": "/syllabus/static/js/107.dd6192be.chunk.js",
+    "static/js/583.f58a968b.chunk.js": "/syllabus/static/js/583.f58a968b.chunk.js",
+    "static/js/563.45685637.chunk.js": "/syllabus/static/js/563.45685637.chunk.js",
+    "static/js/988.16d66e7b.chunk.js": "/syllabus/static/js/988.16d66e7b.chunk.js",
+    "static/js/14.e9b277c1.chunk.js": "/syllabus/static/js/14.e9b277c1.chunk.js",
+    "static/js/280.a26e8728.chunk.js": "/syllabus/static/js/280.a26e8728.chunk.js",
     "index.html": "/syllabus/index.html",
-    "main.a84e6fe1.css.map": "/syllabus/static/css/main.a84e6fe1.css.map",
-    "main.48975695.js.map": "/syllabus/static/js/main.48975695.js.map"
+    "main.e068be13.css.map": "/syllabus/static/css/main.e068be13.css.map",
+    "main.0d6bb90d.js.map": "/syllabus/static/js/main.0d6bb90d.js.map",
+    "632.f179ce46.chunk.js.map": "/syllabus/static/js/632.f179ce46.chunk.js.map",
+    "174.91cccdce.chunk.js.map": "/syllabus/static/js/174.91cccdce.chunk.js.map",
+    "121.47dd5bba.chunk.js.map": "/syllabus/static/js/121.47dd5bba.chunk.js.map",
+    "939.4dbaaa41.chunk.js.map": "/syllabus/static/js/939.4dbaaa41.chunk.js.map",
+    "600.a6806e8c.chunk.js.map": "/syllabus/static/js/600.a6806e8c.chunk.js.map",
+    "107.dd6192be.chunk.js.map": "/syllabus/static/js/107.dd6192be.chunk.js.map",
+    "583.f58a968b.chunk.js.map": "/syllabus/static/js/583.f58a968b.chunk.js.map",
+    "563.45685637.chunk.js.map": "/syllabus/static/js/563.45685637.chunk.js.map",
+    "988.16d66e7b.chunk.js.map": "/syllabus/static/js/988.16d66e7b.chunk.js.map",
+    "14.e9b277c1.chunk.js.map": "/syllabus/static/js/14.e9b277c1.chunk.js.map",
+    "280.a26e8728.chunk.js.map": "/syllabus/static/js/280.a26e8728.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.a84e6fe1.css",
-    "static/js/main.48975695.js"
+    "static/css/main.e068be13.css",
+    "static/js/main.0d6bb90d.js"
   ]
 }
