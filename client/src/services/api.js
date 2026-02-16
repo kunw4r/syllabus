@@ -175,9 +175,10 @@ export function getTop100Movies(genreId = null) {
   return cached(key, async () => {
     if (genreId) {
       const pages = await Promise.all(
-        [1, 2, 3, 4, 5].map(p => tmdb('/discover/movie', `&sort_by=vote_average.desc&vote_count.gte=300&with_genres=${genreId}&page=${p}`))
+        [1, 2, 3, 4, 5].map(p => tmdb('/discover/movie', `&sort_by=vote_average.desc&vote_count.gte=1000&with_genres=${genreId}&page=${p}`))
       );
-      return pages.flatMap(p => p.results || []);
+      const seen = new Set();
+      return pages.flatMap(p => p.results || []).filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
     }
     const pages = await Promise.all(
       [1, 2, 3, 4, 5].map(p => tmdb('/movie/top_rated', `&page=${p}`))
@@ -191,9 +192,10 @@ export function getTop100TV(genreId = null) {
   return cached(key, async () => {
     if (genreId) {
       const pages = await Promise.all(
-        [1, 2, 3, 4, 5].map(p => tmdb('/discover/tv', `&sort_by=vote_average.desc&vote_count.gte=200&with_genres=${genreId}&page=${p}`))
+        [1, 2, 3, 4, 5].map(p => tmdb('/discover/tv', `&sort_by=vote_average.desc&vote_count.gte=500&with_genres=${genreId}&page=${p}`))
       );
-      return pages.flatMap(p => p.results || []);
+      const seen = new Set();
+      return pages.flatMap(p => p.results || []).filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
     }
     const pages = await Promise.all(
       [1, 2, 3, 4, 5].map(p => tmdb('/tv/top_rated', `&page=${p}`))

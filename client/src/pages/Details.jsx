@@ -571,6 +571,17 @@ function MovieTVDetails({ mediaType, id, navigate }) {
     load();
   }, [mediaType, id]);
 
+  // Compute unified score (must be before early returns to keep hooks order stable)
+  const isAnime = data ? (data.original_language === 'ja' && data.genres?.some(g => g.id === 16)) : false;
+  const avgScore = computeUnifiedRating(extRatings, malData, isAnime);
+
+  // Persist Syllabus Score so it's available on MediaCards everywhere
+  useEffect(() => {
+    if (avgScore != null && data?.id) {
+      setSyllabusScore(mediaType, data.id, avgScore);
+    }
+  }, [avgScore, data?.id, mediaType]);
+
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
   if (!data) return <div className="text-center py-20 text-white/40"><h3 className="text-lg">Not found</h3></div>;
 
@@ -601,19 +612,6 @@ function MovieTVDetails({ mediaType, id, navigate }) {
   const streamingProviders = providers?.flatrate || [];
   const rentProviders = providers?.rent || [];
   const buyProviders = providers?.buy || [];
-
-  // Detect anime for Crunchyroll link + MAL
-  const isAnime = data.original_language === 'ja' && data.genres?.some(g => g.id === 16);
-
-  // Unified rating: avg(IMDb + RT) or avg(IMDb + MAL) for anime
-  const avgScore = computeUnifiedRating(extRatings, malData, isAnime);
-
-  // Persist Syllabus Score so it's available on MediaCards everywhere
-  React.useEffect(() => {
-    if (avgScore != null && data?.id) {
-      setSyllabusScore(mediaType, data.id, avgScore);
-    }
-  }, [avgScore, data?.id, mediaType]);
 
   return (
     <div>
