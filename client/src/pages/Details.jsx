@@ -316,6 +316,7 @@ function BookDetails({ workKey, navigate }) {
 
   const totalReaders = (data.want_to_read || 0) + (data.currently_reading || 0) + (data.already_read || 0);
   const searchQ = encodeURIComponent(`${data.title} book`);
+  const isGoogleBook = !!data.google_id;
 
   return (
     <div>
@@ -330,7 +331,7 @@ function BookDetails({ workKey, navigate }) {
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Cover — uses BookCover for automatic fallback chain */}
+        {/* Cover — prefer Google Books covers for speed */}
         <BookCover
           urls={data.cover_urls || (data.poster_path ? [data.poster_path] : [])}
           alt={data.title}
@@ -377,14 +378,14 @@ function BookDetails({ workKey, navigate }) {
           {/* Rating + Stats */}
           <div className="flex flex-wrap items-start gap-3 mb-6">
             {data.rating && (
-              <a href={`https://openlibrary.org${data.key}`} target="_blank" rel="noopener noreferrer"
+              <a href={isGoogleBook ? data.info_link : `https://openlibrary.org${data.key}`} target="_blank" rel="noopener noreferrer"
                 className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-accent/20 transition-colors">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <Star size={16} className="text-gold fill-gold" />
                   <span className="text-xl font-black">{data.rating}</span>
                   <span className="text-white/30 text-xs">/ 10</span>
                 </div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Open Library</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">{isGoogleBook ? 'Google Books' : 'Open Library'}</p>
                 {data.ratings_count > 0 && <p className="text-[9px] text-white/20">{data.ratings_count.toLocaleString()} ratings</p>}
               </a>
             )}
@@ -410,8 +411,8 @@ function BookDetails({ workKey, navigate }) {
             )}
           </div>
 
-          {/* Reader breakdown */}
-          {totalReaders > 0 && (
+          {/* Reader breakdown (Open Library only) */}
+          {!isGoogleBook && totalReaders > 0 && (
             <>
               <div className="flex flex-wrap gap-4 text-xs text-white/40 mb-4">
                 {data.want_to_read > 0 && <span className="flex items-center gap-1.5"><BookMarked size={14} className="text-accent/70" /> {data.want_to_read.toLocaleString()} want to read</span>}
@@ -467,27 +468,42 @@ function BookDetails({ workKey, navigate }) {
             </div>
           </div>
 
-          {/* Fun Facts */}
+          {/* Fun Facts (Open Library stats if available, else Google Books basic) */}
           {(() => {
             const facts = [];
-            if (data.edition_count >= 50) facts.push(`📚 Published in ${data.edition_count} editions worldwide — a true global phenomenon.`);
-            else if (data.edition_count >= 10) facts.push(`📖 Available in ${data.edition_count} different editions.`);
-            if (data.already_read > 10000) facts.push(`🏆 Over ${Math.floor(data.already_read / 1000) * 1000} readers have finished this book on Open Library alone.`);
-            if (data.currently_reading > 1000) facts.push(`👀 ${data.currently_reading.toLocaleString()} people are reading this right now!`);
-            if (data.want_to_read > 50000) facts.push(`🔥 More than ${Math.floor(data.want_to_read / 1000)}k people have this on their reading list.`);
-            if (data.ratings_count > 1000) facts.push(`⭐ Rated by ${data.ratings_count.toLocaleString()} readers with an average of ${data.rating}/10.`);
-            if (data.first_publish_date) {
-              const yearMatch = data.first_publish_date.match(/\d{4}/);
-              if (yearMatch) {
-                const age = new Date().getFullYear() - parseInt(yearMatch[0]);
-                if (age > 100) facts.push(`🕰️ First published ${age} years ago — a true classic that has stood the test of time.`);
-                else if (age > 50) facts.push(`📅 Published over ${age} years ago and still widely read today.`);
-                else if (age <= 2) facts.push(`✨ A brand new release — one of the latest books to hit shelves.`);
+            if (!isGoogleBook) {
+              if (data.edition_count >= 50) facts.push(`📚 Published in ${data.edition_count} editions worldwide — a true global phenomenon.`);
+              else if (data.edition_count >= 10) facts.push(`📖 Available in ${data.edition_count} different editions.`);
+              if (data.already_read > 10000) facts.push(`🏆 Over ${Math.floor(data.already_read / 1000) * 1000} readers have finished this book on Open Library alone.`);
+              if (data.currently_reading > 1000) facts.push(`👀 ${data.currently_reading.toLocaleString()} people are reading this right now!`);
+              if (data.want_to_read > 50000) facts.push(`🔥 More than ${Math.floor(data.want_to_read / 1000)}k people have this on their reading list.`);
+              if (data.ratings_count > 1000) facts.push(`⭐ Rated by ${data.ratings_count.toLocaleString()} readers with an average of ${data.rating}/10.`);
+              if (data.first_publish_date) {
+                const yearMatch = data.first_publish_date.match(/\d{4}/);
+                if (yearMatch) {
+                  const age = new Date().getFullYear() - parseInt(yearMatch[0]);
+                  if (age > 100) facts.push(`🕰️ First published ${age} years ago — a true classic that has stood the test of time.`);
+                  else if (age > 50) facts.push(`📅 Published over ${age} years ago and still widely read today.`);
+                  else if (age <= 2) facts.push(`✨ A brand new release — one of the latest books to hit shelves.`);
+                }
               }
+              if (data.subjects?.some(s => s.toLowerCase().includes('new york times'))) facts.push(`📰 A New York Times bestseller.`);
+              if (data.subjects?.some(s => s.toLowerCase().includes('pulitzer'))) facts.push(`🏅 Pulitzer Prize-related work.`);
+              if (data.authors?.length > 2) facts.push(`✍️ A collaborative work by ${data.authors.length} authors.`);
+            } else {
+              if (data.rating) facts.push(`⭐ Rated ${data.rating}/10 by ${data.ratings_count} Google Books users.`);
+              if (data.first_publish_date) {
+                const yearMatch = data.first_publish_date.match(/\d{4}/);
+                if (yearMatch) {
+                  const age = new Date().getFullYear() - parseInt(yearMatch[0]);
+                  if (age > 100) facts.push(`🕰️ First published ${age} years ago — a true classic.`);
+                  else if (age > 50) facts.push(`📅 Published over ${age} years ago.`);
+                  else if (age <= 2) facts.push(`✨ A brand new release.`);
+                }
+              }
+              if (data.subjects?.length > 0) facts.push(`🏷️ Genres: ${data.subjects.join(', ')}`);
+              if (data.authors?.length > 2) facts.push(`✍️ A collaborative work by ${data.authors.length} authors.`);
             }
-            if (data.subjects?.some(s => s.toLowerCase().includes('new york times'))) facts.push(`📰 A New York Times bestseller.`);
-            if (data.subjects?.some(s => s.toLowerCase().includes('pulitzer'))) facts.push(`🏅 Pulitzer Prize-related work.`);
-            if (data.authors?.length > 2) facts.push(`✍️ A collaborative work by ${data.authors.length} authors.`);
             return facts.length > 0 ? (
               <div className="mb-8">
                 <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider flex items-center gap-2">

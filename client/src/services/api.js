@@ -1,4 +1,6 @@
+
 import { supabase } from './supabase';
+import { searchGoogleBooks, getGoogleBookDetails, mapGoogleBook } from './googleBooks';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
@@ -686,8 +688,12 @@ export function getBooksBySubject(subject) {
   }, BOOK_CACHE_TTL);
 }
 
-/** Search books by title/author/ISBN. */
+
+/** Search books by title/author/ISBN. Tries Google Books first, falls back to Open Library. */
 export async function searchBooks(query) {
+  let results = await searchGoogleBooks(query, 24);
+  if (results.length > 0) return results;
+  // fallback to Open Library
   try {
     const res = await fetch(
       `${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=24&fields=${OL_SEARCH_FIELDS}`
@@ -698,9 +704,19 @@ export async function searchBooks(query) {
   } catch { return []; }
 }
 
-// ─── Book Detail (work + ratings + bookshelves + editions) ───
 
+// ─── Book Detail (Google Books first, fallback to Open Library) ───
 export function getBookDetails(workKey) {
+  // If it's a Google Books ID (no /works/), try Google Books first
+  if (!workKey.startsWith('/works/')) {
+    return cached(`gb:detail:${workKey}`, async () => {
+      const gb = await getGoogleBookDetails(workKey);
+      if (gb) return gb;
+      // fallback to Open Library if not found
+      return getBookDetails(`/works/${workKey}`);
+    }, BOOK_CACHE_TTL);
+  }
+  // Otherwise, Open Library as before
   const key = workKey.startsWith('/works/') ? workKey : `/works/${workKey}`;
   return cached(`ol:detail:${key}`, async () => {
     try {
@@ -710,13 +726,12 @@ export function getBookDetails(workKey) {
         fetch(`${OL_BASE}${key}/bookshelves.json`).then(r => r.json()).catch(() => null),
         fetch(`${OL_BASE}${key}/editions.json?limit=10`).then(r => r.json()).catch(() => null),
       ]);
-
+      // ...existing code for Open Library mapping...
       // Resolve authors (up to 5, parallel)
       const authorKeys = (work.authors || [])
         .map(a => a.author?.key || a.key)
         .filter(Boolean)
         .slice(0, 5);
-
       const authorResults = await Promise.all(
         authorKeys.map(k =>
           fetch(`${OL_BASE}${k}.json`).then(r => r.json()).catch(() => null)
@@ -728,7 +743,6 @@ export function getBookDetails(workKey) {
         photo: a.photos?.[0] ? `${OL_COVERS}/a/id/${a.photos[0]}-M.jpg` : null,
         bio: typeof a.bio === 'string' ? a.bio : a.bio?.value || '',
       }));
-
       // Build cover URL chain (L size for detail view)
       const coverUrls = [];
       for (const coverId of (work.covers || []).slice(0, 3)) {
@@ -744,11 +758,9 @@ export function getBookDetails(workKey) {
         if (olid) coverUrls.push(`${OL_COVERS}/b/olid/${olid}-L.jpg`);
       }
       const uniqueCovers = [...new Set(coverUrls)];
-
       const desc = typeof work.description === 'string'
         ? work.description
         : work.description?.value || '';
-
       return {
         key: work.key,
         title: work.title,

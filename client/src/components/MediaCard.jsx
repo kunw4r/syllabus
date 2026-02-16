@@ -26,8 +26,10 @@ function MediaCard({ item, mediaType = 'movie' }) {
 
   const handleClick = () => {
     if (type === 'book') {
-      const workKey = item.key?.replace('/works/', '') || '';
-      if (workKey) navigate(`/details/book/${workKey}`);
+      // If Google Books, use the ID directly; if Open Library, strip /works/
+      let bookKey = item.key || '';
+      if (bookKey.startsWith('/works/')) bookKey = bookKey.replace('/works/', '');
+      if (bookKey) navigate(`/details/book/${bookKey}`);
       return;
     }
     const id = item.id || item.tmdb_id;
