@@ -463,11 +463,11 @@ function mapOLWork(w) {
   // Cover fallback chain: cover_id → ISBN → edition key → null
   let posterPath = null;
   if (coverId) {
-    posterPath = `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`;
+    posterPath = `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
   } else if (w.isbn?.[0]) {
-    posterPath = `https://covers.openlibrary.org/b/isbn/${w.isbn[0]}-M.jpg`;
+    posterPath = `https://covers.openlibrary.org/b/isbn/${w.isbn[0]}-L.jpg`;
   } else if (w.cover_edition_key) {
-    posterPath = `https://covers.openlibrary.org/b/olid/${w.cover_edition_key}-M.jpg`;
+    posterPath = `https://covers.openlibrary.org/b/olid/${w.cover_edition_key}-L.jpg`;
   }
   return {
     key: w.key,
@@ -583,7 +583,7 @@ export function getTop100Books(subject = null) {
       const data = await res.json();
       return (data.docs || []).filter(d => (d.ratings_count || 0) >= 10).map(mapOLWork);
     } catch { return []; }
-  });
+  }, BOOK_CACHE_TTL);
 }
 
 // ─── Multi-search ───

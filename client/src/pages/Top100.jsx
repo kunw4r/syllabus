@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Star, Trophy, Film, Tv, BookOpen, Users } from 'lucide-react';
 import { SkeletonRow } from '../components/SkeletonCard';
@@ -73,20 +73,33 @@ function Top100() {
   });
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState(null);
+  const [progress, setProgress] = useState(null);  // 0-100 number
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  // Race-condition guard: increment on every fetch, ignore stale responses
+  const requestIdRef = useRef(0);
+
   const fetchData = useCallback(async (t, g) => {
+    const thisRequest = ++requestIdRef.current;
+    const stale = () => requestIdRef.current !== thisRequest;
+
     setLoading(true);
     setProgress(null);
 
     const mediaType = t === 'movies' ? 'movie' : t === 'shows' ? 'tv' : 'book';
     const chartKey = `${mediaType}:${g || 'all'}`;
 
+    // Progress callback — converts {completed, total} to 0-100 number
+    const onProgress = ({ completed, total }) => {
+      if (stale()) return;
+      setProgress(total > 0 ? Math.round((completed / total) * 100) : 100);
+    };
+
     // ─── Phase 1: Try instant load from chart cache (0 API calls) ───
     if (t !== 'books') {
       const cachedItems = getCachedChart(chartKey);
       if (cachedItems && cachedItems.length > 0) {
+        if (stale()) return;
         setItems(cachedItems);
         setLoading(false);
         const age = getChartAge(chartKey);
@@ -97,7 +110,9 @@ function Top100() {
 
         // Cache is stale: re-fetch and re-enrich in background
         let result = t === 'movies' ? await getTop100Movies(g) : await getTop100TV(g);
-        const enriched = await enrichChart(result, mediaType, chartKey, setProgress);
+        if (stale()) return;
+        const enriched = await enrichChart(result, mediaType, chartKey, onProgress);
+        if (stale()) return;
         setItems(enriched);
         setLastUpdated(0);
         return;
@@ -109,6 +124,8 @@ function Top100() {
     if (t === 'movies') result = await getTop100Movies(g);
     else if (t === 'shows') result = await getTop100TV(g);
     else result = await getTop100Books(g);
+
+    if (stale()) return;
 
     if (t !== 'books') {
       // Show immediately with any locally stored scores
@@ -122,7 +139,8 @@ function Top100() {
       setLoading(false);
 
       // Enrich in background with progress bar
-      const enriched = await enrichChart(result, mediaType, chartKey, setProgress);
+      const enriched = await enrichChart(result, mediaType, chartKey, onProgress);
+      if (stale()) return;
       setItems(enriched);
       setLastUpdated(0);
     } else {
@@ -270,10 +288,11 @@ function Top100() {
 }
 
 function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
+  const [imgBroken, setImgBroken] = React.useState(false);
   const rankColor = rank === 1 ? 'text-gold' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-white/20';
   const isBook = mediaType === 'book';
   const rating = isBook ? item.rating : (item.unified_rating ?? item.vote_average);
-  const ratingLabel = isBook ? '' : (item.unified_rating != null ? 'Syllabus' : 'TMDB');
+  const ratingLabel = isBook ? '' : (item.unified_rating != null ? 'Syllabus' : '');
 
   const handleClick = () => {
     if (isBook) {
@@ -295,10 +314,15 @@ function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
       </span>
 
       {/* Poster */}
-      {poster ? (
-        <img src={poster} alt={title} className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform object-cover aspect-[2/3]" />
+      {poster && !imgBroken ? (
+        <img src={poster} alt={title} className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform object-cover aspect-[2/3]"
+          onError={() => setImgBroken(true)}
+          onLoad={e => { if (e.target.naturalWidth <= 1) setImgBroken(true); }}
+        />
       ) : (
-        <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-dark-600 flex-shrink-0 aspect-[2/3]" />
+        <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-dark-600 flex-shrink-0 flex items-center justify-center aspect-[2/3]">
+          <BookOpen size={16} className="text-white/20" />
+        </div>
       )}
 
       {/* Info */}

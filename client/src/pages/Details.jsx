@@ -770,10 +770,9 @@ function MovieTVDetails({ mediaType, id, navigate }) {
 
           {/* ── Ratings ── */}
           <div className="flex flex-wrap items-stretch gap-3 mb-6">
-            {/* Syllabus Score — unified or cached or TMDB fallback */}
+            {/* Syllabus Score — unified or cached */}
             {(() => {
-              const displayScore = avgScore || getSyllabusScore(mediaType, data.id) || (data.vote_average ? data.vote_average.toFixed(1) : null);
-              const scoreLabel = avgScore ? 'Syllabus Score' : getSyllabusScore(mediaType, data.id) ? 'Syllabus Score' : 'TMDB';
+              const displayScore = avgScore || getSyllabusScore(mediaType, data.id);
               return displayScore ? (
                 <div className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center">
                   <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -781,7 +780,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
                     <span className="text-xl font-black">{displayScore}</span>
                     <span className="text-white/30 text-xs">/ 10</span>
                   </div>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">{scoreLabel}</p>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Syllabus Score</p>
                 </div>
               ) : null;
             })()}

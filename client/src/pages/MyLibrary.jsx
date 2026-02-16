@@ -406,10 +406,10 @@ function RecCard({ item, onClick, onAdd }) {
       ) : (
         <div className="w-full aspect-[2/3] bg-dark-600 flex items-center justify-center text-white/30 text-xs p-3 text-center">{title}</div>
       )}
-      {item.vote_average > 0 && (
+      {(item.unified_rating || item.vote_average) > 0 && (
         <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold">
           <Star size={12} className="text-gold fill-gold" />
-          {Number(item.vote_average).toFixed(1)}
+          {Number(item.unified_rating ?? item.vote_average).toFixed(1)}
         </div>
       )}
       {item._source && (

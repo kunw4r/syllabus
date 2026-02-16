@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Star } from 'lucide-react';
 import { addToLibrary, getSyllabusScore } from '../services/api';
@@ -19,9 +19,9 @@ function MediaCard({ item, mediaType = 'movie' }) {
   const year = (item.release_date || item.first_air_date || item.first_publish_year || '').toString().slice(0, 4);
   const type = item.media_type || mediaType;
 
-  // Prefer: unified_rating (from enrichment) → stored Syllabus Score → TMDB vote_average → book rating
+  // Prefer: unified_rating (from enrichment) → stored Syllabus Score → book rating
   const storedScore = type !== 'book' ? getSyllabusScore(type, item.id) : null;
-  const rating = item.unified_rating ?? storedScore ?? item.vote_average ?? item.rating;
+  const rating = item.unified_rating ?? storedScore ?? item.rating;
 
   const handleClick = () => {
     if (type === 'book') {
@@ -54,13 +54,18 @@ function MediaCard({ item, mediaType = 'movie' }) {
     }
   };
 
+  const [imgBroken, setImgBroken] = useState(false);
+
   return (
     <div
       className="group relative rounded-2xl overflow-hidden bg-dark-700/50 border border-white/5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_8px_30px_rgba(233,69,96,0.12)] hover:border-white/10"
       onClick={handleClick}
     >
-      {poster ? (
-        <img src={poster} alt={title} loading="lazy" className="w-full aspect-[2/3] object-cover" />
+      {poster && !imgBroken ? (
+        <img src={poster} alt={title} loading="lazy" className="w-full aspect-[2/3] object-cover"
+          onError={() => setImgBroken(true)}
+          onLoad={e => { if (e.target.naturalWidth <= 1) setImgBroken(true); }}
+        />
       ) : (
         <div className="w-full aspect-[2/3] bg-dark-600 flex items-center justify-center text-white/30 text-xs p-4 text-center">
           {title}

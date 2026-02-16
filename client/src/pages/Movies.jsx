@@ -177,7 +177,7 @@ function Movies() {
               <div className="absolute bottom-6 sm:bottom-10 left-4 sm:left-6 lg:left-10 max-w-lg pr-4">
                 <h1 className="text-2xl sm:text-3xl lg:text-5xl font-black mb-2 sm:mb-3 leading-tight">{hero.title}</h1>
                 <div className="flex items-center gap-3 text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">
-                  <span className="flex items-center gap-1 text-gold"><Star size={14} className="fill-gold" /> {(heroRating ?? hero.vote_average)?.toFixed(1)}</span>
+                  {heroRating && <span className="flex items-center gap-1 text-gold"><Star size={14} className="fill-gold" /> {heroRating.toFixed(1)}</span>}
                   <span>{hero.release_date?.slice(0, 4)}</span>
                 </div>
                 <p className="text-white/50 text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 mb-4 sm:mb-5">{hero.overview}</p>
@@ -204,10 +204,10 @@ function Movies() {
                   <span className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
                   <div className="relative">
                     {item.poster_path && <img src={`${TMDB_IMG}/w185${item.poster_path}`} alt={item.title} loading="lazy" className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
-                    {(item.unified_rating || item.vote_average) > 0 && (
+                    {item.unified_rating > 0 && (
                       <div className="absolute top-1.5 right-1.5 z-20 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold">
                         <Star size={11} className="text-gold fill-gold" />
-                        {Number(item.unified_rating ?? item.vote_average).toFixed(1)}
+                        {Number(item.unified_rating).toFixed(1)}
                       </div>
                     )}
                   </div>
