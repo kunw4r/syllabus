@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
 const OL_BASE = 'https://openlibrary.org';
@@ -104,60 +106,39 @@ export async function multiSearch(query) {
   return [...media, ...books];
 }
 
-// ─── Library (localStorage) ───
-
-const LIBRARY_KEY = 'syllabus_library';
-
-function readLibrary() {
-  try {
-    return JSON.parse(localStorage.getItem(LIBRARY_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLibrary(items) {
-  localStorage.setItem(LIBRARY_KEY, JSON.stringify(items));
-}
+// ─── Library (Supabase) ───
 
 export async function getLibrary(filters = {}) {
-  let items = readLibrary();
-  if (filters.media_type) items = items.filter(i => i.media_type === filters.media_type);
-  if (filters.status) items = items.filter(i => i.status === filters.status);
-  return items;
+  let query = supabase.from('library').select('*').order('added_at', { ascending: false });
+  if (filters.media_type) query = query.eq('media_type', filters.media_type);
+  if (filters.status) query = query.eq('status', filters.status);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 }
 
 export async function addToLibrary(item) {
-  const items = readLibrary();
-  const exists = items.some(i =>
-    (item.tmdb_id && i.tmdb_id === item.tmdb_id && i.media_type === item.media_type) ||
-    (item.openlibrary_key && i.openlibrary_key === item.openlibrary_key)
-  );
-  if (exists) throw new Error('Already in library');
-
-  const newItem = {
-    id: Date.now(),
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+  const { data, error } = await supabase.from('library').insert({
+    user_id: user.id,
     ...item,
-    status: 'want',
-    added_at: new Date().toISOString(),
-  };
-  items.unshift(newItem);
-  writeLibrary(items);
-  return newItem;
+  }).select().single();
+  if (error) throw error;
+  return data;
 }
 
 export async function updateLibraryItem(id, updates) {
-  const items = readLibrary();
-  const idx = items.findIndex(i => i.id === id);
-  if (idx !== -1) {
-    items[idx] = { ...items[idx], ...updates };
-    writeLibrary(items);
-  }
-  return items[idx];
+  const { data, error } = await supabase.from('library')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export async function removeFromLibrary(id) {
-  const items = readLibrary().filter(i => i.id !== id);
-  writeLibrary(items);
-  return { message: 'Removed' };
+  const { error } = await supabase.from('library').delete().eq('id', id);
+  if (error) throw error;
 }
