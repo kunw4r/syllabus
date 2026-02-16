@@ -293,20 +293,31 @@ export default function Profile() {
         {/* Avatar Picker */}
         {showAvatarPicker && (
           <div className="relative mt-6 pt-6 border-t border-white/10">
-            <h3 className="text-sm font-semibold text-white/50 mb-3">Choose an avatar</h3>
-            <div className="grid grid-cols-8 sm:grid-cols-16 gap-2">
-              {AVATAR_PRESETS.map((url, i) => (
-                <button
-                  key={i}
-                  onClick={() => setEditForm(f => ({ ...f, avatar_url: url }))}
-                  className={`w-12 h-12 rounded-full overflow-hidden ring-2 transition-all ${
-                    editForm.avatar_url === url ? 'ring-accent scale-110' : 'ring-transparent hover:ring-white/30'
-                  }`}
-                >
-                  <img src={url} alt="" className="w-full h-full" />
-                </button>
-              ))}
-            </div>
+            <h3 className="text-sm font-semibold text-white/50 mb-4">Choose an avatar</h3>
+            {/* Style sections */}
+            {[
+              { label: 'Characters', start: 0, end: 6 },
+              { label: 'Portraits', start: 6, end: 12 },
+              { label: 'Personas', start: 12, end: 18 },
+              { label: 'Minimal', start: 18, end: 24 },
+            ].map(section => (
+              <div key={section.label} className="mb-4">
+                <p className="text-xs text-white/30 mb-2 uppercase tracking-wider">{section.label}</p>
+                <div className="flex gap-2 flex-wrap">
+                  {AVATAR_PRESETS.slice(section.start, section.end).map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setEditForm(f => ({ ...f, avatar_url: url }))}
+                      className={`w-14 h-14 rounded-full overflow-hidden ring-2 transition-all hover:scale-105 ${
+                        editForm.avatar_url === url ? 'ring-accent scale-110 shadow-lg shadow-accent/30' : 'ring-transparent hover:ring-white/30'
+                      }`}
+                    >
+                      <img src={url} alt="" className="w-full h-full" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
             <div className="mt-3">
               <input
                 className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white/70 text-xs w-full max-w-sm focus:outline-none focus:border-accent"

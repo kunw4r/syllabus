@@ -590,24 +590,36 @@ export async function getSmartRecommendations(libraryItems) {
 //  SOCIAL: Profiles, Follows, Activity, Blends
 // ═══════════════════════════════════════════════════════
 
-// Preset avatar options
+// Preset avatar options — character-style (like Crunchyroll / Spotify)
 export const AVATAR_PRESETS = [
-  'https://api.dicebear.com/7.x/glass/svg?seed=cinema',
-  'https://api.dicebear.com/7.x/glass/svg?seed=popcorn',
-  'https://api.dicebear.com/7.x/glass/svg?seed=director',
-  'https://api.dicebear.com/7.x/glass/svg?seed=film',
-  'https://api.dicebear.com/7.x/glass/svg?seed=drama',
-  'https://api.dicebear.com/7.x/glass/svg?seed=action',
-  'https://api.dicebear.com/7.x/glass/svg?seed=comedy',
-  'https://api.dicebear.com/7.x/glass/svg?seed=thriller',
-  'https://api.dicebear.com/7.x/glass/svg?seed=horror',
-  'https://api.dicebear.com/7.x/glass/svg?seed=romance',
-  'https://api.dicebear.com/7.x/glass/svg?seed=scifi',
-  'https://api.dicebear.com/7.x/glass/svg?seed=anime',
-  'https://api.dicebear.com/7.x/glass/svg?seed=book',
-  'https://api.dicebear.com/7.x/glass/svg?seed=music',
-  'https://api.dicebear.com/7.x/glass/svg?seed=game',
-  'https://api.dicebear.com/7.x/glass/svg?seed=chill',
+  // Adventurer style (cartoon characters)
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Neo',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Trinity',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Ripley',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Goku',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Totoro',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Yoda',
+  // Lorelei style (stylish portraits)
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=Sora',
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=Luna',
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=Kai',
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=Ember',
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=Storm',
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=Phoenix',
+  // Personas style (full character avatars)
+  'https://api.dicebear.com/7.x/personas/svg?seed=Hero',
+  'https://api.dicebear.com/7.x/personas/svg?seed=Villain',
+  'https://api.dicebear.com/7.x/personas/svg?seed=Sage',
+  'https://api.dicebear.com/7.x/personas/svg?seed=Rebel',
+  'https://api.dicebear.com/7.x/personas/svg?seed=Ghost',
+  'https://api.dicebear.com/7.x/personas/svg?seed=Ninja',
+  // Notionists style (minimalist character portraits)
+  'https://api.dicebear.com/7.x/notionists/svg?seed=Ace',
+  'https://api.dicebear.com/7.x/notionists/svg?seed=Maverick',
+  'https://api.dicebear.com/7.x/notionists/svg?seed=Raven',
+  'https://api.dicebear.com/7.x/notionists/svg?seed=Atlas',
+  'https://api.dicebear.com/7.x/notionists/svg?seed=Echo',
+  'https://api.dicebear.com/7.x/notionists/svg?seed=Cipher',
 ];
 
 // ─── Profiles ───
@@ -621,7 +633,15 @@ export async function getMyProfile() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  return data;
+  if (data) return data;
+  // Auto-create profile row if it doesn't exist yet
+  const username = user.user_metadata?.username || user.email?.split('@')[0] || 'user';
+  const { data: created, error } = await supabase.from('profiles')
+    .upsert({ id: user.id, username }, { onConflict: 'id' })
+    .select()
+    .single();
+  if (error) { console.error('Auto-create profile failed:', error); return null; }
+  return created;
 }
 
 export async function updateProfile(updates) {
