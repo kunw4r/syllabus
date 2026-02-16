@@ -27,9 +27,9 @@ function Navbar() {
     <>
       {/* Desktop sidebar */}
       <nav className="fixed left-0 top-0 hidden h-screen w-60 flex-col border-r border-white/5 bg-dark-800/80 backdrop-blur-xl lg:flex z-50">
-        <div className="px-4 py-6">
-          <NavLink to="/" className="block">
-            <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="w-full max-w-[180px]" />
+        <div className="flex items-center justify-center px-4 py-6">
+          <NavLink to="/">
+            <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="w-44" />
           </NavLink>
         </div>
 
@@ -81,9 +81,9 @@ function Navbar() {
       </nav>
 
       {/* Mobile top-right logo */}
-      <div className="fixed top-4 right-4 z-50 lg:hidden">
-        <NavLink to="/">
-          <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-10" />
+      <div className="fixed top-3 right-3 z-50 lg:hidden">
+        <NavLink to="/" className="block bg-dark-900/60 backdrop-blur-md rounded-xl px-3 py-1.5">
+          <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-8 sm:h-9" />
         </NavLink>
       </div>
 

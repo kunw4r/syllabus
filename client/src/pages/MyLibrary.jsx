@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getLibrary, removeFromLibrary, updateLibraryItem } from '../services/api';
 import { Trash2, Star, MessageSquare, X } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 function MyLibrary() {
   const [items, setItems] = useState([]);
@@ -10,6 +11,7 @@ function MyLibrary() {
   const [reviewItem, setReviewItem] = useState(null);
   const [reviewText, setReviewText] = useState('');
   const [userRating, setUserRating] = useState(0);
+  const toast = useToast();
 
   const loadLibrary = async () => {
     const filters = {};
@@ -23,10 +25,10 @@ function MyLibrary() {
   useEffect(() => { loadLibrary(); }, [filter, typeFilter]);
 
   const handleRemove = async (id) => {
-    if (window.confirm('Remove from library?')) {
-      await removeFromLibrary(id);
-      loadLibrary();
-    }
+    const item = items.find(i => i.id === id);
+    await removeFromLibrary(id);
+    toast(`Removed "${item?.title || 'item'}" from library`, 'success');
+    loadLibrary();
   };
 
   const handleStatusChange = async (id, newStatus) => {
