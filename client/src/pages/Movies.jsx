@@ -131,7 +131,7 @@ function Movies() {
   return (
     <div className="min-w-0">
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6">
+      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6 pr-20 lg:pr-0">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search movies..."

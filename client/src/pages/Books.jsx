@@ -87,7 +87,7 @@ function Books() {
   return (
     <div className="min-w-0">
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6">
+      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6 pr-20 lg:pr-0">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search books by title, author..."
@@ -121,7 +121,7 @@ function Books() {
               <div className="absolute inset-0 flex items-end">
                 <div className="flex items-end gap-6 p-6 sm:p-10 w-full">
                   {hero.poster_path && (
-                    <img src={hero.poster_path} alt={hero.title} className="h-36 sm:h-48 rounded-xl shadow-2xl flex-shrink-0 object-cover aspect-[2/3]" />
+                    <img src={hero.poster_path} alt={hero.title} className="h-36 sm:h-48 rounded-xl shadow-2xl flex-shrink-0 object-contain" />
                   )}
                   <div className="min-w-0 pb-1">
                     <div className="flex items-center gap-2 text-accent text-xs font-semibold mb-2">

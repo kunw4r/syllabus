@@ -475,16 +475,26 @@ function MyLibrary() {
 
   const handleRemove = async (id) => {
     const item = allItems.find(i => i.id === id);
-    await removeFromLibrary(id);
-    toast(`Removed "${item?.title || 'item'}" from library`, 'success');
-    loadLibrary();
+    try {
+      await removeFromLibrary(id);
+      toast(`Removed "${item?.title || 'item'}" from library`, 'success');
+      loadLibrary();
+    } catch (err) {
+      console.error('Remove failed:', err);
+      toast(err?.message || 'Failed to remove — try again', 'error');
+    }
   };
 
   const handleStatusChange = async (id, newStatus) => {
-    await updateLibraryItem(id, { status: newStatus });
-    const item = allItems.find(i => i.id === id);
-    toast(`"${item?.title}" → ${newStatus === 'want' ? 'Wishlist' : newStatus === 'watching' ? 'In Progress' : 'Finished'}`, 'info');
-    loadLibrary();
+    try {
+      await updateLibraryItem(id, { status: newStatus });
+      const item = allItems.find(i => i.id === id);
+      toast(`"${item?.title}" → ${newStatus === 'want' ? 'Wishlist' : newStatus === 'watching' ? 'In Progress' : 'Finished'}`, 'info');
+      loadLibrary();
+    } catch (err) {
+      console.error('Status update failed:', err);
+      toast(err?.message || 'Failed to update status', 'error');
+    }
   };
 
   const openReview = (item) => {

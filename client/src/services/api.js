@@ -370,12 +370,14 @@ export async function addToLibrary(item) {
 }
 
 export async function updateLibraryItem(id, updates) {
+  // Use maybeSingle so a 0-row result doesn't throw PGRST116
   const { data, error } = await supabase.from('library')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
-    .single();
-  if (error) throw error;
+    .maybeSingle();
+  if (error) throw new Error(error.message || 'Update failed');
+  if (!data) throw new Error('Item not found — it may have been removed');
   return data;
 }
 

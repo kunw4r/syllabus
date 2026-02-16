@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
@@ -57,20 +57,31 @@ function LibraryPanel({ mediaId, addPayload }) {
   const toast = useToast();
   const { user } = useAuth();
 
-  const lookup = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
-    const item = await getLibraryItemByMediaId(mediaId);
-    if (item) {
-      setLibItem(item);
-      setStatus(item.status || 'watching');
-      setRating(item.user_rating || 0);
-      setReview(item.review || '');
-      setExpanded(true);
-    }
-    setLoading(false);
-  }, [mediaId, user]);
+  // Stable primitive key so the effect doesn't re-fire every render
+  const stableKey = mediaId.tmdb_id || mediaId.openlibrary_key;
 
-  useEffect(() => { lookup(); }, [lookup]);
+  useEffect(() => {
+    let cancelled = false;
+    async function lookup() {
+      if (!user) { setLoading(false); return; }
+      try {
+        const item = await getLibraryItemByMediaId(mediaId);
+        if (cancelled) return;
+        if (item) {
+          setLibItem(item);
+          setStatus(item.status || 'watching');
+          setRating(item.user_rating || 0);
+          setReview(item.review || '');
+          setExpanded(true);
+        }
+      } catch (err) {
+        console.error('Library lookup failed:', err);
+      }
+      if (!cancelled) setLoading(false);
+    }
+    lookup();
+    return () => { cancelled = true; };
+  }, [stableKey, user]);
 
   const handleAdd = async (chosenStatus) => {
     if (!user) return toast('Please log in first', 'error');
@@ -82,8 +93,6 @@ function LibraryPanel({ mediaId, addPayload }) {
       toast(`Added to library!`, 'success');
     } catch (err) {
       toast(err?.message === 'Already in your library' ? 'Already in your library' : 'Could not add', 'error');
-      // Re-check in case it's already there
-      lookup();
     }
   };
 
@@ -112,7 +121,7 @@ function LibraryPanel({ mediaId, addPayload }) {
       toast('Saved!', 'success');
     } catch (err) {
       console.error('Save failed:', err);
-      toast('Failed to save — try again', 'error');
+      toast(err?.message || 'Failed to save — try again', 'error');
     }
     setSaving(false);
   };
@@ -313,7 +322,7 @@ function BookDetails({ workKey, navigate }) {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Cover */}
         {data.poster_path ? (
-          <img src={data.poster_path} alt={data.title} className="w-48 sm:w-56 md:w-64 rounded-2xl shadow-2xl shadow-black/50 flex-shrink-0 bg-dark-700 aspect-[2/3] object-cover" />
+          <img src={data.poster_path} alt={data.title} className="w-48 sm:w-56 md:w-64 max-h-[400px] rounded-2xl shadow-2xl shadow-black/50 flex-shrink-0 bg-dark-700 object-contain" />
         ) : (
           <div className="w-48 sm:w-56 md:w-64 aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/30 text-sm flex-shrink-0">
             <BookOpen size={48} className="text-white/10" />
@@ -434,10 +443,10 @@ function BookDetails({ workKey, navigate }) {
                 <span className="text-xs font-medium text-[#ff9900]">Amazon</span>
                 <ExternalLink size={10} className="text-[#ff9900]/40" />
               </a>
-              <a href={`https://www.bookdepository.com/search?searchTerm=${searchQ}`} target="_blank" rel="noopener noreferrer"
+              <a href={`https://www.booktopia.com.au/search?keywords=${searchQ}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
                 <ShoppingCart size={16} className="text-white/60" />
-                <span className="text-xs font-medium">Book Depository</span>
+                <span className="text-xs font-medium">Booktopia</span>
                 <ExternalLink size={10} className="text-white/30" />
               </a>
               <a href={`https://www.goodreads.com/search?q=${searchQ}`} target="_blank" rel="noopener noreferrer"
