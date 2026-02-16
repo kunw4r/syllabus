@@ -374,3 +374,76 @@ export async function removeFromLibrary(id) {
   const { error } = await supabase.from('library').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ─── TMDB Discover by Mood ───
+
+const MOOD_GENRES = {
+  light: { movie: '35,10751,10402', tv: '35,10751' }, // Comedy, Family, Music
+  dark: { movie: '28,53,27,80', tv: '28,80,9648' }, // Action, Thriller, Horror, Crime
+  mind: { movie: '878,9648,14', tv: '878,9648' }, // Sci-Fi, Mystery, Fantasy
+  feel: { movie: '10749,18,10402', tv: '10749,18' }, // Romance, Drama, Music
+  adventure: { movie: '12,28,14', tv: '10759,14' }, // Adventure, Action, Fantasy
+  chill: { movie: '99,36,10770', tv: '99,10764' }, // Documentary, History, Reality
+};
+
+export async function discoverByMood(mood, mediaType = 'movie') {
+  const genreStr = MOOD_GENRES[mood]?.[mediaType] || MOOD_GENRES.light[mediaType];
+  const endpoint = mediaType === 'movie' ? '/discover/movie' : '/discover/tv';
+  const data = await tmdb(endpoint, `&with_genres=${genreStr}&sort_by=vote_average.desc&vote_count.gte=200&page=${Math.floor(Math.random() * 3) + 1}`);
+  return data.results || [];
+}
+
+// ─── Smart Recommendations (based on library) ───
+
+export async function getSmartRecommendations(libraryItems) {
+  if (!libraryItems || libraryItems.length === 0) return [];
+
+  // Find highest-rated finished items (prefer user_rating, fallback to external)
+  const rated = libraryItems
+    .filter(i => i.status === 'finished' && i.media_type !== 'book')
+    .sort((a, b) => (b.user_rating || b.external_rating || 0) - (a.user_rating || a.external_rating || 0))
+    .slice(0, 5);
+
+  // Also include items being watched
+  const watching = libraryItems
+    .filter(i => i.status === 'watching' && i.media_type !== 'book')
+    .slice(0, 3);
+
+  const seeds = [...rated, ...watching].slice(0, 6);
+  if (seeds.length === 0) return [];
+
+  // Fetch TMDB recommendations for each seed
+  const allRecs = await Promise.all(
+    seeds.map(async (item) => {
+      try {
+        const endpoint = item.media_type === 'tv' ? `/tv/${item.tmdb_id}` : `/movie/${item.tmdb_id}`;
+        const data = await tmdb(endpoint, '&append_to_response=recommendations');
+        return (data.recommendations?.results || []).map(r => ({
+          ...r,
+          media_type: r.media_type || item.media_type,
+          _source: item.title,
+          _sourceRating: item.user_rating || item.external_rating || 0,
+        }));
+      } catch { return []; }
+    })
+  );
+
+  // Flatten, deduplicate, remove items already in library
+  const libraryIds = new Set(libraryItems.map(i => String(i.tmdb_id)));
+  const seen = new Set();
+  const unique = allRecs.flat().filter(r => {
+    const key = `${r.media_type}-${r.id}`;
+    if (seen.has(key) || libraryIds.has(String(r.id))) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Score: TMDB rating + bonus for coming from highly-rated seeds
+  unique.sort((a, b) => {
+    const scoreA = (a.vote_average || 0) + (a._sourceRating / 10);
+    const scoreB = (b.vote_average || 0) + (b._sourceRating / 10);
+    return scoreB - scoreA;
+  });
+
+  return unique.slice(0, 20);
+}
