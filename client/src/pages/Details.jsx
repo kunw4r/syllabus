@@ -560,9 +560,16 @@ function MovieTVDetails({ mediaType, id, navigate }) {
       const imdbId = result.external_ids?.imdb_id || result.imdb_id;
       const resultTitle = result.name || result.title;
       if (imdbId) {
-        getOMDbRatings(imdbId, resultTitle, mediaType)
-          .then(r => { setExtRatings(r); setRatingsLoaded(true); })
-          .catch(() => setRatingsLoaded(true));
+        // Try to get OMDb ratings, retry once after 2s if rate-limited
+        const fetchRatings = async () => {
+          let r = await getOMDbRatings(imdbId, resultTitle, mediaType).catch(() => null);
+          if (!r) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            r = await getOMDbRatings(imdbId, resultTitle, mediaType).catch(() => null);
+          }
+          return r;
+        };
+        fetchRatings().then(r => { setExtRatings(r); setRatingsLoaded(true); });
       } else {
         setRatingsLoaded(true);
       }

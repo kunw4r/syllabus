@@ -2,8 +2,42 @@ import { supabase } from './supabase';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
-const OMDB_KEY = process.env.REACT_APP_OMDB_API_KEY || '4a3b711b';
 const OL_BASE = 'https://openlibrary.org';
+
+// ─── OMDb API key rotation ───
+// Free tier = 1,000 calls/day per key. Multiple keys give 2,000+/day.
+// Keys rotate automatically when one hits the rate limit.
+const OMDB_KEYS = [
+  process.env.REACT_APP_OMDB_API_KEY || '4a3b711b',
+  '91f420c8',
+].filter(Boolean);
+let _omdbKeyIdx = 0;
+const _exhaustedKeys = new Set();
+
+function getNextOmdbKey() {
+  for (let i = 0; i < OMDB_KEYS.length; i++) {
+    const idx = (_omdbKeyIdx + i) % OMDB_KEYS.length;
+    if (!_exhaustedKeys.has(idx)) return idx;
+  }
+  _exhaustedKeys.clear(); // all exhausted → reset (quota may have refreshed)
+  return 0;
+}
+
+async function omdbFetch(params) {
+  for (let attempt = 0; attempt < OMDB_KEYS.length; attempt++) {
+    const idx = getNextOmdbKey();
+    const key = OMDB_KEYS[idx];
+    const res = await fetch(`https://www.omdbapi.com/?${params}&apikey=${key}`);
+    const data = await res.json();
+    if (data.Error === 'Request limit reached!') {
+      _exhaustedKeys.add(idx);
+      _omdbKeyIdx = (idx + 1) % OMDB_KEYS.length;
+      continue;
+    }
+    return data;
+  }
+  return { Response: 'False', Error: 'Request limit reached!' };
+}
 
 // ─── In-memory cache (configurable TTL) ───
 const cache = new Map();
@@ -279,20 +313,18 @@ export function getOMDbRatings(imdbId, title = null, type = null) {
 
   return cached(`omdb:${imdbId}`, async () => {
     try {
-      const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_KEY}`);
-      const data = await res.json();
-      // Don't cache rate-limit errors — they're transient
-      if (data.Error === 'Request limit reached!') return null;
+      const data = await omdbFetch(`i=${imdbId}`);
+      // Throw on rate-limit so cached() doesn't store the failure
+      if (data.Error === 'Request limit reached!') throw new Error('OMDB_RATE_LIMIT');
       const ratings = parseOMDbResponse(data);
       if (!ratings) { saveOmdbEntry(storedKey, null); return null; }
 
       // If no RT score and we have a title, try searching by title as fallback
       if (!ratings.rt && title) {
         const omdbType = type === 'tv' ? 'series' : type === 'movie' ? 'movie' : '';
-        let url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_KEY}`;
-        if (omdbType) url += `&type=${omdbType}`;
-        const fallbackRes = await fetch(url);
-        const fallbackData = await fallbackRes.json();
+        let params = `t=${encodeURIComponent(title)}`;
+        if (omdbType) params += `&type=${omdbType}`;
+        const fallbackData = await omdbFetch(params);
         if (fallbackData.Response !== 'False') {
           (fallbackData.Ratings || []).forEach(r => {
             if (r.Source === 'Rotten Tomatoes' && !ratings.rt) {
@@ -304,7 +336,10 @@ export function getOMDbRatings(imdbId, title = null, type = null) {
 
       saveOmdbEntry(storedKey, ratings);
       return ratings;
-    } catch { return null; }
+    } catch (err) {
+      if (err?.message === 'OMDB_RATE_LIMIT') throw err; // don't cache, allow retry
+      return null;
+    }
   });
 }
 
@@ -319,14 +354,17 @@ export function getOMDbByTitle(title, year, type = 'movie') {
 
   return cached(`omdb:t:${title}:${year || ''}:${omdbType}`, async () => {
     try {
-      let url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&type=${omdbType}&apikey=${OMDB_KEY}`;
-      if (year) url += `&y=${year}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      let params = `t=${encodeURIComponent(title)}&type=${omdbType}`;
+      if (year) params += `&y=${year}`;
+      const data = await omdbFetch(params);
+      if (data.Error === 'Request limit reached!') throw new Error('OMDB_RATE_LIMIT');
       const result = parseOMDbResponse(data);
       saveOmdbEntry(storedKey, result);
       return result;
-    } catch { return null; }
+    } catch (err) {
+      if (err?.message === 'OMDB_RATE_LIMIT') throw err; // propagate so enrichment stops
+      return null;
+    }
   });
 }
 
@@ -377,26 +415,34 @@ export async function enrichChart(items, mediaType, chartKey, onProgress) {
   if (total > 0 && onProgress) onProgress({ completed: 0, total, phase: 'enriching' });
 
   // Second pass: batch OMDb lookups with throttling
-  const BATCH_SIZE = 5;
-  const BATCH_DELAY = 300; // ms between batches to avoid rate-limits
+  // Conservative batching to preserve OMDb quota for Details pages
+  const BATCH_SIZE = 3;
+  const BATCH_DELAY = 500; // ms between batches to avoid rate-limits
+  let rateLimited = false;
 
-  for (let i = 0; i < needsFetch.length; i += BATCH_SIZE) {
+  for (let i = 0; i < needsFetch.length && !rateLimited; i += BATCH_SIZE) {
     const batch = needsFetch.slice(i, i + BATCH_SIZE);
     await Promise.all(batch.map(async (item) => {
+      if (rateLimited) return; // skip if we hit the limit mid-batch
       const title = item.title || item.name;
       const year = (item.release_date || item.first_air_date || '').slice(0, 4);
       const isAnime = item.original_language === 'ja' &&
         (item.genre_ids?.includes(16) || item.genres?.some(g => g.id === 16));
 
-      const omdb = await getOMDbByTitle(title, year, mediaType);
-      let mal = null;
-      if (isAnime) {
-        try { mal = await getMALRating(title); } catch { /* ignore */ }
-      }
-
-      item.unified_rating = computeUnifiedRating(omdb, mal, isAnime);
-      if (item.unified_rating != null) {
-        setSyllabusScore(mediaType, item.id, item.unified_rating);
+      try {
+        const omdb = await getOMDbByTitle(title, year, mediaType);
+        let mal = null;
+        if (isAnime) {
+          try { mal = await getMALRating(title); } catch { /* ignore */ }
+        }
+        item.unified_rating = computeUnifiedRating(omdb, mal, isAnime);
+        if (item.unified_rating != null) {
+          setSyllabusScore(mediaType, item.id, item.unified_rating);
+        }
+      } catch (err) {
+        if (err?.message === 'OMDB_RATE_LIMIT') {
+          rateLimited = true; // stop enriching, preserve quota for Details
+        }
       }
     }));
 
