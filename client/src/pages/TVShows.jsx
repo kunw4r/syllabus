@@ -121,7 +121,7 @@ function TVShows() {
       await addToLibrary({
         tmdb_id: hero.id, media_type: 'tv', title: hero.name,
         poster_path: hero.poster_path ? `${TMDB_IMG}/w500${hero.poster_path}` : null,
-        overview: hero.overview, external_rating: hero.vote_average, release_date: hero.first_air_date,
+        overview: hero.overview, external_rating: heroRating ?? hero.vote_average, release_date: hero.first_air_date,
       });
     } catch { /* ignore */ }
   };
@@ -194,7 +194,15 @@ function TVShows() {
               {trending.slice(0, 10).map((item, i) => (
                 <div key={item.id} className="flex-shrink-0 flex items-end cursor-pointer group/card" onClick={() => navigate(`/details/tv/${item.id}`)}>
                   <span className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
-                  {item.poster_path && <img src={`${TMDB_IMG}/w500${item.poster_path}`} alt={item.name} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
+                  <div className="relative">
+                    {item.poster_path && <img src={`${TMDB_IMG}/w500${item.poster_path}`} alt={item.name} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
+                    {item.vote_average > 0 && (
+                      <div className="absolute top-1.5 right-1.5 z-20 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold">
+                        <Star size={9} className="text-gold fill-gold" />
+                        {Number(item.vote_average).toFixed(1)}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

@@ -16,7 +16,7 @@ function MediaCard({ item, mediaType = 'movie' }) {
   const poster = item.poster_path
     ? (item.poster_path.startsWith('http') ? item.poster_path : `${TMDB_IMG}${item.poster_path}`)
     : null;
-  const rating = item.vote_average || item.rating;
+  const rating = item.unified_rating ?? item.vote_average ?? item.rating;
   const year = (item.release_date || item.first_air_date || item.first_publish_year || '').toString().slice(0, 4);
   const type = item.media_type || mediaType;
 

@@ -758,7 +758,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
 
           {/* ── Ratings ── */}
           <div className="flex flex-wrap items-stretch gap-3 mb-6">
-            {/* Average Score */}
+            {/* Syllabus Score — the unified rating shown everywhere */}
             {avgScore && (
               <div className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -766,7 +766,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
                   <span className="text-xl font-black">{avgScore}</span>
                   <span className="text-white/30 text-xs">/ 10</span>
                 </div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Average</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Syllabus Score</p>
               </div>
             )}
 
