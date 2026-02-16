@@ -64,7 +64,17 @@ export function applyStoredScores(items, mediaType) {
 let _omdbCache = null;
 function getOmdbStore() {
   if (!_omdbCache) {
-    try { _omdbCache = JSON.parse(localStorage.getItem(OMDB_STORE_KEY) || '{}'); }
+    try {
+      _omdbCache = JSON.parse(localStorage.getItem(OMDB_STORE_KEY) || '{}');
+      // Purge null entries (stale rate-limit failures) so they can be re-fetched
+      let purged = false;
+      for (const k of Object.keys(_omdbCache)) {
+        if (_omdbCache[k] === null) { delete _omdbCache[k]; purged = true; }
+      }
+      if (purged) {
+        try { localStorage.setItem(OMDB_STORE_KEY, JSON.stringify(_omdbCache)); } catch { /* quota */ }
+      }
+    }
     catch { _omdbCache = {}; }
   }
   return _omdbCache;
@@ -238,6 +248,8 @@ export function getOMDbRatings(imdbId, title = null, type = null) {
     try {
       const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_KEY}`);
       const data = await res.json();
+      // Don't cache rate-limit errors — they're transient
+      if (data.Error === 'Request limit reached!') return null;
       const ratings = parseOMDbResponse(data);
       if (!ratings) { saveOmdbEntry(storedKey, null); return null; }
 

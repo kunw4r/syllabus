@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X, Sparkles, Lightbulb } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
-import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, computeUnifiedRating, setSyllabusScore, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
+import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, computeUnifiedRating, setSyllabusScore, getSyllabusScore, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -542,6 +542,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [extRatings, setExtRatings] = useState(null);
+  const [ratingsLoaded, setRatingsLoaded] = useState(false);
   const [malData, setMalData] = useState(null);
   const toast = useToast();
 
@@ -549,6 +550,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
     async function load() {
       setLoading(true);
       setExtRatings(null);
+      setRatingsLoaded(false);
       setMalData(null);
       const fetcher = mediaType === 'movie' ? getMovieDetails : getTVDetails;
       const result = await fetcher(id);
@@ -558,7 +560,11 @@ function MovieTVDetails({ mediaType, id, navigate }) {
       const imdbId = result.external_ids?.imdb_id || result.imdb_id;
       const resultTitle = result.name || result.title;
       if (imdbId) {
-        getOMDbRatings(imdbId, resultTitle, mediaType).then(r => setExtRatings(r));
+        getOMDbRatings(imdbId, resultTitle, mediaType)
+          .then(r => { setExtRatings(r); setRatingsLoaded(true); })
+          .catch(() => setRatingsLoaded(true));
+      } else {
+        setRatingsLoaded(true);
       }
 
       // Fetch MAL rating for anime
@@ -743,7 +749,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               </div>
             )}
             {/* Shimmer while loading */}
-            {!extRatings && data.external_ids?.imdb_id && (
+            {!ratingsLoaded && data.external_ids?.imdb_id && (
               <div className="space-y-3 animate-pulse">
                 {[1,2,3].map(i => (<div key={i} className="flex gap-2.5"><div className="w-3 h-3 bg-dark-600 rounded" /><div className="flex-1"><div className="h-2 w-10 bg-dark-600 rounded mb-1" /><div className="h-3 w-20 bg-dark-600 rounded" /></div></div>))}
               </div>
@@ -763,17 +769,21 @@ function MovieTVDetails({ mediaType, id, navigate }) {
 
           {/* ── Ratings ── */}
           <div className="flex flex-wrap items-stretch gap-3 mb-6">
-            {/* Syllabus Score — the unified rating shown everywhere */}
-            {avgScore && (
-              <div className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Star size={16} className="text-gold fill-gold" />
-                  <span className="text-xl font-black">{avgScore}</span>
-                  <span className="text-white/30 text-xs">/ 10</span>
+            {/* Syllabus Score — unified or cached or TMDB fallback */}
+            {(() => {
+              const displayScore = avgScore || getSyllabusScore(mediaType, data.id) || (data.vote_average ? data.vote_average.toFixed(1) : null);
+              const scoreLabel = avgScore ? 'Syllabus Score' : getSyllabusScore(mediaType, data.id) ? 'Syllabus Score' : 'TMDB';
+              return displayScore ? (
+                <div className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center">
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <Star size={16} className="text-gold fill-gold" />
+                    <span className="text-xl font-black">{displayScore}</span>
+                    <span className="text-white/30 text-xs">/ 10</span>
+                  </div>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">{scoreLabel}</p>
                 </div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Syllabus Score</p>
-              </div>
-            )}
+              ) : null;
+            })()}
 
             {/* IMDb — links to IMDb page */}
             {extRatings?.imdb && (
@@ -800,6 +810,18 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               </a>
             )}
 
+            {/* TMDB rating — always show when OMDb loaded but no IMDb/RT available */}
+            {ratingsLoaded && !extRatings?.imdb && data.vote_average > 0 && (
+              <a href={`https://www.themoviedb.org/${mediaType}/${data.id}`} target="_blank" rel="noopener noreferrer"
+                className="bg-[#01b4e4]/[0.08] border border-[#01b4e4]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#01b4e4]/[0.15] transition-colors cursor-pointer flex flex-col justify-center">
+                <p className="text-xl font-black text-[#01b4e4]">{data.vote_average.toFixed(1)}</p>
+                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">TMDB <ExternalLink size={8} /></p>
+                {data.vote_count && (
+                  <p className="text-[9px] text-white/20">{data.vote_count.toLocaleString()} votes</p>
+                )}
+              </a>
+            )}
+
             {/* MAL (anime only) */}
             {isAnime && malData?.score && (
               <a href={malData.url} target="_blank" rel="noopener noreferrer"
@@ -821,8 +843,8 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               </a>
             )}
 
-            {/* Loading shimmer */}
-            {!extRatings && data.external_ids?.imdb_id && (
+            {/* Loading shimmer — only while actually loading, not after failure */}
+            {!ratingsLoaded && data.external_ids?.imdb_id && (
               <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 text-center min-w-[90px] animate-pulse flex flex-col justify-center">
                 <div className="h-5 w-12 bg-dark-600 rounded mx-auto mb-1" />
                 <div className="h-2 w-8 bg-dark-600 rounded mx-auto" />
