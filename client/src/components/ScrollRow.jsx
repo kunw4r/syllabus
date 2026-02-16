@@ -29,4 +29,4 @@ function ScrollRow({ title, children, className = '' }) {
   );
 }
 
-export default ScrollRow;
+export default React.memo(ScrollRow);

@@ -181,7 +181,7 @@ function Top100() {
               : (item.release_date || item.first_air_date || '').slice(0, 4);
             const poster = isBook
               ? item.poster_path
-              : item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
+              : item.poster_path ? `https://image.tmdb.org/t/p/w185${item.poster_path}` : null;
 
             return (
               <RankedItem

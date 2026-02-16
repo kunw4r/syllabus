@@ -5,7 +5,7 @@ import { addToLibrary, getSyllabusScore } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
-const TMDB_IMG = 'https://image.tmdb.org/t/p/w780';
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w342';
 
 function MediaCard({ item, mediaType = 'movie' }) {
   const navigate = useNavigate();
@@ -92,4 +92,4 @@ function MediaCard({ item, mediaType = 'movie' }) {
   );
 }
 
-export default MediaCard;
+export default React.memo(MediaCard);

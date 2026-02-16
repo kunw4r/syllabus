@@ -203,7 +203,7 @@ function Movies() {
                 <div key={item.id} className="flex-shrink-0 flex items-end cursor-pointer group/card" onClick={() => navigate(`/details/movie/${item.id}`)}>
                   <span className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
                   <div className="relative">
-                    {item.poster_path && <img src={`${TMDB_IMG}/w500${item.poster_path}`} alt={item.title} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
+                    {item.poster_path && <img src={`${TMDB_IMG}/w185${item.poster_path}`} alt={item.title} loading="lazy" className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
                     {(item.unified_rating || item.vote_average) > 0 && (
                       <div className="absolute top-1.5 right-1.5 z-20 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold">
                         <Star size={9} className="text-gold fill-gold" />

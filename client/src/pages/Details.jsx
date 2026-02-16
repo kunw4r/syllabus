@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w780';
-const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/original';
+const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w92';
 const TMDB_PROFILE = 'https://image.tmdb.org/t/p/w185';
 

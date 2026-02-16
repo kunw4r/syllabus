@@ -52,42 +52,26 @@ export default function Profile() {
       const own = !userId || userId === user?.id;
       setIsOwnProfile(own);
 
-      const p = own ? await getMyProfile() : await getProfile(targetUserId);
-      setProfile(p);
-
-      const [frs, fing] = await Promise.all([
+      // Parallel fetch — all independent API calls in one batch
+      const [p, frs, fing, followStatus, lib, act] = await Promise.all([
+        own ? getMyProfile() : getProfile(targetUserId),
         getFollowers(targetUserId),
         getFollowing(targetUserId),
+        (!own && user) ? isFollowing(targetUserId) : Promise.resolve(false),
+        own ? getLibrary() : getFriendLibrary(targetUserId),
+        own ? getMyActivity(20) : Promise.resolve([]),
       ]);
+
+      setProfile(p);
       setFollowers(frs);
       setFollowing(fing);
+      setIFollow(followStatus);
+      setLibrary(lib);
+      setActivity(act);
 
-      if (!own && user) {
-        const following = await isFollowing(targetUserId);
-        setIFollow(following);
-      }
-
-      // Get library (own or friend's)
+      // Discover Weekly (own profile only) — fire after main data loaded
       if (own) {
-        const lib = await getLibrary();
-        setLibrary(lib);
-      } else {
-        const lib = await getFriendLibrary(targetUserId);
-        setLibrary(lib);
-      }
-
-      // Activity
-      if (own) {
-        const act = await getMyActivity(20);
-        setActivity(act);
-      }
-
-      // Discover Weekly (own profile only)
-      if (own) {
-        try {
-          const dw = await getDiscoverWeekly();
-          setDiscoverWeekly(dw);
-        } catch { /* ignore */ }
+        getDiscoverWeekly().then(dw => setDiscoverWeekly(dw)).catch(() => {});
       }
     } catch (err) {
       console.error('Failed to load profile:', err);
