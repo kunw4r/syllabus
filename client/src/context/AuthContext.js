@@ -21,19 +21,27 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUp = async (email, password, username) => {
+    // First try normal signup
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { username } },
     });
-    // If signup succeeded, try to create profile row (ignore if trigger already did it)
-    if (!error && data?.user) {
+    if (error) {
+      // If a database trigger is blocking signup, show a clearer message
+      if (error.message?.includes('Database error')) {
+        return { data: null, error: { message: 'Account setup issue — please try again in a moment, or contact support.' } };
+      }
+      return { data, error };
+    }
+    // Create profile row (handles case where trigger doesn't exist)
+    if (data?.user) {
       await supabase.from('profiles').upsert(
         { id: data.user.id, username },
         { onConflict: 'id' }
       ).select();
     }
-    return { data, error };
+    return { data, error: null };
   };
 
   const signIn = async (email, password) => {

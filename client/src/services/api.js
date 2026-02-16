@@ -52,6 +52,55 @@ export async function getTVDetails(id) {
   return tmdb(`/tv/${id}`, '&append_to_response=recommendations,credits');
 }
 
+// ─── Movie Discovery ───
+
+export async function getTopRatedMovies() {
+  const data = await tmdb('/movie/top_rated');
+  return data.results || [];
+}
+
+export async function getNowPlayingMovies() {
+  const data = await tmdb('/movie/now_playing');
+  return data.results || [];
+}
+
+export async function getPopularMovies() {
+  const data = await tmdb('/movie/popular');
+  return data.results || [];
+}
+
+export async function getMoviesByGenre(genreId) {
+  const data = await tmdb('/discover/movie', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=50`);
+  return data.results || [];
+}
+
+// ─── TV Discovery ───
+
+export async function getTopRatedTV() {
+  const data = await tmdb('/tv/top_rated');
+  return data.results || [];
+}
+
+export async function getPopularTV() {
+  const data = await tmdb('/tv/popular');
+  return data.results || [];
+}
+
+export async function getTVByGenre(genreId) {
+  const data = await tmdb('/discover/tv', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=50`);
+  return data.results || [];
+}
+
+export async function getAnime() {
+  const data = await tmdb('/discover/tv', '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50');
+  return data.results || [];
+}
+
+export async function getAnimationTV() {
+  const data = await tmdb('/discover/tv', '&with_genres=16&without_original_language=ja&sort_by=popularity.desc&vote_count.gte=20');
+  return data.results || [];
+}
+
 // ─── Books (Open Library) ───
 
 export async function getTrendingBooks() {
