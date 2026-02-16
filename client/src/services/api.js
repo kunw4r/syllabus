@@ -305,13 +305,14 @@ export function getTop100Movies(genreId = null) {
   return cached(key, async () => {
     if (genreId) {
       const pages = await Promise.all(
-        [1, 2, 3, 4, 5].map(p => tmdb('/discover/movie', `&sort_by=vote_average.desc&vote_count.gte=1000&with_genres=${genreId}&page=${p}`))
+        [1, 2, 3, 4, 5].map(p => tmdb('/discover/movie', `&sort_by=popularity.desc&vote_count.gte=200&with_genres=${genreId}&page=${p}`))
       );
       const seen = new Set();
       return pages.flatMap(p => p.results || []).filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
     }
+    // Default: most popular movies (enrichChart re-sorts by Syllabus Score)
     const pages = await Promise.all(
-      [1, 2, 3, 4, 5].map(p => tmdb('/movie/top_rated', `&page=${p}`))
+      [1, 2, 3, 4, 5].map(p => tmdb('/movie/popular', `&page=${p}`))
     );
     return pages.flatMap(p => p.results || []);
   });
@@ -322,13 +323,14 @@ export function getTop100TV(genreId = null) {
   return cached(key, async () => {
     if (genreId) {
       const pages = await Promise.all(
-        [1, 2, 3, 4, 5].map(p => tmdb('/discover/tv', `&sort_by=vote_average.desc&vote_count.gte=500&with_genres=${genreId}&page=${p}`))
+        [1, 2, 3, 4, 5].map(p => tmdb('/discover/tv', `&sort_by=popularity.desc&vote_count.gte=100&with_genres=${genreId}&page=${p}`))
       );
       const seen = new Set();
       return pages.flatMap(p => p.results || []).filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
     }
+    // Default: most popular TV shows (enrichChart re-sorts by Syllabus Score)
     const pages = await Promise.all(
-      [1, 2, 3, 4, 5].map(p => tmdb('/tv/top_rated', `&page=${p}`))
+      [1, 2, 3, 4, 5].map(p => tmdb('/tv/popular', `&page=${p}`))
     );
     return pages.flatMap(p => p.results || []);
   });
@@ -626,7 +628,7 @@ export function getBookDetails(workKey) {
         fetch(`${OL_BASE}${key}.json`).then(r => r.json()),
         fetch(`${OL_BASE}${key}/ratings.json`).then(r => r.json()).catch(() => null),
         fetch(`${OL_BASE}${key}/bookshelves.json`).then(r => r.json()).catch(() => null),
-        fetch(`${OL_BASE}${key}/editions.json?limit=1`).then(r => r.json()).catch(() => null),
+        fetch(`${OL_BASE}${key}/editions.json?limit=5`).then(r => r.json()).catch(() => null),
       ]);
 
       // Resolve authors
@@ -649,13 +651,27 @@ export function getBookDetails(workKey) {
       }
 
       const coverId = work.covers?.[0];
+      // Cover fallback chain: cover_id → edition covers → edition ISBN → edition OLID → null
+      let posterPath = null;
+      if (coverId) {
+        posterPath = `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
+      } else if (editions?.entries?.length) {
+        // Try each edition until we find a cover source
+        for (const ed of editions.entries) {
+          if (ed.covers?.[0]) { posterPath = `https://covers.openlibrary.org/b/id/${ed.covers[0]}-L.jpg`; break; }
+          const isbn = ed.isbn_13?.[0] || ed.isbn_10?.[0];
+          if (isbn) { posterPath = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`; break; }
+          const olid = ed.key?.replace('/books/', '');
+          if (olid) { posterPath = `https://covers.openlibrary.org/b/olid/${olid}-L.jpg`; break; }
+        }
+      }
       const desc = typeof work.description === 'string' ? work.description : work.description?.value || '';
       return {
         key: work.key,
         title: work.title,
         description: desc,
         cover_id: coverId,
-        poster_path: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null,
+        poster_path: posterPath,
         first_publish_date: work.first_publish_date || '',
         subjects: (work.subjects || []).slice(0, 8),
         rating: ratings?.summary?.average ? Math.round(ratings.summary.average * 20) / 10 : null,
