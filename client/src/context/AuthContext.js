@@ -26,6 +26,13 @@ export function AuthProvider({ children }) {
       password,
       options: { data: { username } },
     });
+    // If signup succeeded, try to create profile row (ignore if trigger already did it)
+    if (!error && data?.user) {
+      await supabase.from('profiles').upsert(
+        { id: data.user.id, username },
+        { onConflict: 'id' }
+      ).select();
+    }
     return { data, error };
   };
 

@@ -10,8 +10,14 @@ import MyLibrary from './pages/MyLibrary';
 import Details from './pages/Details';
 import Login from './pages/Login';
 
+function ProtectedRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+  return children;
+}
+
 function App() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -21,23 +27,26 @@ function App() {
     );
   }
 
-  if (!user) return <Login />;
-
   return (
-    <div className="flex min-h-screen">
-      <Navbar />
-      <main className="flex-1 ml-0 md:ml-60 p-6 md:p-10">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/movies" element={<Movies />} />
-          <Route path="/tv" element={<TVShows />} />
-          <Route path="/books" element={<Books />} />
-          <Route path="/library" element={<MyLibrary />} />
-          <Route path="/details/:mediaType/:id" element={<Details />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </main>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={
+        <div className="flex min-h-screen">
+          <Navbar />
+          <main className="flex-1 ml-0 md:ml-60 p-6 md:p-10">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/movies" element={<Movies />} />
+              <Route path="/tv" element={<TVShows />} />
+              <Route path="/books" element={<Books />} />
+              <Route path="/library" element={<ProtectedRoute><MyLibrary /></ProtectedRoute>} />
+              <Route path="/details/:mediaType/:id" element={<Details />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+        </div>
+      } />
+    </Routes>
   );
 }
 

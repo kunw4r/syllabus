@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Film, BookOpen, Tv } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 function Login() {
   const { signIn, signUp } = useAuth();
+  const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,6 +28,7 @@ function Login() {
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
+        navigate('/');
       }
     } catch (err) {
       setError(err.message);
@@ -34,39 +37,42 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      {/* Background accents */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center px-4 relative">
+      {/* Subtle grid background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-accent/[0.03] rounded-full blur-[120px]" />
       </div>
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-sm relative z-10">
+        {/* Back to browse */}
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-2 text-white/30 hover:text-white/60 text-sm mb-12 transition-colors"
+        >
+          <ArrowLeft size={16} /> Back to browsing
+        </button>
+
         {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-accent tracking-tight mb-3">syllabus</h1>
-          <p className="text-white/40 text-sm">Your personal media shelf</p>
-          <div className="flex items-center justify-center gap-4 mt-4 text-white/20">
-            <Film size={20} />
-            <Tv size={20} />
-            <BookOpen size={20} />
-          </div>
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-accent tracking-tight">syllabus</h1>
+          <p className="text-white/30 text-sm mt-2">Track movies, shows & books you love.</p>
         </div>
 
-        {/* Form card */}
-        <div className="glass rounded-2xl p-8">
-          <h2 className="text-xl font-semibold mb-6">
-            {isSignUp ? 'Create account' : 'Welcome back'}
+        {/* Form */}
+        <div>
+          <h2 className="text-lg font-semibold mb-6 text-white/90">
+            {isSignUp ? 'Create account' : 'Sign in'}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {isSignUp && (
               <input
                 type="text"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="input-field"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors"
                 required
               />
             )}
@@ -75,7 +81,7 @@ function Login() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors"
               required
             />
             <input
@@ -83,32 +89,32 @@ function Login() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors"
               minLength={6}
               required
             />
 
             {error && (
-              <p className="text-red-400 text-sm bg-red-400/10 rounded-lg px-4 py-2">{error}</p>
+              <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-2.5">{error}</p>
             )}
             {message && (
-              <p className="text-green-400 text-sm bg-green-400/10 rounded-lg px-4 py-2">{message}</p>
+              <p className="text-green-400 text-xs bg-green-400/10 border border-green-400/20 rounded-xl px-4 py-2.5">{message}</p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-accent hover:bg-accent/90 text-white font-medium rounded-xl px-4 py-3 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed mt-2"
             >
-              {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+              {loading ? 'Loading...' : isSignUp ? 'Create account' : 'Sign in'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-white/40 mt-6">
+          <p className="text-sm text-white/30 mt-6">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button
               onClick={() => { setIsSignUp(!isSignUp); setError(''); setMessage(''); }}
-              className="text-accent hover:text-accent-hover transition-colors"
+              className="text-accent hover:underline transition-colors"
             >
               {isSignUp ? 'Sign in' : 'Sign up'}
             </button>
