@@ -80,6 +80,13 @@ function Navbar() {
         </div>
       </nav>
 
+      {/* Mobile top-right logo */}
+      <div className="fixed top-3 right-4 z-50 lg:hidden">
+        <NavLink to="/">
+          <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-7" />
+        </NavLink>
+      </div>
+
       {/* Mobile bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex lg:hidden border-t border-white/5 bg-dark-900/90 backdrop-blur-xl">
         {mobileItems.map(({ to, icon: Icon, label }) => {
