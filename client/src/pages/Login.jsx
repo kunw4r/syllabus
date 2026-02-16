@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 function Login() {
   const { signIn, signUp } = useAuth();
@@ -48,15 +48,15 @@ function Login() {
         {/* Back to browse */}
         <button
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 text-white/30 hover:text-white/60 text-sm mb-12 transition-colors"
+          className="inline-flex items-center gap-1 text-white/30 hover:text-white/60 text-sm mb-12 transition-colors"
         >
-          <ArrowLeft size={16} /> Back to browsing
+          <ChevronLeft size={20} strokeWidth={2.5} /> Back
         </button>
 
         {/* Logo */}
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-accent tracking-tight">syllabus</h1>
-          <p className="text-white/30 text-sm mt-2">Track movies, shows & books you love.</p>
+          <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-9 mb-3" />
+          <p className="text-white/30 text-sm">Track movies, shows & books you love.</p>
         </div>
 
         {/* Form */}

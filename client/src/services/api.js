@@ -402,7 +402,7 @@ function mapOLWork(w) {
     author: w.author_name?.[0] || w.authors?.[0]?.name || 'Unknown',
     cover_id: coverId,
     poster_path: coverId
-      ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
+      ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`
       : null,
     first_publish_year: w.first_publish_year,
     rating: w.ratings_average ? Math.round(w.ratings_average * 20) / 10 : null,
@@ -429,21 +429,9 @@ export function getTrendingBooks() {
 export function getBooksBySubject(subject) {
   return cached(`ol:subject:${subject}`, async () => {
     try {
-      const res = await fetch(`${OL_BASE}/subjects/${encodeURIComponent(subject)}.json?limit=20`);
+      const res = await fetch(`${OL_BASE}/search.json?subject=${encodeURIComponent(subject)}&limit=20&fields=key,title,author_name,cover_i,first_publish_year,ratings_average,ratings_count,edition_count,subject`);
       const data = await res.json();
-      return (data.works || []).map(w => ({
-        key: w.key,
-        title: w.title,
-        author: w.authors?.[0]?.name || 'Unknown',
-        cover_id: w.cover_id,
-        poster_path: w.cover_id
-          ? `https://covers.openlibrary.org/b/id/${w.cover_id}-L.jpg`
-          : null,
-        first_publish_year: w.first_publish_year,
-        rating: null,
-        subject: [subject],
-        media_type: 'book',
-      }));
+      return (data.docs || []).map(mapOLWork);
     } catch { return []; }
   });
 }
@@ -804,52 +792,52 @@ export const AVATAR_PRESETS = {
   'Adventurer': [
     'Neo', 'Trinity', 'Ripley', 'Goku', 'Totoro', 'Yoda',
     'Athena', 'Zephyr', 'Cosmo', 'Pixel', 'Blaze', 'Orbit',
-  ].map(s => `https://api.dicebear.com/7.x/adventurer/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/adventurer/svg?seed=${s}`),
 
   'Portraits': [
     'Sora', 'Luna', 'Kai', 'Ember', 'Storm', 'Phoenix',
     'Aurora', 'Vesper', 'Cleo', 'Nyx', 'Zenith', 'Opal',
-  ].map(s => `https://api.dicebear.com/7.x/lorelei/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/lorelei/svg?seed=${s}`),
 
   'Personas': [
     'Hero', 'Villain', 'Sage', 'Rebel', 'Ghost', 'Ninja',
     'Druid', 'Rogue', 'Titan', 'Oracle', 'Drift', 'Hex',
-  ].map(s => `https://api.dicebear.com/7.x/personas/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/personas/svg?seed=${s}`),
 
   'Minimal': [
     'Ace', 'Maverick', 'Raven', 'Atlas', 'Echo', 'Cipher',
     'Nova', 'Flux', 'Prism', 'Quasar', 'Onyx', 'Aero',
-  ].map(s => `https://api.dicebear.com/7.x/notionists/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/notionists/svg?seed=${s}`),
 
   'Pixel Art': [
     'Mario', 'Zelda', 'Link', 'Samus', 'Kirby', 'Fox',
     'Pikachu', 'Cloud', 'Sonic', 'Megaman', 'Pac', 'Snake',
-  ].map(s => `https://api.dicebear.com/7.x/pixel-art/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/pixel-art/svg?seed=${s}`),
 
   'Big Smile': [
     'Joy', 'Sunny', 'Breeze', 'Coral', 'Daisy', 'Mint',
     'Fern', 'Copper', 'Sienna', 'Jade', 'Willow', 'Ivy',
-  ].map(s => `https://api.dicebear.com/7.x/big-smile/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/big-smile/svg?seed=${s}`),
 
   'Fun Emoji': [
     'Happy', 'Cool', 'Chill', 'Zen', 'Fire', 'Sparkle',
     'Wave', 'Star', 'Moon', 'Rain', 'Snow', 'Thunder',
-  ].map(s => `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${s}`),
 
   'Thumbs': [
     'Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot',
     'Golf', 'Hotel', 'India', 'Juliet', 'Kilo', 'Lima',
-  ].map(s => `https://api.dicebear.com/7.x/thumbs/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/thumbs/svg?seed=${s}`),
 
   'Bottts': [
     'Robo1', 'Mech', 'Droid', 'Bolt', 'Gear', 'Chip',
     'Wire', 'Core', 'Node', 'Byte', 'Data', 'Grid',
-  ].map(s => `https://api.dicebear.com/7.x/bottts/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/bottts/svg?seed=${s}`),
 
   'Shapes': [
     'Ruby', 'Emerald', 'Sapphire', 'Diamond', 'Topaz', 'Amethyst',
     'Pearl', 'Garnet', 'Citrine', 'Peridot', 'Tanzanite', 'Aqua',
-  ].map(s => `https://api.dicebear.com/7.x/shapes/svg?seed=${s}`),
+  ].map(s => `https://api.dicebear.com/9.x/shapes/svg?seed=${s}`),
 };
 
 // ─── Profiles ───

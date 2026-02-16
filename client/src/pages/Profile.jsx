@@ -128,19 +128,23 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     try {
       // Strip temporary AI fields before saving
-      const { _aiPrompt, _aiGenerating, ...cleanForm } = editForm;
+      const { _aiPrompt, _aiGenerating, _aiError, ...cleanForm } = editForm;
       // Validate avatar URL domain
       if (cleanForm.avatar_url) {
-        const ALLOWED_AVATAR_HOSTS = ['api.dicebear.com', 'image.pollinations.ai'];
-        try {
-          const url = new URL(cleanForm.avatar_url);
-          if (!ALLOWED_AVATAR_HOSTS.includes(url.hostname)) {
-            toast('Avatar URL must be from DiceBear or Pollinations AI', 'error');
+        if (cleanForm.avatar_url.startsWith('data:image/')) {
+          // Data URLs from AI generation are allowed
+        } else {
+          const ALLOWED_AVATAR_HOSTS = ['api.dicebear.com', 'image.pollinations.ai'];
+          try {
+            const url = new URL(cleanForm.avatar_url);
+            if (!ALLOWED_AVATAR_HOSTS.includes(url.hostname)) {
+              toast('Avatar URL must be from DiceBear or AI generator', 'error');
+              return;
+            }
+          } catch {
+            toast('Invalid avatar URL', 'error');
             return;
           }
-        } catch {
-          toast('Invalid avatar URL', 'error');
-          return;
         }
       }
       // Sanitize text fields
@@ -197,7 +201,7 @@ export default function Profile() {
           <div className="relative group">
             <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-accent/30 bg-dark-700 flex items-center justify-center">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.onerror = null; e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span style="font-size:2rem;color:rgba(255,255,255,0.2)">👤</span>'; }} />
               ) : (
                 <User size={48} className="text-white/20" />
               )}
@@ -313,67 +317,65 @@ export default function Profile() {
               <p className="text-xs text-white/50 mb-2 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles size={14} className="text-accent" /> AI Avatar Generator
               </p>
-              <div className="flex gap-2">
-                <input
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white/70 text-xs focus:outline-none focus:border-accent"
-                  placeholder="Describe your avatar... e.g. anime warrior with blue hair"
-                  value={editForm._aiPrompt || ''}
-                  onChange={e => setEditForm(f => ({ ...f, _aiPrompt: e.target.value }))}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && editForm._aiPrompt?.trim()) {
-                      const prompt = encodeURIComponent(`profile avatar portrait, ${editForm._aiPrompt.trim()}, centered face, clean background, high quality, digital art`);
-                      const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
-                      setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: true }));
-                      // Pre-load image
-                      const img = new Image();
-                      img.onload = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
-                      img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
-                      img.src = url;
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    if (!editForm._aiPrompt?.trim()) return;
-                    const prompt = encodeURIComponent(`profile avatar portrait, ${editForm._aiPrompt.trim()}, centered face, clean background, high quality, digital art`);
+              {(() => {
+                const generateAvatar = async (promptText) => {
+                  if (!promptText?.trim()) return;
+                  setEditForm(f => ({ ...f, _aiGenerating: true, _aiError: false }));
+                  try {
+                    const prompt = encodeURIComponent(`profile avatar portrait, ${promptText.trim()}, centered face, clean background, high quality, digital art`);
                     const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
-                    setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: true }));
-                    const img = new Image();
-                    img.onload = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
-                    img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
-                    img.src = url;
-                  }}
-                  disabled={!editForm._aiPrompt?.trim()}
-                  className="bg-accent hover:bg-accent/80 disabled:opacity-30 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors"
-                >
-                  Generate
-                </button>
-              </div>
-              {editForm._aiGenerating && (
-                <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
-                  <div className="w-3 h-3 border-2 border-white/20 border-t-accent rounded-full animate-spin" />
-                  Generating your avatar...
-                </div>
-              )}
-              {editForm.avatar_url?.includes('pollinations.ai') && !editForm._aiGenerating && (
-                <div className="mt-2 flex items-center gap-3">
-                  <img src={editForm.avatar_url} alt="AI avatar" className="w-16 h-16 rounded-full object-cover border-2 border-accent/40" />
-                  <button
-                    onClick={() => {
-                      const prompt = encodeURIComponent(`profile avatar portrait, ${editForm._aiPrompt?.trim()}, centered face, clean background, high quality, digital art`);
-                      const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
-                      setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: true }));
-                      const img = new Image();
-                      img.onload = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
-                      img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false }));
-                      img.src = url;
-                    }}
-                    className="text-xs text-accent hover:text-accent/80 transition-colors"
-                  >
-                    Regenerate
-                  </button>
-                </div>
-              )}
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('Generation failed');
+                    const blob = await res.blob();
+                    const reader = new FileReader();
+                    reader.onloadend = () => setEditForm(f => ({ ...f, avatar_url: reader.result, _aiGenerating: false }));
+                    reader.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false, _aiError: true }));
+                    reader.readAsDataURL(blob);
+                  } catch {
+                    setEditForm(f => ({ ...f, _aiGenerating: false, _aiError: true }));
+                  }
+                };
+                return (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white/70 text-xs focus:outline-none focus:border-accent"
+                        placeholder="Describe your avatar... e.g. anime warrior with blue hair"
+                        value={editForm._aiPrompt || ''}
+                        onChange={e => setEditForm(f => ({ ...f, _aiPrompt: e.target.value, _aiError: false }))}
+                        onKeyDown={e => { if (e.key === 'Enter') generateAvatar(editForm._aiPrompt); }}
+                      />
+                      <button
+                        onClick={() => generateAvatar(editForm._aiPrompt)}
+                        disabled={!editForm._aiPrompt?.trim() || editForm._aiGenerating}
+                        className="bg-accent hover:bg-accent/80 disabled:opacity-30 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors"
+                      >
+                        Generate
+                      </button>
+                    </div>
+                    {editForm._aiGenerating && (
+                      <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
+                        <div className="w-3 h-3 border-2 border-white/20 border-t-accent rounded-full animate-spin" />
+                        Generating your avatar (may take a few seconds)...
+                      </div>
+                    )}
+                    {editForm._aiError && (
+                      <p className="mt-2 text-xs text-red-400">Failed to generate. Try again or use a different prompt.</p>
+                    )}
+                    {editForm.avatar_url?.startsWith('data:') && !editForm._aiGenerating && (
+                      <div className="mt-2 flex items-center gap-3">
+                        <img src={editForm.avatar_url} alt="AI avatar" className="w-16 h-16 rounded-full object-cover border-2 border-accent/40" />
+                        <button
+                          onClick={() => generateAvatar(editForm._aiPrompt)}
+                          className="text-xs text-accent hover:text-accent/80 transition-colors"
+                        >
+                          Regenerate
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Preset sections */}

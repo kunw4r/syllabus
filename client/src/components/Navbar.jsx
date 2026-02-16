@@ -59,8 +59,12 @@ function Navbar() {
                   }`
                 }
               >
-                <Icon size={18} strokeWidth={1.8} />
-                {label}
+                {({ isActive }) => (
+                  <>
+                    <Icon size={20} strokeWidth={1.5} className={isActive ? 'fill-accent/20' : ''} />
+                    {label}
+                  </>
+                )}
               </NavLink>
             </li>
           ))}
@@ -76,7 +80,7 @@ function Navbar() {
                 onClick={signOut}
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-white/50 transition-all hover:bg-white/5 hover:text-white"
               >
-                <LogOut size={18} strokeWidth={1.8} />
+                <LogOut size={20} strokeWidth={1.5} />
                 Sign Out
               </button>
             </>
@@ -85,7 +89,7 @@ function Navbar() {
               onClick={() => navigate('/login')}
               className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-accent transition-all hover:bg-accent/10"
             >
-              <LogIn size={18} strokeWidth={1.8} />
+              <LogIn size={20} strokeWidth={1.5} />
               Sign In
             </button>
           )}
@@ -109,9 +113,9 @@ function Navbar() {
               <button
                 key="explore"
                 onClick={() => setExploreOpen(true)}
-                className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors text-white/30 active:text-white`}
+                className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors text-white/30 active:text-white"
               >
-                <Icon size={22} strokeWidth={1.5} />
+                <Icon size={24} strokeWidth={1.5} />
                 {label}
               </button>
             );
@@ -127,8 +131,12 @@ function Navbar() {
                 }`
               }
             >
-              <Icon size={22} strokeWidth={1.5} />
-              {label}
+              {({ isActive }) => (
+                <>
+                  <Icon size={24} strokeWidth={1.5} className={isActive ? 'fill-accent/20' : ''} />
+                  {label}
+                </>
+              )}
             </NavLink>
           );
         })}
@@ -147,7 +155,7 @@ function Navbar() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-white">Explore</h3>
               <button onClick={() => setExploreOpen(false)} className="text-white/40 hover:text-white p-1">
-                <X size={20} />
+                <X size={22} strokeWidth={1.5} />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -165,7 +173,7 @@ function Navbar() {
                   style={{ backgroundImage: `linear-gradient(to bottom right, var(--tw-gradient-stops))` }}
                 >
                   <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
-                    <Icon size={20} className="text-white" strokeWidth={1.6} />
+                    <Icon size={22} className="text-white" strokeWidth={1.5} />
                   </div>
                   <span className="text-sm font-medium text-white">{label}</span>
                 </NavLink>

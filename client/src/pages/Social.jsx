@@ -224,7 +224,7 @@ function UserRow({ user: u, isFollowed, onFollow, onUnfollow, onClick, showBlend
       <button onClick={onClick} className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-10 h-10 rounded-full overflow-hidden bg-dark-700 ring-2 ring-white/10 shrink-0 flex items-center justify-center">
           {u.avatar_url ? (
-            <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+            <img src={u.avatar_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.onerror = null; e.target.style.display = 'none'; }} />
           ) : (
             <User size={18} className="text-white/20" />
           )}
@@ -280,7 +280,7 @@ function ActivityFeed({ activity, navigate }) {
               <button onClick={() => navigate(`/profile/${a.user_id}`)} className="shrink-0">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-dark-700 ring-2 ring-white/10 flex items-center justify-center">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                    <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.onerror = null; e.target.style.display = 'none'; }} />
                   ) : (
                     <User size={16} className="text-white/20" />
                   )}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X, Sparkles, Lightbulb } from 'lucide-react';
+import { Star, ChevronLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X, Sparkles, Lightbulb } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, computeUnifiedRating, setSyllabusScore, getSyllabusScore, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -325,8 +325,8 @@ function BookDetails({ workKey, navigate }) {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-900" />
       </div>
 
-      <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors">
-        <ArrowLeft size={18} /> Back
+      <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-white/50 hover:text-white mb-8 transition-colors">
+        <ChevronLeft size={22} strokeWidth={2.5} /> Back
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
@@ -736,8 +736,8 @@ function MovieTVDetails({ mediaType, id, navigate }) {
       )}
 
       <button onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors">
-        <ArrowLeft size={18} /> Back
+        className="inline-flex items-center gap-1 text-white/50 hover:text-white mb-8 transition-colors">
+        <ChevronLeft size={22} strokeWidth={2.5} /> Back
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
