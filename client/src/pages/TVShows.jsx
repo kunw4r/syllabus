@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Search, X, Plus } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import ScrollRow from '../components/ScrollRow';
+import { SkeletonRow, SkeletonHero } from '../components/SkeletonCard';
 import { getTrendingTV, getTopRatedTV, getTVByGenre, getAnime, getAnimationTV, searchTV, addToLibrary } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -28,33 +29,57 @@ function TVShows() {
   const [anime, setAnime] = useState([]);
   const [animation, setAnimation] = useState([]);
   const [genreData, setGenreData] = useState({});
+  const [loadedGenres, setLoadedGenres] = useState(new Set());
   const [results, setResults] = useState(null);
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
   useEffect(() => {
-    async function load() {
+    async function loadInitial() {
       try {
-        const [t, tr, an, anim, ...genreResults] = await Promise.all([
+        const [t, tr, an, anim] = await Promise.all([
           getTrendingTV(),
           getTopRatedTV(),
           getAnime(),
           getAnimationTV(),
-          ...TV_GENRES.map(g => getTVByGenre(g.id)),
         ]);
         setTrending(t);
         setHero(t[Math.floor(Math.random() * Math.min(5, t.length))]);
         setTopRated(tr);
         setAnime(an);
         setAnimation(anim);
+
+        // Pre-load first 3 genres
+        const initial = TV_GENRES.slice(0, 3);
+        const genreResults = await Promise.all(initial.map(g => getTVByGenre(g.id)));
         const gd = {};
-        TV_GENRES.forEach((g, i) => { gd[g.id] = genreResults[i]; });
+        initial.forEach((g, i) => { gd[g.id] = genreResults[i]; });
         setGenreData(gd);
+        setLoadedGenres(new Set(initial.map(g => g.id)));
       } catch (err) { console.error(err); }
-      setLoading(false);
+      setInitialLoaded(true);
     }
-    load();
+    loadInitial();
   }, []);
+
+  const loadGenre = useCallback(async (genreId) => {
+    if (loadedGenres.has(genreId)) return;
+    setLoadedGenres(prev => new Set([...prev, genreId]));
+    const data = await getTVByGenre(genreId);
+    setGenreData(prev => ({ ...prev, [genreId]: data }));
+  }, [loadedGenres]);
+
+  const observerRef = useCallback((node) => {
+    if (!node) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        const genreId = Number(node.dataset.genre);
+        if (genreId) loadGenre(genreId);
+        observer.disconnect();
+      }
+    }, { rootMargin: '300px' });
+    observer.observe(node);
+  }, [loadGenre]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -78,7 +103,14 @@ function TVShows() {
     } catch { /* ignore */ }
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
+  if (!initialLoaded) return (
+    <div className="min-w-0">
+      <SkeletonHero />
+      <SkeletonRow title />
+      <SkeletonRow title />
+      <SkeletonRow title />
+    </div>
+  );
 
   return (
     <div className="min-w-0">
@@ -149,14 +181,22 @@ function TVShows() {
             </ScrollRow>
           )}
 
-          {/* Genre Rows */}
-          {TV_GENRES.map(g => (
-            genreData[g.id]?.length > 0 && (
-              <ScrollRow key={g.id} title={g.name}>
-                {genreData[g.id].map(t => <div key={t.id} className="flex-shrink-0 w-[150px]"><MediaCard item={t} mediaType="tv" /></div>)}
-              </ScrollRow>
-            )
-          ))}
+          {/* Genre Rows (lazy-loaded) */}
+          {TV_GENRES.map(g => {
+            const loaded = loadedGenres.has(g.id);
+            const shows = genreData[g.id];
+            return (
+              <div key={g.id} ref={loaded ? undefined : observerRef} data-genre={g.id}>
+                {!loaded ? (
+                  <SkeletonRow title={g.name} />
+                ) : shows?.length > 0 ? (
+                  <ScrollRow title={g.name}>
+                    {shows.map(t => <div key={t.id} className="flex-shrink-0 w-[150px]"><MediaCard item={t} mediaType="tv" /></div>)}
+                  </ScrollRow>
+                ) : null}
+              </div>
+            );
+          })}
 
           {/* Top Rated */}
           <ScrollRow title="Top Rated of All Time">

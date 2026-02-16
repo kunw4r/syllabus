@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Search, X, Plus } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import ScrollRow from '../components/ScrollRow';
+import { SkeletonRow, SkeletonHero } from '../components/SkeletonCard';
 import { getTrendingMovies, getNowPlayingMovies, getTopRatedMovies, getMoviesByGenre, searchMovies, addToLibrary } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,31 +30,57 @@ function Movies() {
   const [nowPlaying, setNowPlaying] = useState([]);
   const [topRated, setTopRated] = useState([]);
   const [genreData, setGenreData] = useState({});
+  const [loadedGenres, setLoadedGenres] = useState(new Set());
   const [results, setResults] = useState(null);
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
+  // Phase 1: Load hero + trending + now playing (fast initial paint)
   useEffect(() => {
-    async function load() {
+    async function loadInitial() {
       try {
-        const [t, np, tr, ...genreResults] = await Promise.all([
+        const [t, np, tr] = await Promise.all([
           getTrendingMovies(),
           getNowPlayingMovies(),
           getTopRatedMovies(),
-          ...GENRES.map(g => getMoviesByGenre(g.id)),
         ]);
         setTrending(t);
         setHero(t[Math.floor(Math.random() * Math.min(5, t.length))]);
         setNowPlaying(np);
         setTopRated(tr);
+
+        // Pre-load first 3 genres
+        const initial = GENRES.slice(0, 3);
+        const genreResults = await Promise.all(initial.map(g => getMoviesByGenre(g.id)));
         const gd = {};
-        GENRES.forEach((g, i) => { gd[g.id] = genreResults[i]; });
+        initial.forEach((g, i) => { gd[g.id] = genreResults[i]; });
         setGenreData(gd);
+        setLoadedGenres(new Set(initial.map(g => g.id)));
       } catch (err) { console.error(err); }
-      setLoading(false);
+      setInitialLoaded(true);
     }
-    load();
+    loadInitial();
   }, []);
+
+  // Lazy-load genres as they scroll into view
+  const loadGenre = useCallback(async (genreId) => {
+    if (loadedGenres.has(genreId)) return;
+    setLoadedGenres(prev => new Set([...prev, genreId]));
+    const data = await getMoviesByGenre(genreId);
+    setGenreData(prev => ({ ...prev, [genreId]: data }));
+  }, [loadedGenres]);
+
+  const observerRef = useCallback((node) => {
+    if (!node) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        const genreId = Number(node.dataset.genre);
+        if (genreId) loadGenre(genreId);
+        observer.disconnect();
+      }
+    }, { rootMargin: '300px' });
+    observer.observe(node);
+  }, [loadGenre]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -77,7 +104,14 @@ function Movies() {
     } catch { /* ignore */ }
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
+  if (!initialLoaded) return (
+    <div className="min-w-0">
+      <SkeletonHero />
+      <SkeletonRow title />
+      <SkeletonRow title />
+      <SkeletonRow title />
+    </div>
+  );
 
   return (
     <div className="min-w-0">
@@ -139,14 +173,22 @@ function Movies() {
             {nowPlaying.map(m => <div key={m.id} className="flex-shrink-0 w-[150px]"><MediaCard item={m} mediaType="movie" /></div>)}
           </ScrollRow>
 
-          {/* Genre Rows */}
-          {GENRES.map(g => (
-            genreData[g.id]?.length > 0 && (
-              <ScrollRow key={g.id} title={g.name}>
-                {genreData[g.id].map(m => <div key={m.id} className="flex-shrink-0 w-[150px]"><MediaCard item={m} mediaType="movie" /></div>)}
-              </ScrollRow>
-            )
-          ))}
+          {/* Genre Rows (lazy-loaded) */}
+          {GENRES.map(g => {
+            const loaded = loadedGenres.has(g.id);
+            const movies = genreData[g.id];
+            return (
+              <div key={g.id} ref={loaded ? undefined : observerRef} data-genre={g.id}>
+                {!loaded ? (
+                  <SkeletonRow title={g.name} />
+                ) : movies?.length > 0 ? (
+                  <ScrollRow title={g.name}>
+                    {movies.map(m => <div key={m.id} className="flex-shrink-0 w-[150px]"><MediaCard item={m} mediaType="movie" /></div>)}
+                  </ScrollRow>
+                ) : null}
+              </div>
+            );
+          })}
 
           {/* Top Rated */}
           <ScrollRow title="Top Rated of All Time">

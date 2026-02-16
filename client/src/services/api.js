@@ -4,22 +4,37 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
 const OL_BASE = 'https://openlibrary.org';
 
+// ─── In-memory cache (5-minute TTL) ───
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000;
+
+function cached(key, fetcher) {
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return Promise.resolve(entry.data);
+  return fetcher().then(data => {
+    cache.set(key, { data, ts: Date.now() });
+    return data;
+  });
+}
+
 // ─── TMDB helper ───
 async function tmdb(endpoint, params = '') {
   const res = await fetch(`${TMDB_BASE}${endpoint}?api_key=${TMDB_KEY}${params}`);
   return res.json();
 }
 
-// ─── Movies ───
-
-export async function getTrendingMovies() {
-  const data = await tmdb('/trending/movie/week');
-  return data.results || [];
+function tmdbCached(endpoint, params = '') {
+  return cached(`tmdb:${endpoint}${params}`, () => tmdb(endpoint, params));
 }
 
-export async function getUpcomingMovies() {
-  const data = await tmdb('/movie/upcoming');
-  return data.results || [];
+// ─── Movies ───
+
+export function getTrendingMovies() {
+  return tmdbCached('/trending/movie/week').then(d => d.results || []);
+}
+
+export function getUpcomingMovies() {
+  return tmdbCached('/movie/upcoming').then(d => d.results || []);
 }
 
 export async function searchMovies(query) {
@@ -27,20 +42,18 @@ export async function searchMovies(query) {
   return data.results || [];
 }
 
-export async function getMovieDetails(id) {
-  return tmdb(`/movie/${id}`, '&append_to_response=recommendations,credits');
+export function getMovieDetails(id) {
+  return tmdbCached(`/movie/${id}`, '&append_to_response=recommendations,credits');
 }
 
 // ─── TV Shows ───
 
-export async function getTrendingTV() {
-  const data = await tmdb('/trending/tv/week');
-  return data.results || [];
+export function getTrendingTV() {
+  return tmdbCached('/trending/tv/week').then(d => d.results || []);
 }
 
-export async function getAiringTV() {
-  const data = await tmdb('/tv/airing_today');
-  return data.results || [];
+export function getAiringTV() {
+  return tmdbCached('/tv/airing_today').then(d => d.results || []);
 }
 
 export async function searchTV(query) {
@@ -48,91 +61,101 @@ export async function searchTV(query) {
   return data.results || [];
 }
 
-export async function getTVDetails(id) {
-  return tmdb(`/tv/${id}`, '&append_to_response=recommendations,credits');
+export function getTVDetails(id) {
+  return tmdbCached(`/tv/${id}`, '&append_to_response=recommendations,credits');
 }
 
 // ─── Movie Discovery ───
 
-export async function getTopRatedMovies() {
-  const data = await tmdb('/movie/top_rated');
-  return data.results || [];
+export function getTopRatedMovies() {
+  return tmdbCached('/movie/top_rated').then(d => d.results || []);
 }
 
-export async function getNowPlayingMovies() {
-  const data = await tmdb('/movie/now_playing');
-  return data.results || [];
+export function getNowPlayingMovies() {
+  return tmdbCached('/movie/now_playing').then(d => d.results || []);
 }
 
-export async function getPopularMovies() {
-  const data = await tmdb('/movie/popular');
-  return data.results || [];
+export function getPopularMovies() {
+  return tmdbCached('/movie/popular').then(d => d.results || []);
 }
 
-export async function getMoviesByGenre(genreId) {
-  const data = await tmdb('/discover/movie', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=50`);
-  return data.results || [];
+export function getMoviesByGenre(genreId) {
+  return tmdbCached('/discover/movie', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=50`).then(d => d.results || []);
 }
 
 // ─── TV Discovery ───
 
-export async function getTopRatedTV() {
-  const data = await tmdb('/tv/top_rated');
-  return data.results || [];
+export function getTopRatedTV() {
+  return tmdbCached('/tv/top_rated').then(d => d.results || []);
 }
 
-export async function getPopularTV() {
-  const data = await tmdb('/tv/popular');
-  return data.results || [];
+export function getPopularTV() {
+  return tmdbCached('/tv/popular').then(d => d.results || []);
 }
 
-export async function getTVByGenre(genreId) {
-  const data = await tmdb('/discover/tv', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=50`);
-  return data.results || [];
+export function getTVByGenre(genreId) {
+  return tmdbCached('/discover/tv', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=50`).then(d => d.results || []);
 }
 
-export async function getAnime() {
-  const data = await tmdb('/discover/tv', '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50');
-  return data.results || [];
+export function getAnime() {
+  return tmdbCached('/discover/tv', '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50').then(d => d.results || []);
 }
 
-export async function getAnimationTV() {
-  const data = await tmdb('/discover/tv', '&with_genres=16&without_original_language=ja&sort_by=popularity.desc&vote_count.gte=20');
-  return data.results || [];
+export function getAnimationTV() {
+  return tmdbCached('/discover/tv', '&with_genres=16&without_original_language=ja&sort_by=popularity.desc&vote_count.gte=20').then(d => d.results || []);
 }
 
 // ─── Books (Open Library) ───
 
-export async function getTrendingBooks() {
-  try {
-    const res = await fetch(`${OL_BASE}/trending/daily.json?limit=20`);
-    const data = await res.json();
-    return (data.works || []).map(book => ({
-      key: book.key,
-      title: book.title,
-      author: book.author_name?.[0] || 'Unknown',
-      cover_id: book.cover_i,
-      poster_path: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg` : null,
-      first_publish_year: book.first_publish_year,
-    }));
-  } catch {
-    return [];
-  }
+function mapOLBook(book) {
+  return {
+    key: book.key,
+    title: book.title,
+    author: book.author_name?.[0] || book.authors?.[0]?.name || 'Unknown',
+    cover_id: book.cover_i || book.cover_id,
+    poster_path: (book.cover_i || book.cover_id)
+      ? `https://covers.openlibrary.org/b/id/${book.cover_i || book.cover_id}-M.jpg`
+      : null,
+    first_publish_year: book.first_publish_year,
+    rating: book.ratings_average ? Math.round(book.ratings_average * 20) / 10 : null, // scale to /10
+    ratings_count: book.ratings_count || 0,
+    subject: book.subject?.slice(0, 3) || [],
+  };
+}
+
+export function getTrendingBooks() {
+  return cached('ol:trending', async () => {
+    try {
+      const res = await fetch(`${OL_BASE}/trending/daily.json?limit=20`);
+      const data = await res.json();
+      return (data.works || []).map(mapOLBook);
+    } catch { return []; }
+  });
+}
+
+export function getBooksBySubject(subject) {
+  return cached(`ol:subject:${subject}`, async () => {
+    try {
+      const res = await fetch(`${OL_BASE}/subjects/${subject}.json?limit=20`);
+      const data = await res.json();
+      return (data.works || []).map(w => ({
+        key: w.key,
+        title: w.title,
+        author: w.authors?.[0]?.name || 'Unknown',
+        cover_id: w.cover_id,
+        poster_path: w.cover_id ? `https://covers.openlibrary.org/b/id/${w.cover_id}-M.jpg` : null,
+        first_publish_year: w.first_publish_year,
+        rating: null,
+        subject: [subject],
+      }));
+    } catch { return []; }
+  });
 }
 
 export async function searchBooks(query) {
-  const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=20`);
+  const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=20&fields=key,title,author_name,cover_i,first_publish_year,ratings_average,ratings_count,subject`);
   const data = await res.json();
-  return (data.docs || []).map(book => ({
-    key: book.key,
-    title: book.title,
-    author: book.author_name?.[0] || 'Unknown',
-    cover_id: book.cover_i,
-    poster_path: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg` : null,
-    first_publish_year: book.first_publish_year,
-    rating: book.ratings_average ? Math.round(book.ratings_average * 10) / 10 : null,
-    subject: book.subject?.slice(0, 3) || [],
-  }));
+  return (data.docs || []).map(mapOLBook);
 }
 
 // ─── Multi-search ───
