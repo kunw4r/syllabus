@@ -125,6 +125,59 @@ function getOmdbEntry(key) {
   return getOmdbStore()[key] ?? undefined;
 }
 
+// ─── Static Score Database (pre-built by enrichment agent) ───
+// Loads scores.json on startup → merges into localStorage score store.
+// This means every popular movie/TV show has instant scores with zero live OMDb calls.
+const STATIC_DB_KEY = 'syllabus_static_db_ts';
+const STATIC_DB_TTL = 12 * 60 * 60 * 1000; // refresh static DB every 12h
+
+let _staticDbLoaded = false;
+
+async function loadStaticScoreDB() {
+  if (_staticDbLoaded) return;
+  _staticDbLoaded = true;
+
+  // Check if we loaded recently (avoid re-parsing on every page nav)
+  try {
+    const lastLoad = parseInt(localStorage.getItem(STATIC_DB_KEY) || '0');
+    if (Date.now() - lastLoad < STATIC_DB_TTL) return;
+  } catch { /* continue */ }
+
+  try {
+    const res = await fetch(`${process.env.PUBLIC_URL || ''}/data/scores.json`);
+    if (!res.ok) return;
+    const db = await res.json();
+
+    const scoreStore = getScoreStore();
+    let merged = 0;
+
+    for (const type of ['movie', 'tv']) {
+      const bucket = db[type];
+      if (!bucket) continue;
+      for (const [id, entry] of Object.entries(bucket)) {
+        const key = `${type}:${id}`;
+        // Only fill in scores that aren't already cached (user's live fetches take priority)
+        if (scoreStore[key] == null && entry.s != null) {
+          scoreStore[key] = entry.s;
+          merged++;
+        }
+      }
+    }
+
+    if (merged > 0) {
+      _saveScoreStore();
+      console.log(`[Syllabus] Loaded ${merged} pre-built scores from static database`);
+    }
+
+    localStorage.setItem(STATIC_DB_KEY, String(Date.now()));
+  } catch (err) {
+    console.warn('[Syllabus] Could not load static score DB:', err.message);
+  }
+}
+
+// Fire on module load (non-blocking)
+loadStaticScoreDB();
+
 // ─── Persistent Chart Cache (localStorage, 24h TTL) ───
 // Stores pre-sorted Top 100 lists so they load instantly on repeat visits.
 const CHART_STORE_KEY = 'syllabus_charts';

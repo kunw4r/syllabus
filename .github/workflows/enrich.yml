@@ -1,0 +1,38 @@
+name: Enrich Syllabus Scores
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # Daily at 2am UTC
+  workflow_dispatch:        # Manual trigger from GitHub UI
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run enrichment agent
+        env:
+          TMDB_KEY: ${{ secrets.TMDB_KEY }}
+          OMDB_KEY_1: ${{ secrets.OMDB_KEY_1 }}
+          OMDB_KEY_2: ${{ secrets.OMDB_KEY_2 }}
+        run: node scripts/enrich.js --limit 1800
+
+      - name: Commit updated scores
+        run: |
+          git config user.name "Syllabus Bot"
+          git config user.email "bot@syllabus.app"
+          git add client/public/data/scores.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update scores database [$(date -u +%Y-%m-%d)]"
+            git push
+          fi
