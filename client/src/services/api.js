@@ -5,13 +5,14 @@ const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
 const OMDB_KEY = process.env.REACT_APP_OMDB_API_KEY || '4a3b711b';
 const OL_BASE = 'https://openlibrary.org';
 
-// ─── In-memory cache (5-minute TTL) ───
+// ─── In-memory cache (configurable TTL) ───
 const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 5 * 60 * 1000;       // default 5 min
+const BOOK_CACHE_TTL = 30 * 60 * 1000; // books 30 min (OL is slow)
 
-function cached(key, fetcher) {
+function cached(key, fetcher, ttl = CACHE_TTL) {
   const entry = cache.get(key);
-  if (entry && Date.now() - entry.ts < CACHE_TTL) return Promise.resolve(entry.data);
+  if (entry && Date.now() - entry.ts < ttl) return Promise.resolve(entry.data);
   return fetcher().then(data => {
     cache.set(key, { data, ts: Date.now() });
     return data;
@@ -88,6 +89,38 @@ function saveOmdbEntry(key, data) {
 
 function getOmdbEntry(key) {
   return getOmdbStore()[key] ?? undefined;
+}
+
+// ─── Persistent Chart Cache (localStorage, 24h TTL) ───
+// Stores pre-sorted Top 100 lists so they load instantly on repeat visits.
+const CHART_STORE_KEY = 'syllabus_charts';
+const CHART_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+let _chartCache = null;
+function getChartStore() {
+  if (!_chartCache) {
+    try { _chartCache = JSON.parse(localStorage.getItem(CHART_STORE_KEY) || '{}'); } catch { _chartCache = {}; }
+  }
+  return _chartCache;
+}
+
+function saveChart(chartKey, items) {
+  const store = getChartStore();
+  store[chartKey] = { items, ts: Date.now() };
+  try { localStorage.setItem(CHART_STORE_KEY, JSON.stringify(store)); } catch { /* quota */ }
+}
+
+export function getCachedChart(chartKey) {
+  const entry = getChartStore()[chartKey];
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CHART_TTL) return null; // stale
+  return entry.items;
+}
+
+export function getChartAge(chartKey) {
+  const entry = getChartStore()[chartKey];
+  if (!entry) return Infinity;
+  return Date.now() - entry.ts;
 }
 
 // ─── TMDB helper ───
@@ -318,58 +351,89 @@ export function computeUnifiedRating(omdbData, malData, isAnime) {
   return parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1));
 }
 
-// ─── Batch enrich items with unified ratings (for Top 100) ───
+// ─── Chart Enrichment Agent ───
+// Enriches items with Syllabus Scores in throttled background batches.
+// Persists results to localStorage chart cache + score store.
+// Provides progress callbacks so the UI can show a progress bar.
 
-export function enrichItemsWithRatings(items, mediaType) {
-  const key = `enriched:${mediaType}:${items.map(i => i.id || i.key).join(',')}`;
-  return cached(key, async () => {
-    const enriched = items.map(i => ({ ...i }));
-    const scoreStore = getScoreStore();
-    const batchSize = 10;
+export async function enrichChart(items, mediaType, chartKey, onProgress) {
+  const enriched = items.map(i => ({ ...i }));
+  const scoreStore = getScoreStore();
 
-    // First pass: apply any stored scores (instant — no API calls)
-    const needsFetch = [];
-    enriched.forEach(item => {
-      const storeKey = `${mediaType}:${item.id}`;
-      if (scoreStore[storeKey] != null) {
-        item.unified_rating = scoreStore[storeKey];
-      } else {
-        needsFetch.push(item);
-      }
-    });
-
-    // Second pass: fetch OMDb only for items without stored scores
-    for (let i = 0; i < needsFetch.length; i += batchSize) {
-      const batch = needsFetch.slice(i, i + batchSize);
-      await Promise.all(batch.map(async (item) => {
-        const title = item.title || item.name;
-        const year = (item.release_date || item.first_air_date || '').slice(0, 4);
-        const isAnime = item.original_language === 'ja' &&
-          (item.genre_ids?.includes(16) || item.genres?.some(g => g.id === 16));
-
-        const omdb = await getOMDbByTitle(title, year, mediaType);
-        let mal = null;
-        if (isAnime) {
-          try { mal = await getMALRating(title); } catch { /* ignore */ }
-        }
-
-        item.unified_rating = computeUnifiedRating(omdb, mal, isAnime);
-        // Persist the score for future instant lookups
-        if (item.unified_rating != null) {
-          setSyllabusScore(mediaType, item.id, item.unified_rating);
-        }
-      }));
+  // First pass: apply stored scores instantly (zero API calls)
+  const needsFetch = [];
+  enriched.forEach(item => {
+    const key = `${mediaType}:${item.id}`;
+    if (scoreStore[key] != null) {
+      item.unified_rating = scoreStore[key];
+    } else {
+      needsFetch.push(item);
     }
-
-    // Sort by unified rating (fallback to vote_average/rating)
-    enriched.sort((a, b) => {
-      const ra = a.unified_rating ?? a.vote_average ?? a.rating ?? 0;
-      const rb = b.unified_rating ?? b.vote_average ?? b.rating ?? 0;
-      return rb - ra;
-    });
-
-    return enriched;
   });
+
+  const total = needsFetch.length;
+  let completed = 0;
+
+  if (total > 0 && onProgress) onProgress({ completed: 0, total, phase: 'enriching' });
+
+  // Second pass: batch OMDb lookups with throttling
+  const BATCH_SIZE = 5;
+  const BATCH_DELAY = 300; // ms between batches to avoid rate-limits
+
+  for (let i = 0; i < needsFetch.length; i += BATCH_SIZE) {
+    const batch = needsFetch.slice(i, i + BATCH_SIZE);
+    await Promise.all(batch.map(async (item) => {
+      const title = item.title || item.name;
+      const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+      const isAnime = item.original_language === 'ja' &&
+        (item.genre_ids?.includes(16) || item.genres?.some(g => g.id === 16));
+
+      const omdb = await getOMDbByTitle(title, year, mediaType);
+      let mal = null;
+      if (isAnime) {
+        try { mal = await getMALRating(title); } catch { /* ignore */ }
+      }
+
+      item.unified_rating = computeUnifiedRating(omdb, mal, isAnime);
+      if (item.unified_rating != null) {
+        setSyllabusScore(mediaType, item.id, item.unified_rating);
+      }
+    }));
+
+    completed += batch.length;
+    if (onProgress) onProgress({ completed, total, phase: 'enriching' });
+
+    // Throttle between batches (skip delay on last batch)
+    if (i + BATCH_SIZE < needsFetch.length) {
+      await new Promise(r => setTimeout(r, BATCH_DELAY));
+    }
+  }
+
+  // Sort by Syllabus Score (fallback to vote_average)
+  enriched.sort((a, b) => {
+    const ra = a.unified_rating ?? a.vote_average ?? a.rating ?? 0;
+    const rb = b.unified_rating ?? b.vote_average ?? b.rating ?? 0;
+    return rb - ra;
+  });
+
+  // Persist the sorted chart for instant loading next time
+  if (chartKey) {
+    const slim = enriched.map(({ id, title, name, poster_path, release_date, first_air_date,
+      vote_average, unified_rating, genre_ids, genres, original_language, overview }) => ({
+      id, title, name, poster_path, release_date, first_air_date,
+      vote_average, unified_rating, genre_ids, genres, original_language,
+      overview: overview?.slice(0, 200),
+    }));
+    saveChart(chartKey, slim);
+  }
+
+  if (onProgress) onProgress({ completed: total, total, phase: 'done' });
+  return enriched;
+}
+
+// Legacy wrapper for non-chart enrichment (e.g. Home page rows)
+export function enrichItemsWithRatings(items, mediaType) {
+  return enrichChart(items, mediaType, null, null);
 }
 
 // ─── MAL / Jikan (Anime ratings) ───
@@ -396,14 +460,21 @@ export function getMALRating(title) {
 
 function mapOLWork(w) {
   const coverId = w.cover_i || w.cover_id;
+  // Cover fallback chain: cover_id → ISBN → edition key → null
+  let posterPath = null;
+  if (coverId) {
+    posterPath = `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`;
+  } else if (w.isbn?.[0]) {
+    posterPath = `https://covers.openlibrary.org/b/isbn/${w.isbn[0]}-M.jpg`;
+  } else if (w.cover_edition_key) {
+    posterPath = `https://covers.openlibrary.org/b/olid/${w.cover_edition_key}-M.jpg`;
+  }
   return {
     key: w.key,
     title: w.title,
     author: w.author_name?.[0] || w.authors?.[0]?.name || 'Unknown',
     cover_id: coverId,
-    poster_path: coverId
-      ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`
-      : null,
+    poster_path: posterPath,
     first_publish_year: w.first_publish_year,
     rating: w.ratings_average ? Math.round(w.ratings_average * 20) / 10 : null,
     ratings_count: w.ratings_count || 0,
@@ -423,22 +494,24 @@ export function getTrendingBooks() {
       const data = await res.json();
       return (data.works || []).map(mapOLWork);
     } catch { return []; }
-  });
+  }, BOOK_CACHE_TTL);
 }
+
+const OL_BOOK_FIELDS = 'key,title,author_name,cover_i,cover_edition_key,isbn,first_publish_year,ratings_average,ratings_count,edition_count,subject';
 
 export function getBooksBySubject(subject) {
   return cached(`ol:subject:${subject}`, async () => {
     try {
-      const res = await fetch(`${OL_BASE}/search.json?subject=${encodeURIComponent(subject)}&limit=20&fields=key,title,author_name,cover_i,first_publish_year,ratings_average,ratings_count,edition_count,subject`);
+      const res = await fetch(`${OL_BASE}/search.json?subject=${encodeURIComponent(subject)}&limit=20&fields=${OL_BOOK_FIELDS}`);
       const data = await res.json();
       return (data.docs || []).map(mapOLWork);
     } catch { return []; }
-  });
+  }, BOOK_CACHE_TTL);
 }
 
 export async function searchBooks(query) {
   try {
-    const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=20&fields=key,title,author_name,cover_i,first_publish_year,ratings_average,ratings_count,want_to_read_count,already_read_count,currently_reading_count,edition_count,subject`);
+    const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=20&fields=${OL_BOOK_FIELDS},want_to_read_count,already_read_count,currently_reading_count`);
     const data = await res.json();
     return (data.docs || []).map(mapOLWork);
   } catch { return []; }
@@ -496,7 +569,7 @@ export function getBookDetails(workKey) {
         media_type: 'book',
       };
     } catch { return null; }
-  });
+  }, BOOK_CACHE_TTL);
 }
 
 // ─── Top 100 Books (by rating, filtered by min votes) ───
@@ -506,7 +579,7 @@ export function getTop100Books(subject = null) {
   return cached(key, async () => {
     try {
       const q = subject ? `subject:${subject}` : 'subject:fiction OR subject:literature';
-      const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(q)}&sort=rating&limit=100&fields=key,title,author_name,cover_i,first_publish_year,ratings_average,ratings_count,want_to_read_count,already_read_count,currently_reading_count,edition_count,subject`);
+      const res = await fetch(`${OL_BASE}/search.json?q=${encodeURIComponent(q)}&sort=rating&limit=100&fields=${OL_BOOK_FIELDS},want_to_read_count,already_read_count,currently_reading_count`);
       const data = await res.json();
       return (data.docs || []).filter(d => (d.ratings_count || 0) >= 10).map(mapOLWork);
     } catch { return []; }

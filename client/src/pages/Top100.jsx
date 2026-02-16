@@ -2,7 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Star, Trophy, Film, Tv, BookOpen, Users } from 'lucide-react';
 import { SkeletonRow } from '../components/SkeletonCard';
-import { getTop100Movies, getTop100TV, getTop100Books, enrichItemsWithRatings, applyStoredScores } from '../services/api';
+import {
+  getTop100Movies, getTop100TV, getTop100Books,
+  enrichChart, applyStoredScores,
+  getCachedChart, getChartAge,
+} from '../services/api';
 
 // TMDB genre IDs
 const MOVIE_GENRES = [
@@ -69,24 +73,58 @@ function Top100() {
   });
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchData = useCallback(async (t, g) => {
     setLoading(true);
+    setProgress(null);
+
+    const mediaType = t === 'movies' ? 'movie' : t === 'shows' ? 'tv' : 'book';
+    const chartKey = `${mediaType}:${g || 'all'}`;
+
+    // ─── Phase 1: Try instant load from chart cache (0 API calls) ───
+    if (t !== 'books') {
+      const cachedItems = getCachedChart(chartKey);
+      if (cachedItems && cachedItems.length > 0) {
+        setItems(cachedItems);
+        setLoading(false);
+        const age = getChartAge(chartKey);
+        setLastUpdated(age);
+
+        // If cache is < 24h old, we're done
+        if (age < 24 * 60 * 60 * 1000) return;
+
+        // Cache is stale: re-fetch and re-enrich in background
+        let result = t === 'movies' ? await getTop100Movies(g) : await getTop100TV(g);
+        const enriched = await enrichChart(result, mediaType, chartKey, setProgress);
+        setItems(enriched);
+        setLastUpdated(0);
+        return;
+      }
+    }
+
+    // ─── Phase 2: No cache — fetch from APIs ───
     let result = [];
     if (t === 'movies') result = await getTop100Movies(g);
     else if (t === 'shows') result = await getTop100TV(g);
     else result = await getTop100Books(g);
 
-    // For movies/TV: apply any cached scores instantly, then enrich the rest
     if (t !== 'books') {
-      const mediaType = t === 'movies' ? 'movie' : 'tv';
-      // Show immediately with whatever scores we have cached
+      // Show immediately with any locally stored scores
       applyStoredScores(result, mediaType);
+      result.sort((a, b) => {
+        const ra = a.unified_rating ?? a.vote_average ?? 0;
+        const rb = b.unified_rating ?? b.vote_average ?? 0;
+        return rb - ra;
+      });
       setItems([...result]);
       setLoading(false);
-      // Then enrich remaining items (skips already-cached ones internally)
-      const enriched = await enrichItemsWithRatings(result, mediaType);
+
+      // Enrich in background with progress bar
+      const enriched = await enrichChart(result, mediaType, chartKey, setProgress);
       setItems(enriched);
+      setLastUpdated(0);
     } else {
       setItems(result);
       setLoading(false);
@@ -112,6 +150,17 @@ function Top100() {
   const genres = tab === 'movies' ? MOVIE_GENRES : tab === 'shows' ? TV_GENRES : BOOK_GENRES;
   const mediaType = tab === 'movies' ? 'movie' : tab === 'shows' ? 'tv' : 'book';
 
+  // Format "last updated" time
+  const updatedLabel = (() => {
+    if (lastUpdated === null || lastUpdated === undefined) return null;
+    if (lastUpdated === 0) return 'Just now';
+    const mins = Math.floor(lastUpdated / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  })();
+
   return (
     <div className="min-w-0">
       {/* Header */}
@@ -120,7 +169,12 @@ function Top100() {
           <Trophy size={28} className="text-gold" />
           <h1 className="text-3xl font-black">Top 100</h1>
         </div>
-        <p className="text-white/40 text-sm">The highest rated of all time.</p>
+        <p className="text-white/40 text-sm">
+          The highest rated of all time, ranked by Syllabus Score.
+          {updatedLabel && (
+            <span className="text-white/20 ml-2">· Updated {updatedLabel}</span>
+          )}
+        </p>
       </div>
 
       {/* Tab Switch */}
@@ -144,7 +198,7 @@ function Top100() {
       </div>
 
       {/* Genre Filter Pills */}
-      <div className="flex flex-wrap gap-1.5 mb-8">
+      <div className="flex flex-wrap gap-1.5 mb-4">
         {genres.map(g => (
           <button key={g.id ?? 'all'}
             onClick={() => setGenre(g.id)}
@@ -158,6 +212,19 @@ function Top100() {
           </button>
         ))}
       </div>
+
+      {/* Progress bar during background enrichment */}
+      {progress !== null && progress < 100 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-[11px] text-white/30 mb-1.5">
+            <span>Scoring titles…</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
+          <div className="h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
+            <div className="h-full bg-accent/60 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-2">
@@ -206,7 +273,7 @@ function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
   const rankColor = rank === 1 ? 'text-gold' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-white/20';
   const isBook = mediaType === 'book';
   const rating = isBook ? item.rating : (item.unified_rating ?? item.vote_average);
-  const ratingLabel = isBook ? '' : (item.unified_rating != null ? '' : 'TMDB');
+  const ratingLabel = isBook ? '' : (item.unified_rating != null ? 'Syllabus' : 'TMDB');
 
   const handleClick = () => {
     if (isBook) {

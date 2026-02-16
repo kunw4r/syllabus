@@ -7,7 +7,6 @@ import { getTrendingBooks, getBooksBySubject, searchBooks } from '../services/ap
 
 const SUBJECTS = [
   { key: 'fiction', name: 'Fiction' },
-  { key: 'literary fiction', name: 'Literary Fiction' },
   { key: 'science fiction', name: 'Science Fiction' },
   { key: 'fantasy', name: 'Fantasy' },
   { key: 'mystery', name: 'Mystery & Thriller' },
@@ -16,16 +15,9 @@ const SUBJECTS = [
   { key: 'biography', name: 'Biography & Memoir' },
   { key: 'history', name: 'History' },
   { key: 'science', name: 'Science' },
+  { key: 'true crime', name: 'True Crime' },
   { key: 'philosophy', name: 'Philosophy' },
   { key: 'self-help', name: 'Self-Help' },
-  { key: 'business', name: 'Business & Finance' },
-  { key: 'poetry', name: 'Poetry' },
-  { key: 'comics', name: 'Comics & Graphic Novels' },
-  { key: 'true crime', name: 'True Crime' },
-  { key: 'young adult fiction', name: 'Young Adult' },
-  { key: 'children', name: "Children's Books" },
-  { key: 'cooking', name: 'Cooking & Food' },
-  { key: 'art', name: 'Art & Design' },
 ];
 
 function Books() {
@@ -36,19 +28,19 @@ function Books() {
   const [query, setQuery] = useState('');
   const [heroLoaded, setHeroLoaded] = useState(false);
 
-  // Load trending + first 4 subjects immediately
+  // Load trending + first 2 subjects immediately
   useEffect(() => {
     async function loadInitial() {
       const [t, ...initialResults] = await Promise.all([
         getTrendingBooks(),
-        ...SUBJECTS.slice(0, 4).map(s => getBooksBySubject(s.key)),
+        ...SUBJECTS.slice(0, 2).map(s => getBooksBySubject(s.key)),
       ]);
       setTrending(t);
       setHeroLoaded(true);
       const sd = {};
-      SUBJECTS.slice(0, 4).forEach((s, i) => { sd[s.key] = initialResults[i]; });
+      SUBJECTS.slice(0, 2).forEach((s, i) => { sd[s.key] = initialResults[i]; });
       setSubjectData(sd);
-      setLoadedSubjects(new Set(SUBJECTS.slice(0, 4).map(s => s.key)));
+      setLoadedSubjects(new Set(SUBJECTS.slice(0, 2).map(s => s.key)));
     }
     loadInitial();
   }, []);

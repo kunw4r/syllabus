@@ -811,18 +811,6 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               </a>
             )}
 
-            {/* TMDB rating — always show when OMDb loaded but no IMDb/RT available */}
-            {ratingsLoaded && !extRatings?.imdb && data.vote_average > 0 && (
-              <a href={`https://www.themoviedb.org/${mediaType}/${data.id}`} target="_blank" rel="noopener noreferrer"
-                className="bg-[#01b4e4]/[0.08] border border-[#01b4e4]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#01b4e4]/[0.15] transition-colors cursor-pointer flex flex-col justify-center">
-                <p className="text-xl font-black text-[#01b4e4]">{data.vote_average.toFixed(1)}</p>
-                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">TMDB <ExternalLink size={10} /></p>
-                {data.vote_count && (
-                  <p className="text-[9px] text-white/20">{data.vote_count.toLocaleString()} votes</p>
-                )}
-              </a>
-            )}
-
             {/* MAL (anime only) */}
             {isAnime && malData?.score && (
               <a href={malData.url} target="_blank" rel="noopener noreferrer"
