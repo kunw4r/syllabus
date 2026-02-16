@@ -28,7 +28,9 @@ function Navbar() {
       {/* Desktop sidebar */}
       <nav className="fixed left-0 top-0 hidden h-screen w-60 flex-col border-r border-white/5 bg-dark-800/80 backdrop-blur-xl lg:flex z-50">
         <div className="px-6 py-8">
-          <span className="text-2xl font-bold tracking-tight text-accent">syllabus</span>
+          <NavLink to="/" className="block">
+            <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-8 w-auto" />
+          </NavLink>
         </div>
 
         <ul className="flex flex-1 flex-col gap-1 px-3">
