@@ -128,7 +128,7 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     try {
       // Strip temporary AI fields before saving
-      const { _aiPrompt, _aiGenerating, _aiError, ...cleanForm } = editForm;
+      const { _aiPrompt, _aiGenerating, _aiError, _aiFallback, _aiResults, ...cleanForm } = editForm;
       // Validate avatar URL domain
       if (cleanForm.avatar_url) {
         if (cleanForm.avatar_url.startsWith('data:image/')) {
@@ -315,40 +315,62 @@ export default function Profile() {
             {/* AI Avatar Generator */}
             <div className="mb-5 p-4 bg-gradient-to-r from-accent/10 to-purple-500/10 border border-accent/20 rounded-xl">
               <p className="text-xs text-white/50 mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles size={14} className="text-accent" /> AI Avatar Generator
+                <Sparkles size={14} className="text-accent" /> Avatar Generator
               </p>
               {(() => {
+                const AI_STYLES = ['adventurer', 'lorelei', 'notionists', 'personas', 'big-smile', 'fun-emoji', 'thumbs', 'bottts', 'pixel-art', 'shapes'];
+
                 const generateAvatar = (promptText) => {
                   if (!promptText?.trim()) return;
-                  setEditForm(f => ({ ...f, _aiGenerating: true, _aiError: false }));
-                  const prompt = encodeURIComponent(`profile avatar portrait, ${promptText.trim()}, centered face, clean background, high quality, digital art`);
-                  const url = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${Date.now()}`;
-                  const img = new Image();
+                  const seed = promptText.trim();
+                  setEditForm(f => ({ ...f, _aiGenerating: true, _aiError: false, _aiFallback: false, _aiResults: null }));
+
+                  // Try Pollinations AI first with a timeout
+                  const prompt = encodeURIComponent(`profile avatar portrait, ${seed}, centered face, clean background, high quality, digital art`);
+                  const pollinationsUrl = `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&model=flux`;
+                  const img = new window.Image();
                   img.crossOrigin = 'anonymous';
+                  let timedOut = false;
+
+                  const timeout = setTimeout(() => {
+                    timedOut = true;
+                    img.src = ''; // abort image load
+                    // Fall back to DiceBear
+                    const results = AI_STYLES.map(style => `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`);
+                    setEditForm(f => ({ ...f, _aiGenerating: false, _aiFallback: true, _aiResults: results }));
+                  }, 15000);
+
                   img.onload = () => {
+                    if (timedOut) return;
+                    clearTimeout(timeout);
                     try {
                       const canvas = document.createElement('canvas');
                       canvas.width = img.naturalWidth;
                       canvas.height = img.naturalHeight;
                       canvas.getContext('2d').drawImage(img, 0, 0);
                       const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                      setEditForm(f => ({ ...f, avatar_url: dataUrl, _aiGenerating: false }));
+                      setEditForm(f => ({ ...f, avatar_url: dataUrl, _aiGenerating: false, _aiFallback: false, _aiResults: null }));
                     } catch {
-                      // If canvas tainted, use the URL directly
-                      setEditForm(f => ({ ...f, avatar_url: url, _aiGenerating: false }));
+                      setEditForm(f => ({ ...f, avatar_url: pollinationsUrl, _aiGenerating: false, _aiFallback: false, _aiResults: null }));
                     }
                   };
-                  img.onerror = () => setEditForm(f => ({ ...f, _aiGenerating: false, _aiError: true }));
-                  img.src = url;
+                  img.onerror = () => {
+                    if (timedOut) return;
+                    clearTimeout(timeout);
+                    // AI failed — fall back to DiceBear with user's text as seed
+                    const results = AI_STYLES.map(style => `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`);
+                    setEditForm(f => ({ ...f, _aiGenerating: false, _aiFallback: true, _aiResults: results }));
+                  };
+                  img.src = pollinationsUrl;
                 };
                 return (
                   <>
                     <div className="flex gap-2">
                       <input
                         className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white/70 text-xs focus:outline-none focus:border-accent"
-                        placeholder="Describe your avatar... e.g. anime warrior with blue hair"
+                        placeholder="Type anything... e.g. moon prince, anime warrior, space cat"
                         value={editForm._aiPrompt || ''}
-                        onChange={e => setEditForm(f => ({ ...f, _aiPrompt: e.target.value, _aiError: false }))}
+                        onChange={e => setEditForm(f => ({ ...f, _aiPrompt: e.target.value, _aiError: false, _aiFallback: false, _aiResults: null }))}
                         onKeyDown={e => { if (e.key === 'Enter') generateAvatar(editForm._aiPrompt); }}
                       />
                       <button
@@ -362,20 +384,46 @@ export default function Profile() {
                     {editForm._aiGenerating && (
                       <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
                         <div className="w-3 h-3 border-2 border-white/20 border-t-accent rounded-full animate-spin" />
-                        Generating your avatar (may take a few seconds)...
+                        Generating avatars from your prompt...
                       </div>
                     )}
-                    {editForm._aiError && (
-                      <p className="mt-2 text-xs text-red-400">Failed to generate. Try again or use a different prompt.</p>
-                    )}
-                    {editForm.avatar_url?.startsWith('data:') && !editForm._aiGenerating && (
-                      <div className="mt-2 flex items-center gap-3">
+                    {/* AI-generated avatar result */}
+                    {editForm.avatar_url?.startsWith('data:') && !editForm._aiGenerating && !editForm._aiFallback && (
+                      <div className="mt-3 flex items-center gap-3">
                         <img src={editForm.avatar_url} alt="AI avatar" className="w-16 h-16 rounded-full object-cover border-2 border-accent/40" />
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-green-400">AI avatar generated!</span>
+                          <button
+                            onClick={() => generateAvatar(editForm._aiPrompt)}
+                            className="text-xs text-accent hover:text-accent/80 transition-colors text-left"
+                          >
+                            Regenerate
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* DiceBear fallback results — always shown as selectable grid */}
+                    {editForm._aiFallback && editForm._aiResults && (
+                      <div className="mt-3">
+                        <p className="text-xs text-white/40 mb-2">Unique avatars for "{editForm._aiPrompt}" — tap to select:</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {editForm._aiResults.map((url, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setEditForm(f => ({ ...f, avatar_url: url }))}
+                              className={`w-14 h-14 rounded-full overflow-hidden border-2 transition-all hover:scale-110 ${
+                                editForm.avatar_url === url ? 'border-accent shadow-lg shadow-accent/30' : 'border-white/10 hover:border-white/30'
+                              }`}
+                            >
+                              <img src={url} alt={`avatar ${i + 1}`} className="w-full h-full object-cover bg-white/5" />
+                            </button>
+                          ))}
+                        </div>
                         <button
                           onClick={() => generateAvatar(editForm._aiPrompt)}
-                          className="text-xs text-accent hover:text-accent/80 transition-colors"
+                          className="mt-2 text-xs text-accent hover:text-accent/80 transition-colors"
                         >
-                          Regenerate
+                          Try again
                         </button>
                       </div>
                     )}
