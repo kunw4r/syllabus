@@ -442,6 +442,7 @@ function MyLibrary() {
   const [reviewItem, setReviewItem] = useState(null);
   const [reviewText, setReviewText] = useState('');
   const [userRating, setUserRating] = useState(0);
+  const [reviewStatus, setReviewStatus] = useState('watching');
   const [activeTab, setActiveTab] = useState('shelf');
   const toast = useToast();
   const navigate = useNavigate();
@@ -490,11 +491,16 @@ function MyLibrary() {
     setReviewItem(item);
     setReviewText(item.review || '');
     setUserRating(item.user_rating || 0);
+    setReviewStatus(item.status || 'watching');
   };
 
   const saveReview = async () => {
-    await updateLibraryItem(reviewItem.id, { user_rating: userRating || null, review: reviewText });
-    toast('Review saved!', 'success');
+    await updateLibraryItem(reviewItem.id, {
+      user_rating: userRating || null,
+      review: reviewText,
+      status: reviewStatus,
+    });
+    toast('Saved!', 'success');
     setReviewItem(null);
     loadLibrary();
   };
@@ -623,33 +629,52 @@ function MyLibrary() {
                       {Number(item.user_rating) % 1 === 0 ? item.user_rating : Number(item.user_rating).toFixed(1)}/10
                     </div>
                   )}
-                  <div className={`absolute bottom-[88px] left-2.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                    item.status === 'finished' ? 'bg-green-500/80' : item.status === 'watching' ? 'bg-blue-500/80' : 'bg-purple-500/80'
-                  }`}>
-                    {item.status === 'want' ? 'wishlist' : item.status === 'watching' ? 'watching' : 'done'}
+                  {/* Hover overlay with status buttons + actions */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col justify-end">
+                    {/* Status buttons */}
+                    <div className="flex gap-1.5 px-2.5 mb-2">
+                      {[
+                        { key: 'want', icon: Clock, label: 'Wishlist', activeClass: 'bg-purple-500 text-white' },
+                        { key: 'watching', icon: Eye, label: 'Watching', activeClass: 'bg-blue-500 text-white' },
+                        { key: 'finished', icon: CheckCircle2, label: 'Done', activeClass: 'bg-green-500 text-white' },
+                      ].map(s => (
+                        <button key={s.key}
+                          onClick={e => { e.stopPropagation(); handleStatusChange(item.id, s.key); }}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 transition-all ${
+                            item.status === s.key
+                              ? s.activeClass
+                              : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                          }`}>
+                          <s.icon size={11} />
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex gap-1.5 px-2.5 mb-2.5">
+                      <button onClick={e => { e.stopPropagation(); openReview(item); }}
+                        className="flex-1 py-2 rounded-lg bg-accent/80 hover:bg-accent text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                        <Star size={12} /> Rate
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); handleRemove(item.id); }}
+                        className="py-2 px-3 rounded-lg bg-white/10 hover:bg-red-500/80 text-white/60 hover:text-white text-xs transition-colors">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center gap-2">
-                    <button onClick={e => { e.stopPropagation(); openReview(item); }} title="Rate & Review"
-                      className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center hover:bg-accent transition-colors">
-                      <MessageSquare size={18} />
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); handleRemove(item.id); }} title="Remove"
-                      className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center hover:bg-red-500 transition-colors">
-                      <Trash2 size={18} />
-                    </button>
+                  {/* Status badge (always visible) */}
+                  <div className={`absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold backdrop-blur-md ${
+                    item.status === 'finished' ? 'bg-green-500/80 text-white' :
+                    item.status === 'watching' ? 'bg-blue-500/80 text-white' :
+                    'bg-purple-500/80 text-white'
+                  } ${item.user_rating > 0 ? 'top-9' : ''}`}>
+                    {item.status === 'want' ? <><Clock size={10} /> Wishlist</> :
+                     item.status === 'watching' ? <><Eye size={10} /> Watching</> :
+                     <><CheckCircle2 size={10} /> Done</>}
                   </div>
                   <div className="p-3">
                     <p className="text-sm font-semibold truncate">{item.title}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <select value={item.status} onClick={e => e.stopPropagation()}
-                        onChange={e => { e.stopPropagation(); handleStatusChange(item.id, e.target.value); }}
-                        className="bg-dark-600 text-white/70 border border-white/10 rounded-lg px-2 py-1 text-xs cursor-pointer focus:outline-none focus:border-accent/50">
-                        <option value="want">Wishlist</option>
-                        <option value="watching">In Progress</option>
-                        <option value="finished">Finished</option>
-                      </select>
-                    </div>
-                    {item.review && <p className="text-xs text-white/30 mt-2 line-clamp-2 italic">"{item.review}"</p>}
+                    {item.review && <p className="text-xs text-white/30 mt-1.5 line-clamp-2 italic">"{item.review}"</p>}
                   </div>
                 </div>
               ))}
@@ -678,6 +703,26 @@ function MyLibrary() {
               <div>
                 <p className="font-semibold">{reviewItem.title}</p>
                 <p className="text-xs text-white/40 capitalize">{reviewItem.media_type}</p>
+              </div>
+            </div>
+
+            {/* ── Status Picker ── */}
+            <div className="mb-5">
+              <label className="text-xs text-white/40 block mb-2">Status</label>
+              <div className="flex gap-2">
+                {[
+                  { key: 'want', icon: Clock, label: 'Wishlist', active: 'bg-purple-500 border-purple-400 text-white' },
+                  { key: 'watching', icon: Eye, label: 'In Progress', active: 'bg-blue-500 border-blue-400 text-white' },
+                  { key: 'finished', icon: CheckCircle2, label: 'Finished', active: 'bg-green-500 border-green-400 text-white' },
+                ].map(s => (
+                  <button key={s.key} onClick={() => setReviewStatus(s.key)}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                      reviewStatus === s.key ? s.active : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/70'
+                    }`}>
+                    <s.icon size={14} />
+                    {s.label}
+                  </button>
+                ))}
               </div>
             </div>
 
