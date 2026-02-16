@@ -80,7 +80,7 @@ function Movies() {
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-dark-500 border-t-accent rounded-full animate-spin" /></div>;
 
   return (
-    <div>
+    <div className="min-w-0">
       {/* Search */}
       <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6">
         <div className="relative flex-1 max-w-md">
@@ -102,33 +102,33 @@ function Movies() {
         <>
           {/* Hero Banner */}
           {hero?.backdrop_path && (
-            <div className="relative -mx-6 md:-mx-10 -mt-2 mb-10 h-[60vh] min-h-[400px] overflow-hidden rounded-b-3xl">
-              <img src={`${TMDB_IMG}/original${hero.backdrop_path}`} alt="" className="w-full h-full object-cover" />
+            <div className="relative -mx-4 sm:-mx-6 lg:-mx-10 -mt-2 mb-10 h-[50vh] sm:h-[60vh] min-h-[320px] overflow-hidden rounded-b-3xl">
+              <img src={`${TMDB_IMG}/w1280${hero.backdrop_path}`} alt="" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-dark-900/80 via-transparent to-transparent" />
-              <div className="absolute bottom-10 left-6 md:left-10 max-w-lg">
-                <h1 className="text-3xl md:text-5xl font-black mb-3 leading-tight">{hero.title}</h1>
-                <div className="flex items-center gap-3 text-sm text-white/50 mb-3">
+              <div className="absolute bottom-6 sm:bottom-10 left-4 sm:left-6 lg:left-10 max-w-lg pr-4">
+                <h1 className="text-2xl sm:text-3xl lg:text-5xl font-black mb-2 sm:mb-3 leading-tight">{hero.title}</h1>
+                <div className="flex items-center gap-3 text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">
                   <span className="flex items-center gap-1 text-gold"><Star size={14} className="fill-gold" /> {hero.vote_average?.toFixed(1)}</span>
                   <span>{hero.release_date?.slice(0, 4)}</span>
                 </div>
-                <p className="text-white/50 text-sm leading-relaxed line-clamp-3 mb-5">{hero.overview}</p>
-                <div className="flex gap-3">
-                  <button onClick={() => navigate(`/details/movie/${hero.id}`)} className="bg-white text-black font-semibold px-5 py-2.5 rounded-xl text-sm hover:bg-white/90 transition-colors">More Info</button>
-                  <button onClick={handleHeroAdd} className="bg-white/10 backdrop-blur-md border border-white/10 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"><Plus size={16} /> Library</button>
+                <p className="text-white/50 text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 mb-4 sm:mb-5">{hero.overview}</p>
+                <div className="flex gap-2 sm:gap-3">
+                  <button onClick={() => navigate(`/details/movie/${hero.id}`)} className="bg-white text-black font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm hover:bg-white/90 transition-colors">More Info</button>
+                  <button onClick={handleHeroAdd} className="bg-white/10 backdrop-blur-md border border-white/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"><Plus size={16} /> Library</button>
                 </div>
               </div>
             </div>
           )}
 
           {/* Top 10 */}
-          <div className="mb-10">
+          <div className="mb-10 min-w-0">
             <h2 className="text-[15px] font-semibold text-white/80 mb-4 uppercase tracking-wide">Top 10 Movies This Week</h2>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
               {trending.slice(0, 10).map((item, i) => (
                 <div key={item.id} className="flex-shrink-0 flex items-end cursor-pointer group/card" onClick={() => navigate(`/details/movie/${item.id}`)}>
-                  <span className="text-[7rem] font-black leading-none -mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
-                  {item.poster_path && <img src={`${TMDB_IMG}/w300${item.poster_path}`} alt={item.title} className="h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300" />}
+                  <span className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
+                  {item.poster_path && <img src={`${TMDB_IMG}/w300${item.poster_path}`} alt={item.title} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300" />}
                 </div>
               ))}
             </div>

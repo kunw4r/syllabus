@@ -31,9 +31,9 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="*" element={
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen overflow-x-hidden">
           <Navbar />
-          <main className="flex-1 ml-0 md:ml-60 p-6 md:p-10">
+          <main className="flex-1 ml-0 lg:ml-60 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-10 lg:pb-10 overflow-x-hidden">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/movies" element={<Movies />} />
