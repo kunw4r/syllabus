@@ -408,7 +408,7 @@ function RecCard({ item, onClick, onAdd }) {
       )}
       {item.vote_average > 0 && (
         <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold">
-          <Star size={10} className="text-gold fill-gold" />
+          <Star size={12} className="text-gold fill-gold" />
           {Number(item.vote_average).toFixed(1)}
         </div>
       )}
@@ -635,7 +635,7 @@ function MyLibrary() {
                   )}
                   {item.external_rating > 0 && (
                     <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold">
-                      <Star size={10} className="text-gold fill-gold" />
+                      <Star size={12} className="text-gold fill-gold" />
                       {Number(item.external_rating).toFixed(1)}
                     </div>
                   )}
@@ -660,7 +660,7 @@ function MyLibrary() {
                               ? s.activeClass
                               : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
                           }`}>
-                          <s.icon size={11} />
+                          <s.icon size={13} />
                           {s.label}
                         </button>
                       ))}
@@ -669,11 +669,11 @@ function MyLibrary() {
                     <div className="flex gap-1.5 px-2.5 mb-2.5">
                       <button onClick={e => { e.stopPropagation(); openReview(item); }}
                         className="flex-1 py-2 rounded-lg bg-accent/80 hover:bg-accent text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
-                        <Star size={12} /> Rate
+                        <Star size={14} /> Rate
                       </button>
                       <button onClick={e => { e.stopPropagation(); handleRemove(item.id); }}
                         className="py-2 px-3 rounded-lg bg-white/10 hover:bg-red-500/80 text-white/60 hover:text-white text-xs transition-colors">
-                        <Trash2 size={12} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -683,9 +683,9 @@ function MyLibrary() {
                     item.status === 'watching' ? 'bg-blue-500/80 text-white' :
                     'bg-purple-500/80 text-white'
                   } ${item.user_rating > 0 ? 'top-9' : ''}`}>
-                    {item.status === 'want' ? <><Clock size={10} /> Wishlist</> :
-                     item.status === 'watching' ? <><Eye size={10} /> Watching</> :
-                     <><CheckCircle2 size={10} /> Done</>}
+                    {item.status === 'want' ? <><Clock size={12} /> Wishlist</> :
+                     item.status === 'watching' ? <><Eye size={12} /> Watching</> :
+                     <><CheckCircle2 size={12} /> Done</>}
                   </div>
                   <div className="p-3">
                     <p className="text-sm font-semibold truncate">{item.title}</p>

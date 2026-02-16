@@ -130,7 +130,7 @@ function Books() {
                     <h1 className="text-xl sm:text-3xl lg:text-4xl font-black mb-2 leading-tight line-clamp-2">{hero.title}</h1>
                     <p className="text-white/50 text-sm mb-1">by {hero.author}</p>
                     <div className="flex items-center gap-3 text-xs text-white/40">
-                      {hero.rating && <span className="flex items-center gap-1 text-gold"><Star size={12} className="fill-gold" /> {hero.rating}</span>}
+                      {hero.rating && <span className="flex items-center gap-1 text-gold"><Star size={14} className="fill-gold" /> {hero.rating}</span>}
                       {hero.first_publish_year && <span>{hero.first_publish_year}</span>}
                     </div>
                   </div>

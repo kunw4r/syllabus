@@ -206,7 +206,7 @@ function TVShows() {
                     {item.poster_path && <img src={`${TMDB_IMG}/w185${item.poster_path}`} alt={item.name} loading="lazy" className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
                     {(item.unified_rating || item.vote_average) > 0 && (
                       <div className="absolute top-1.5 right-1.5 z-20 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold">
-                        <Star size={9} className="text-gold fill-gold" />
+                        <Star size={11} className="text-gold fill-gold" />
                         {Number(item.unified_rating ?? item.vote_average).toFixed(1)}
                       </div>
                     )}

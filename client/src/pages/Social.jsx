@@ -240,7 +240,7 @@ function UserRow({ user: u, isFollowed, onFollow, onUnfollow, onClick, showBlend
             onClick={onBlend}
             className="bg-gradient-to-r from-purple-500/20 to-accent/20 hover:from-purple-500/30 hover:to-accent/30 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all"
           >
-            <Shuffle size={12} /> Blend
+            <Shuffle size={14} /> Blend
           </button>
         )}
         {isFollowed ? (
@@ -248,14 +248,14 @@ function UserRow({ user: u, isFollowed, onFollow, onUnfollow, onClick, showBlend
             onClick={onUnfollow}
             className="bg-white/10 hover:bg-red-500/20 hover:text-red-400 text-white/50 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
           >
-            <UserMinus size={12} /> Unfollow
+            <UserMinus size={14} /> Unfollow
           </button>
         ) : onFollow ? (
           <button
             onClick={onFollow}
             className="bg-accent hover:bg-accent/80 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
           >
-            <UserPlus size={12} /> Follow
+            <UserPlus size={14} /> Follow
           </button>
         ) : null}
       </div>
@@ -319,7 +319,7 @@ function ActivityFeed({ activity, navigate }) {
 
                 {a.rating && (
                   <div className="flex items-center gap-1 mt-1">
-                    <Star size={12} className="text-gold fill-gold" />
+                    <Star size={14} className="text-gold fill-gold" />
                     <span className="text-xs font-bold text-gold">{a.rating}/10</span>
                   </div>
                 )}

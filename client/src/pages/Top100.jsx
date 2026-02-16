@@ -244,7 +244,7 @@ function RankedItem({ rank, item, title, year, poster, mediaType, navigate }) {
         </p>
         {isBook && (item.already_read > 0 || item.want_to_read > 0) && (
           <p className="text-[10px] text-white/20 mt-0.5 flex items-center gap-1">
-            <Users size={10} />
+            <Users size={12} />
             {((item.already_read || 0) + (item.want_to_read || 0) + (item.currently_reading || 0)).toLocaleString()} readers
           </p>
         )}

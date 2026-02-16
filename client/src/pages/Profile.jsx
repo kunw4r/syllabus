@@ -311,7 +311,7 @@ export default function Profile() {
             {/* AI Avatar Generator */}
             <div className="mb-5 p-4 bg-gradient-to-r from-accent/10 to-purple-500/10 border border-accent/20 rounded-xl">
               <p className="text-xs text-white/50 mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles size={12} className="text-accent" /> AI Avatar Generator
+                <Sparkles size={14} className="text-accent" /> AI Avatar Generator
               </p>
               <div className="flex gap-2">
                 <input
@@ -631,7 +631,7 @@ function LibraryTab({ library, navigate }) {
                 )}
                 {item.user_rating && (
                   <div className="absolute top-1 right-1 bg-black/70 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
-                    <Star size={10} className="text-gold fill-gold" />
+                    <Star size={12} className="text-gold fill-gold" />
                     <span className="text-[10px] font-bold text-gold">{item.user_rating}</span>
                   </div>
                 )}
@@ -687,7 +687,7 @@ function PeopleList({ people, title, navigate, onBlend }) {
               onClick={() => onBlend(p.id)}
               className="bg-gradient-to-r from-purple-500/20 to-accent/20 hover:from-purple-500/30 hover:to-accent/30 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shrink-0"
             >
-              <Shuffle size={12} /> Blend
+              <Shuffle size={14} /> Blend
             </button>
           )}
         </div>
@@ -713,7 +713,7 @@ function BlendTab({ blend, following, onSelectFriend, navigate }) {
             }`}
           >
             <div className="w-5 h-5 rounded-full overflow-hidden bg-dark-700">
-              {f.avatar_url ? <img src={f.avatar_url} alt="" className="w-full h-full object-cover" /> : <User size={12} className="text-white/20 m-auto" />}
+              {f.avatar_url ? <img src={f.avatar_url} alt="" className="w-full h-full object-cover" /> : <User size={14} className="text-white/20 m-auto" />}
             </div>
             {f.display_name || f.username}
           </button>

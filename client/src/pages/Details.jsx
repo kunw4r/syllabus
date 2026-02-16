@@ -364,7 +364,7 @@ function BookDetails({ workKey, navigate }) {
                   <span className="text-sm text-white/60 hover:text-accent transition-colors">
                     {author.name}
                   </span>
-                  <ExternalLink size={10} className="text-white/20" />
+                  <ExternalLink size={12} className="text-white/20" />
                 </a>
               ))}
             </div>
@@ -414,9 +414,9 @@ function BookDetails({ workKey, navigate }) {
           {/* Reader breakdown */}
           {totalReaders > 0 && (
             <div className="flex flex-wrap gap-4 text-xs text-white/40 mb-4">
-              {data.want_to_read > 0 && <span className="flex items-center gap-1.5"><BookMarked size={12} className="text-accent/70" /> {data.want_to_read.toLocaleString()} want to read</span>}
-              {data.currently_reading > 0 && <span className="flex items-center gap-1.5"><Eye size={12} className="text-blue-400/70" /> {data.currently_reading.toLocaleString()} reading now</span>}
-              {data.already_read > 0 && <span className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-400/70" /> {data.already_read.toLocaleString()} have read</span>}
+              {data.want_to_read > 0 && <span className="flex items-center gap-1.5"><BookMarked size={14} className="text-accent/70" /> {data.want_to_read.toLocaleString()} want to read</span>}
+              {data.currently_reading > 0 && <span className="flex items-center gap-1.5"><Eye size={14} className="text-blue-400/70" /> {data.currently_reading.toLocaleString()} reading now</span>}
+              {data.already_read > 0 && <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-400/70" /> {data.already_read.toLocaleString()} have read</span>}
             </div>
           )}
           {totalReaders > 0 && (
@@ -445,25 +445,25 @@ function BookDetails({ workKey, navigate }) {
                 className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
                 <BookOpen size={16} className="text-white/60" />
                 <span className="text-xs font-medium">Read Free</span>
-                <ExternalLink size={10} className="text-white/30" />
+                <ExternalLink size={12} className="text-white/30" />
               </a>
               <a href={`https://www.amazon.com/s?k=${searchQ}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-[#ff9900]/10 border border-[#ff9900]/20 rounded-lg px-4 py-2.5 hover:bg-[#ff9900]/20 transition-colors">
                 <ShoppingCart size={16} className="text-[#ff9900]" />
                 <span className="text-xs font-medium text-[#ff9900]">Amazon</span>
-                <ExternalLink size={10} className="text-[#ff9900]/40" />
+                <ExternalLink size={12} className="text-[#ff9900]/40" />
               </a>
               <a href={`https://www.booktopia.com.au/search?keywords=${searchQ}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
                 <ShoppingCart size={16} className="text-white/60" />
                 <span className="text-xs font-medium">Booktopia</span>
-                <ExternalLink size={10} className="text-white/30" />
+                <ExternalLink size={12} className="text-white/30" />
               </a>
               <a href={`https://www.goodreads.com/search?q=${searchQ}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
                 <Star size={16} className="text-white/60" />
                 <span className="text-xs font-medium">Goodreads</span>
-                <ExternalLink size={10} className="text-white/30" />
+                <ExternalLink size={12} className="text-white/30" />
               </a>
             </div>
           </div>
@@ -619,6 +619,112 @@ function MovieTVDetails({ mediaType, id, navigate }) {
   const rentProviders = providers?.rent || [];
   const buyProviders = providers?.buy || [];
 
+  // Quick Facts card — rendered in poster column (desktop) and info column (mobile)
+  const quickFactsCard = (
+    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
+      {data.tagline && (
+        <p className="text-xs italic text-white/40 leading-relaxed">"{data.tagline}"</p>
+      )}
+      {directors.length > 0 && (
+        <div>
+          <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Director</p>
+          <div className="space-y-2">
+            {directors.map(d => (
+              <a key={d.id} href={`https://www.google.com/search?q=${encodeURIComponent(d.name + ' filmmaker')}`}
+                target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -m-1 transition-colors">
+                {d.profile_path ? (
+                  <img src={`${TMDB_PROFILE}${d.profile_path}`} alt={d.name}
+                    className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
+                    {d.name?.charAt(0)}
+                  </div>
+                )}
+                <span className="text-xs text-white/70 group-hover/crew:text-accent transition-colors">{d.name}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+      {writers.length > 0 && (
+        <div>
+          <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Writer</p>
+          <div className="space-y-2">
+            {writers.map(w => (
+              <a key={w.id + w.job} href={`https://www.google.com/search?q=${encodeURIComponent(w.name + ' writer')}`}
+                target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -m-1 transition-colors">
+                {w.profile_path ? (
+                  <img src={`${TMDB_PROFILE}${w.profile_path}`} alt={w.name}
+                    className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
+                    {w.name?.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <span className="text-xs text-white/70 group-hover/crew:text-accent transition-colors block">{w.name}</span>
+                  <span className="text-[10px] text-white/25">{w.job}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+      {extRatings?.rated && (
+        <div className="flex items-start gap-2.5">
+          <Film size={14} className="text-white/30 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] text-white/30 uppercase tracking-wider">Rated</p>
+            <p className="text-xs text-white/70">{extRatings.rated}</p>
+          </div>
+        </div>
+      )}
+      {extRatings?.awards && (
+        <div className="flex items-start gap-2.5">
+          <Award size={14} className="text-accent/60 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] text-white/30 uppercase tracking-wider">Awards</p>
+            <p className="text-xs text-white/70 leading-relaxed">{extRatings.awards}</p>
+          </div>
+        </div>
+      )}
+      {(extRatings?.boxOffice || data.budget > 0 || data.revenue > 0) && (
+        <div className="flex items-start gap-2.5">
+          <DollarSign size={14} className="text-green-400/60 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] text-white/30 uppercase tracking-wider">Box Office</p>
+            {data.budget > 0 && <p className="text-xs text-white/50">Budget: ${(data.budget / 1e6).toFixed(0)}M</p>}
+            {extRatings?.boxOffice && <p className="text-xs text-white/70">Gross: {extRatings.boxOffice}</p>}
+            {data.revenue > 0 && <p className="text-xs text-white/70">Revenue: ${(data.revenue / 1e6).toFixed(0)}M</p>}
+          </div>
+        </div>
+      )}
+      {extRatings?.country && (
+        <div className="flex items-start gap-2.5">
+          <Globe size={14} className="text-white/30 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] text-white/30 uppercase tracking-wider">Country</p>
+            <p className="text-xs text-white/70">{extRatings.country}</p>
+          </div>
+        </div>
+      )}
+      {data.production_companies?.length > 0 && (
+        <div className="flex items-start gap-2.5">
+          <Info size={14} className="text-white/30 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] text-white/30 uppercase tracking-wider">Studio</p>
+            <p className="text-xs text-white/70">{data.production_companies.slice(0, 2).map(c => c.name).join(', ')}</p>
+          </div>
+        </div>
+      )}
+      {!ratingsLoaded && data.external_ids?.imdb_id && (
+        <div className="space-y-3 animate-pulse">
+          {[1,2,3].map(i => (<div key={i} className="flex gap-2.5"><div className="w-3 h-3 bg-dark-600 rounded" /><div className="flex-1"><div className="h-2 w-10 bg-dark-600 rounded mb-1" /><div className="h-3 w-20 bg-dark-600 rounded" /></div></div>))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div>
       {/* Backdrop */}
@@ -646,114 +752,9 @@ function MovieTVDetails({ mediaType, id, navigate }) {
             </div>
           )}
 
-          {/* ── Quick Facts card ── */}
-          <div className="mt-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
-            {data.tagline && (
-              <p className="text-xs italic text-white/40 leading-relaxed">"{data.tagline}"</p>
-            )}
-
-            {/* Director(s) with profile photos */}
-            {directors.length > 0 && (
-              <div>
-                <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Director</p>
-                <div className="space-y-2">
-                  {directors.map(d => (
-                    <a key={d.id} href={`https://www.google.com/search?q=${encodeURIComponent(d.name + ' filmmaker')}`}
-                      target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -m-1 transition-colors">
-                      {d.profile_path ? (
-                        <img src={`${TMDB_PROFILE}${d.profile_path}`} alt={d.name}
-                          className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
-                          {d.name?.charAt(0)}
-                        </div>
-                      )}
-                      <span className="text-xs text-white/70 group-hover/crew:text-accent transition-colors">{d.name}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Writer(s) with profile photos */}
-            {writers.length > 0 && (
-              <div>
-                <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Writer</p>
-                <div className="space-y-2">
-                  {writers.map(w => (
-                    <a key={w.id + w.job} href={`https://www.google.com/search?q=${encodeURIComponent(w.name + ' writer')}`}
-                      target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -m-1 transition-colors">
-                      {w.profile_path ? (
-                        <img src={`${TMDB_PROFILE}${w.profile_path}`} alt={w.name}
-                          className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
-                          {w.name?.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <span className="text-xs text-white/70 group-hover/crew:text-accent transition-colors block">{w.name}</span>
-                        <span className="text-[10px] text-white/25">{w.job}</span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {extRatings?.rated && (
-              <div className="flex items-start gap-2.5">
-                <Film size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Rated</p>
-                  <p className="text-xs text-white/70">{extRatings.rated}</p>
-                </div>
-              </div>
-            )}
-            {extRatings?.awards && (
-              <div className="flex items-start gap-2.5">
-                <Award size={13} className="text-accent/60 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Awards</p>
-                  <p className="text-xs text-white/70 leading-relaxed">{extRatings.awards}</p>
-                </div>
-              </div>
-            )}
-            {(extRatings?.boxOffice || data.budget > 0 || data.revenue > 0) && (
-              <div className="flex items-start gap-2.5">
-                <DollarSign size={13} className="text-green-400/60 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Box Office</p>
-                  {data.budget > 0 && <p className="text-xs text-white/50">Budget: ${(data.budget / 1e6).toFixed(0)}M</p>}
-                  {extRatings?.boxOffice && <p className="text-xs text-white/70">Gross: {extRatings.boxOffice}</p>}
-                  {data.revenue > 0 && <p className="text-xs text-white/70">Revenue: ${(data.revenue / 1e6).toFixed(0)}M</p>}
-                </div>
-              </div>
-            )}
-            {extRatings?.country && (
-              <div className="flex items-start gap-2.5">
-                <Globe size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Country</p>
-                  <p className="text-xs text-white/70">{extRatings.country}</p>
-                </div>
-              </div>
-            )}
-            {data.production_companies?.length > 0 && (
-              <div className="flex items-start gap-2.5">
-                <Info size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Studio</p>
-                  <p className="text-xs text-white/70">{data.production_companies.slice(0, 2).map(c => c.name).join(', ')}</p>
-                </div>
-              </div>
-            )}
-            {/* Shimmer while loading */}
-            {!ratingsLoaded && data.external_ids?.imdb_id && (
-              <div className="space-y-3 animate-pulse">
-                {[1,2,3].map(i => (<div key={i} className="flex gap-2.5"><div className="w-3 h-3 bg-dark-600 rounded" /><div className="flex-1"><div className="h-2 w-10 bg-dark-600 rounded mb-1" /><div className="h-3 w-20 bg-dark-600 rounded" /></div></div>))}
-              </div>
-            )}
+          {/* ── Quick Facts card (desktop only) ── */}
+          <div className="hidden md:block mt-4">
+            {quickFactsCard}
           </div>
         </div>
 
@@ -790,7 +791,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               <a href={`https://www.imdb.com/title/${imdbId}/`} target="_blank" rel="noopener noreferrer"
                 className="bg-[#f5c518]/[0.08] border border-[#f5c518]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#f5c518]/[0.15] transition-colors cursor-pointer flex flex-col justify-center">
                 <p className="text-xl font-black text-[#f5c518]">{extRatings.imdb.score}</p>
-                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">IMDb <ExternalLink size={8} /></p>
+                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">IMDb <ExternalLink size={10} /></p>
                 {extRatings.imdb.votes && (
                   <p className="text-[9px] text-white/20">{extRatings.imdb.votes} votes</p>
                 )}
@@ -806,7 +807,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
                     🍅 {extRatings.rt.score}
                   </span>
                 </p>
-                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">Rotten Tomatoes <ExternalLink size={8} /></p>
+                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">Rotten Tomatoes <ExternalLink size={10} /></p>
               </a>
             )}
 
@@ -815,7 +816,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               <a href={`https://www.themoviedb.org/${mediaType}/${data.id}`} target="_blank" rel="noopener noreferrer"
                 className="bg-[#01b4e4]/[0.08] border border-[#01b4e4]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#01b4e4]/[0.15] transition-colors cursor-pointer flex flex-col justify-center">
                 <p className="text-xl font-black text-[#01b4e4]">{data.vote_average.toFixed(1)}</p>
-                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">TMDB <ExternalLink size={8} /></p>
+                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">TMDB <ExternalLink size={10} /></p>
                 {data.vote_count && (
                   <p className="text-[9px] text-white/20">{data.vote_count.toLocaleString()} votes</p>
                 )}
@@ -827,7 +828,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               <a href={malData.url} target="_blank" rel="noopener noreferrer"
                 className="bg-[#2e51a2]/10 border border-[#2e51a2]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#2e51a2]/20 transition-colors flex flex-col justify-center">
                 <p className="text-xl font-black text-[#2e51a2]">{malData.score}</p>
-                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">MAL <ExternalLink size={8} /></p>
+                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">MAL <ExternalLink size={10} /></p>
                 {malData.scored_by && (
                   <p className="text-[9px] text-white/20">{malData.scored_by.toLocaleString()} votes</p>
                 )}
@@ -839,7 +840,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
               <a href={`https://www.crunchyroll.com/search?q=${encodeURIComponent(title)}`} target="_blank" rel="noopener noreferrer"
                 className="bg-[#f47521]/10 border border-[#f47521]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#f47521]/20 transition-colors flex flex-col justify-center">
                 <p className="text-xl font-black text-[#f47521]">CR</p>
-                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">Crunchyroll <ExternalLink size={8} /></p>
+                <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">Crunchyroll <ExternalLink size={10} /></p>
               </a>
             )}
 
@@ -853,6 +854,11 @@ function MovieTVDetails({ mediaType, id, navigate }) {
           </div>
 
           <p className="text-white/60 leading-relaxed mb-6 max-w-2xl">{data.overview}</p>
+
+          {/* ── Quick Facts card (mobile only) ── */}
+          <div className="md:hidden mb-6">
+            {quickFactsCard}
+          </div>
 
           {/* ── Trailer ── */}
           {trailer && (
@@ -919,7 +925,7 @@ function MovieTVDetails({ mediaType, id, navigate }) {
                           className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 hover:bg-white/[0.08] transition-colors">
                           {p.logo_path && <img src={`${TMDB_LOGO}${p.logo_path}`} alt="" className="w-6 h-6 rounded object-cover" />}
                           <span className="text-xs font-medium">{p.provider_name}</span>
-                          <ExternalLink size={9} className="text-white/20" />
+                          <ExternalLink size={11} className="text-white/20" />
                         </a>
                       ))}
                     </div>
