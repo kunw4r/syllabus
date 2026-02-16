@@ -155,8 +155,16 @@ export function getOMDbRatings(imdbId) {
           ratings.imdb = { score: r.Value, votes: data.imdbVotes };
         } else if (r.Source === 'Rotten Tomatoes') {
           ratings.rt = { score: r.Value };
+        } else if (r.Source === 'Metacritic') {
+          ratings.metacritic = { score: r.Value };
         }
       });
+      if (data.Director && data.Director !== 'N/A') ratings.director = data.Director;
+      if (data.Writer && data.Writer !== 'N/A') ratings.writer = data.Writer;
+      if (data.Awards && data.Awards !== 'N/A') ratings.awards = data.Awards;
+      if (data.BoxOffice && data.BoxOffice !== 'N/A') ratings.boxOffice = data.BoxOffice;
+      if (data.Rated && data.Rated !== 'N/A') ratings.rated = data.Rated;
+      if (data.Country && data.Country !== 'N/A') ratings.country = data.Country;
       return ratings;
     } catch { return null; }
   });

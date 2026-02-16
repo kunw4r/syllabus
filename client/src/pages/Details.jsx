@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play } from 'lucide-react';
+import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, getBookDetails, addToLibrary } from '../services/api';
 
@@ -375,15 +375,95 @@ function MovieTVDetails({ mediaType, id, navigate }) {
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Poster */}
-        {data.poster_path ? (
-          <img src={`${TMDB_IMG}${data.poster_path}`} alt={title}
-            className="w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 rounded-2xl shadow-2xl shadow-black/50 flex-shrink-0 self-start aspect-[2/3] object-cover" />
-        ) : (
-          <div className="w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/30 text-sm flex-shrink-0 self-start">
-            No Poster
+        {/* Poster column — sticky on desktop */}
+        <div className="flex-shrink-0 md:sticky md:top-8 md:self-start w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80">
+          {data.poster_path ? (
+            <img src={`${TMDB_IMG}${data.poster_path}`} alt={title}
+              className="w-full rounded-2xl shadow-2xl shadow-black/50 aspect-[2/3] object-cover" />
+          ) : (
+            <div className="w-full aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/30 text-sm">
+              No Poster
+            </div>
+          )}
+
+          {/* ── Quick Facts card ── */}
+          <div className="hidden md:block mt-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
+            {data.tagline && (
+              <p className="text-xs italic text-white/40 leading-relaxed">"{data.tagline}"</p>
+            )}
+            {extRatings?.director && (
+              <div className="flex items-start gap-2.5">
+                <Clapperboard size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Director</p>
+                  <p className="text-xs text-white/70">{extRatings.director}</p>
+                </div>
+              </div>
+            )}
+            {extRatings?.writer && (
+              <div className="flex items-start gap-2.5">
+                <PenLine size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Writer</p>
+                  <p className="text-xs text-white/70">{extRatings.writer}</p>
+                </div>
+              </div>
+            )}
+            {extRatings?.rated && (
+              <div className="flex items-start gap-2.5">
+                <Film size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Rated</p>
+                  <p className="text-xs text-white/70">{extRatings.rated}</p>
+                </div>
+              </div>
+            )}
+            {extRatings?.awards && (
+              <div className="flex items-start gap-2.5">
+                <Award size={13} className="text-accent/60 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Awards</p>
+                  <p className="text-xs text-white/70 leading-relaxed">{extRatings.awards}</p>
+                </div>
+              </div>
+            )}
+            {(extRatings?.boxOffice || data.budget > 0 || data.revenue > 0) && (
+              <div className="flex items-start gap-2.5">
+                <DollarSign size={13} className="text-green-400/60 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Box Office</p>
+                  {data.budget > 0 && <p className="text-xs text-white/50">Budget: ${(data.budget / 1e6).toFixed(0)}M</p>}
+                  {extRatings?.boxOffice && <p className="text-xs text-white/70">Gross: {extRatings.boxOffice}</p>}
+                  {data.revenue > 0 && <p className="text-xs text-white/70">Revenue: ${(data.revenue / 1e6).toFixed(0)}M</p>}
+                </div>
+              </div>
+            )}
+            {extRatings?.country && (
+              <div className="flex items-start gap-2.5">
+                <Globe size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Country</p>
+                  <p className="text-xs text-white/70">{extRatings.country}</p>
+                </div>
+              </div>
+            )}
+            {data.production_companies?.length > 0 && (
+              <div className="flex items-start gap-2.5">
+                <Info size={13} className="text-white/30 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Studio</p>
+                  <p className="text-xs text-white/70">{data.production_companies.slice(0, 2).map(c => c.name).join(', ')}</p>
+                </div>
+              </div>
+            )}
+            {/* Shimmer while loading */}
+            {!extRatings && data.external_ids?.imdb_id && (
+              <div className="space-y-3 animate-pulse">
+                {[1,2,3].map(i => (<div key={i} className="flex gap-2.5"><div className="w-3 h-3 bg-dark-600 rounded" /><div className="flex-1"><div className="h-2 w-10 bg-dark-600 rounded mb-1" /><div className="h-3 w-20 bg-dark-600 rounded" /></div></div>))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
