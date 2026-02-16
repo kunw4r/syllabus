@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Star } from 'lucide-react';
-import { addToLibrary } from '../services/api';
+import { addToLibrary, getSyllabusScore } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -16,9 +16,12 @@ function MediaCard({ item, mediaType = 'movie' }) {
   const poster = item.poster_path
     ? (item.poster_path.startsWith('http') ? item.poster_path : `${TMDB_IMG}${item.poster_path}`)
     : null;
-  const rating = item.unified_rating ?? item.vote_average ?? item.rating;
   const year = (item.release_date || item.first_air_date || item.first_publish_year || '').toString().slice(0, 4);
   const type = item.media_type || mediaType;
+
+  // Prefer: unified_rating (from enrichment) → stored Syllabus Score → TMDB vote_average → book rating
+  const storedScore = type !== 'book' ? getSyllabusScore(type, item.id) : null;
+  const rating = item.unified_rating ?? storedScore ?? item.vote_average ?? item.rating;
 
   const handleClick = () => {
     if (type === 'book') {

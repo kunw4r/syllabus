@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ArrowLeft, Plus, Check, ExternalLink, BookOpen, Users, BookCopy, ShoppingCart, BookMarked, Eye, CheckCircle2, Play, Award, Clapperboard, PenLine, DollarSign, Globe, Film, Info, Clock, Trash2, MessageSquare, X, Sparkles, Lightbulb } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
-import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, computeUnifiedRating, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
+import { getMovieDetails, getTVDetails, getOMDbRatings, getMALRating, computeUnifiedRating, setSyllabusScore, getBookDetails, addToLibrary, getLibraryItemByMediaId, updateLibraryItem, removeFromLibrary, logActivity } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -607,6 +607,13 @@ function MovieTVDetails({ mediaType, id, navigate }) {
 
   // Unified rating: avg(IMDb + RT) or avg(IMDb + MAL) for anime
   const avgScore = computeUnifiedRating(extRatings, malData, isAnime);
+
+  // Persist Syllabus Score so it's available on MediaCards everywhere
+  React.useEffect(() => {
+    if (avgScore != null && data?.id) {
+      setSyllabusScore(mediaType, data.id, avgScore);
+    }
+  }, [avgScore, data?.id, mediaType]);
 
   return (
     <div>

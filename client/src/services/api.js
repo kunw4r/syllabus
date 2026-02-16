@@ -18,6 +18,68 @@ function cached(key, fetcher) {
   });
 }
 
+// ─── Persistent Syllabus Score store (localStorage) ───
+// Scores never expire — movie ratings are stable.
+// Key format: "movie:123" or "tv:456" → score (number)
+const SCORE_STORE_KEY = 'syllabus_scores';
+const OMDB_STORE_KEY = 'syllabus_omdb';
+
+let _scoreCache = null;
+function getScoreStore() {
+  if (!_scoreCache) {
+    try { _scoreCache = JSON.parse(localStorage.getItem(SCORE_STORE_KEY) || '{}'); }
+    catch { _scoreCache = {}; }
+  }
+  return _scoreCache;
+}
+
+function _saveScoreStore() {
+  try { localStorage.setItem(SCORE_STORE_KEY, JSON.stringify(_scoreCache)); } catch { /* quota */ }
+}
+
+export function getSyllabusScore(mediaType, id) {
+  return getScoreStore()[`${mediaType}:${id}`] ?? null;
+}
+
+export function setSyllabusScore(mediaType, id, score) {
+  if (score == null || !id) return;
+  const store = getScoreStore();
+  store[`${mediaType}:${id}`] = score;
+  _saveScoreStore();
+}
+
+// Batch apply stored scores to an array of items
+export function applyStoredScores(items, mediaType) {
+  const store = getScoreStore();
+  items.forEach(item => {
+    const key = `${mediaType}:${item.id}`;
+    if (store[key] != null) {
+      item.unified_rating = store[key];
+    }
+  });
+  return items;
+}
+
+// ─── Persistent OMDb cache (localStorage) ───
+let _omdbCache = null;
+function getOmdbStore() {
+  if (!_omdbCache) {
+    try { _omdbCache = JSON.parse(localStorage.getItem(OMDB_STORE_KEY) || '{}'); }
+    catch { _omdbCache = {}; }
+  }
+  return _omdbCache;
+}
+
+function saveOmdbEntry(key, data) {
+  const store = getOmdbStore();
+  store[key] = data;
+  try { localStorage.setItem(OMDB_STORE_KEY, JSON.stringify(store)); } catch { /* quota */ }
+}
+
+function getOmdbEntry(key) {
+  return getOmdbStore()[key] ?? undefined;
+}
+
 // ─── TMDB helper ───
 async function tmdb(endpoint, params = '') {
   const res = await fetch(`${TMDB_BASE}${endpoint}?api_key=${TMDB_KEY}${params}`);
@@ -165,15 +227,19 @@ function parseOMDbResponse(data) {
 
 export function getOMDbRatings(imdbId, title = null, type = null) {
   if (!imdbId) return Promise.resolve(null);
+  // Check persistent localStorage cache first
+  const storedKey = `i:${imdbId}`;
+  const stored = getOmdbEntry(storedKey);
+  if (stored !== undefined) return Promise.resolve(stored);
+
   return cached(`omdb:${imdbId}`, async () => {
     try {
       const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_KEY}`);
       const data = await res.json();
       const ratings = parseOMDbResponse(data);
-      if (!ratings) return null;
+      if (!ratings) { saveOmdbEntry(storedKey, null); return null; }
 
       // If no RT score and we have a title, try searching by title as fallback
-      // (OMDb sometimes returns RT for title search but not by IMDb ID, especially for TV)
       if (!ratings.rt && title) {
         const omdbType = type === 'tv' ? 'series' : type === 'movie' ? 'movie' : '';
         let url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_KEY}`;
@@ -189,6 +255,7 @@ export function getOMDbRatings(imdbId, title = null, type = null) {
         }
       }
 
+      saveOmdbEntry(storedKey, ratings);
       return ratings;
     } catch { return null; }
   });
@@ -199,14 +266,19 @@ export function getOMDbRatings(imdbId, title = null, type = null) {
 export function getOMDbByTitle(title, year, type = 'movie') {
   if (!title) return Promise.resolve(null);
   const omdbType = type === 'tv' ? 'series' : 'movie';
-  const key = `omdb:t:${title}:${year || ''}:${omdbType}`;
-  return cached(key, async () => {
+  const storedKey = `t:${title}:${year || ''}:${omdbType}`;
+  const stored = getOmdbEntry(storedKey);
+  if (stored !== undefined) return Promise.resolve(stored);
+
+  return cached(`omdb:t:${title}:${year || ''}:${omdbType}`, async () => {
     try {
       let url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&type=${omdbType}&apikey=${OMDB_KEY}`;
       if (year) url += `&y=${year}`;
       const res = await fetch(url);
       const data = await res.json();
-      return parseOMDbResponse(data);
+      const result = parseOMDbResponse(data);
+      saveOmdbEntry(storedKey, result);
+      return result;
     } catch { return null; }
   });
 }
@@ -238,10 +310,23 @@ export function enrichItemsWithRatings(items, mediaType) {
   const key = `enriched:${mediaType}:${items.map(i => i.id || i.key).join(',')}`;
   return cached(key, async () => {
     const enriched = items.map(i => ({ ...i }));
+    const scoreStore = getScoreStore();
     const batchSize = 10;
 
-    for (let i = 0; i < enriched.length; i += batchSize) {
-      const batch = enriched.slice(i, i + batchSize);
+    // First pass: apply any stored scores (instant — no API calls)
+    const needsFetch = [];
+    enriched.forEach(item => {
+      const storeKey = `${mediaType}:${item.id}`;
+      if (scoreStore[storeKey] != null) {
+        item.unified_rating = scoreStore[storeKey];
+      } else {
+        needsFetch.push(item);
+      }
+    });
+
+    // Second pass: fetch OMDb only for items without stored scores
+    for (let i = 0; i < needsFetch.length; i += batchSize) {
+      const batch = needsFetch.slice(i, i + batchSize);
       await Promise.all(batch.map(async (item) => {
         const title = item.title || item.name;
         const year = (item.release_date || item.first_air_date || '').slice(0, 4);
@@ -255,6 +340,10 @@ export function enrichItemsWithRatings(items, mediaType) {
         }
 
         item.unified_rating = computeUnifiedRating(omdb, mal, isAnime);
+        // Persist the score for future instant lookups
+        if (item.unified_rating != null) {
+          setSyllabusScore(mediaType, item.id, item.unified_rating);
+        }
       }));
     }
 

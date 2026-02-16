@@ -4,7 +4,7 @@ import { Star, Search, X, Plus, Play } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import ScrollRow from '../components/ScrollRow';
 import { SkeletonRow, SkeletonHero } from '../components/SkeletonCard';
-import { getTrendingMovies, getNowPlayingMovies, getTopRatedMovies, getMoviesByGenre, searchMovies, addToLibrary, getMovieDetails, getOMDbByTitle, computeUnifiedRating } from '../services/api';
+import { getTrendingMovies, getNowPlayingMovies, getTopRatedMovies, getMoviesByGenre, searchMovies, addToLibrary, getMovieDetails, getOMDbByTitle, computeUnifiedRating, setSyllabusScore, applyStoredScores } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
@@ -49,6 +49,7 @@ function Movies() {
     getOMDbByTitle(title, year, 'movie').then(omdb => {
       const unified = computeUnifiedRating(omdb, null, false);
       setHeroRating(unified);
+      if (unified != null && hero.id) setSyllabusScore('movie', hero.id, unified);
     }).catch(() => {});
   }, [hero?.id, hero?.title, hero?.release_date]);
 
@@ -66,11 +67,16 @@ function Movies() {
         setNowPlaying(np);
         setTopRated(tr);
 
+        // Apply any stored Syllabus Scores to all lists
+        applyStoredScores(t, 'movie');
+        applyStoredScores(np, 'movie');
+        applyStoredScores(tr, 'movie');
+
         // Pre-load first 3 genres
         const initial = GENRES.slice(0, 3);
         const genreResults = await Promise.all(initial.map(g => getMoviesByGenre(g.id)));
         const gd = {};
-        initial.forEach((g, i) => { gd[g.id] = genreResults[i]; });
+        initial.forEach((g, i) => { applyStoredScores(genreResults[i], 'movie'); gd[g.id] = genreResults[i]; });
         setGenreData(gd);
         setLoadedGenres(new Set(initial.map(g => g.id)));
       } catch (err) { console.error(err); }
@@ -84,6 +90,7 @@ function Movies() {
     if (loadedGenres.has(genreId)) return;
     setLoadedGenres(prev => new Set([...prev, genreId]));
     const data = await getMoviesByGenre(genreId);
+    applyStoredScores(data, 'movie');
     setGenreData(prev => ({ ...prev, [genreId]: data }));
   }, [loadedGenres]);
 
@@ -197,10 +204,10 @@ function Movies() {
                   <span className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
                   <div className="relative">
                     {item.poster_path && <img src={`${TMDB_IMG}/w500${item.poster_path}`} alt={item.title} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
-                    {item.vote_average > 0 && (
+                    {(item.unified_rating || item.vote_average) > 0 && (
                       <div className="absolute top-1.5 right-1.5 z-20 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold">
                         <Star size={9} className="text-gold fill-gold" />
-                        {Number(item.vote_average).toFixed(1)}
+                        {Number(item.unified_rating ?? item.vote_average).toFixed(1)}
                       </div>
                     )}
                   </div>

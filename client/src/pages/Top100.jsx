@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Star, Trophy, Film, Tv, BookOpen, Users } from 'lucide-react';
 import { SkeletonRow } from '../components/SkeletonCard';
-import { getTop100Movies, getTop100TV, getTop100Books, enrichItemsWithRatings } from '../services/api';
+import { getTop100Movies, getTop100TV, getTop100Books, enrichItemsWithRatings, applyStoredScores } from '../services/api';
 
 // TMDB genre IDs
 const MOVIE_GENRES = [
@@ -77,13 +77,20 @@ function Top100() {
     else if (t === 'shows') result = await getTop100TV(g);
     else result = await getTop100Books(g);
 
-    // Enrich movies/TV with OMDb unified ratings and re-sort
+    // For movies/TV: apply any cached scores instantly, then enrich the rest
     if (t !== 'books') {
-      result = await enrichItemsWithRatings(result, t === 'movies' ? 'movie' : 'tv');
+      const mediaType = t === 'movies' ? 'movie' : 'tv';
+      // Show immediately with whatever scores we have cached
+      applyStoredScores(result, mediaType);
+      setItems([...result]);
+      setLoading(false);
+      // Then enrich remaining items (skips already-cached ones internally)
+      const enriched = await enrichItemsWithRatings(result, mediaType);
+      setItems(enriched);
+    } else {
+      setItems(result);
+      setLoading(false);
     }
-
-    setItems(result);
-    setLoading(false);
   }, []);
 
   useEffect(() => {

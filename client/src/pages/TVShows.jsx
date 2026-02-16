@@ -4,7 +4,7 @@ import { Star, Search, X, Plus, Play } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import ScrollRow from '../components/ScrollRow';
 import { SkeletonRow, SkeletonHero } from '../components/SkeletonCard';
-import { getTrendingTV, getTopRatedTV, getTVByGenre, getAnime, getAnimationTV, searchTV, addToLibrary, getTVDetails, getOMDbByTitle, computeUnifiedRating } from '../services/api';
+import { getTrendingTV, getTopRatedTV, getTVByGenre, getAnime, getAnimationTV, searchTV, addToLibrary, getTVDetails, getOMDbByTitle, computeUnifiedRating, setSyllabusScore, applyStoredScores } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
@@ -48,6 +48,7 @@ function TVShows() {
     getOMDbByTitle(title, year, 'tv').then(omdb => {
       const unified = computeUnifiedRating(omdb, null, false);
       setHeroRating(unified);
+      if (unified != null && hero.id) setSyllabusScore('tv', hero.id, unified);
     }).catch(() => {});
   }, [hero?.id, hero?.name, hero?.first_air_date]);
 
@@ -66,11 +67,17 @@ function TVShows() {
         setAnime(an);
         setAnimation(anim);
 
+        // Apply any stored Syllabus Scores
+        applyStoredScores(t, 'tv');
+        applyStoredScores(tr, 'tv');
+        applyStoredScores(an, 'tv');
+        applyStoredScores(anim, 'tv');
+
         // Pre-load first 3 genres
         const initial = TV_GENRES.slice(0, 3);
         const genreResults = await Promise.all(initial.map(g => getTVByGenre(g.id)));
         const gd = {};
-        initial.forEach((g, i) => { gd[g.id] = genreResults[i]; });
+        initial.forEach((g, i) => { applyStoredScores(genreResults[i], 'tv'); gd[g.id] = genreResults[i]; });
         setGenreData(gd);
         setLoadedGenres(new Set(initial.map(g => g.id)));
       } catch (err) { console.error(err); }
@@ -83,6 +90,7 @@ function TVShows() {
     if (loadedGenres.has(genreId)) return;
     setLoadedGenres(prev => new Set([...prev, genreId]));
     const data = await getTVByGenre(genreId);
+    applyStoredScores(data, 'tv');
     setGenreData(prev => ({ ...prev, [genreId]: data }));
   }, [loadedGenres]);
 
@@ -196,10 +204,10 @@ function TVShows() {
                   <span className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.08)' }}>{i + 1}</span>
                   <div className="relative">
                     {item.poster_path && <img src={`${TMDB_IMG}/w500${item.poster_path}`} alt={item.name} className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]" />}
-                    {item.vote_average > 0 && (
+                    {(item.unified_rating || item.vote_average) > 0 && (
                       <div className="absolute top-1.5 right-1.5 z-20 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold">
                         <Star size={9} className="text-gold fill-gold" />
-                        {Number(item.vote_average).toFixed(1)}
+                        {Number(item.unified_rating ?? item.vote_average).toFixed(1)}
                       </div>
                     )}
                   </div>
