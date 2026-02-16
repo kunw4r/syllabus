@@ -129,6 +129,23 @@ export default function Profile() {
     try {
       // Strip temporary AI fields before saving
       const { _aiPrompt, _aiGenerating, ...cleanForm } = editForm;
+      // Validate avatar URL domain
+      if (cleanForm.avatar_url) {
+        const ALLOWED_AVATAR_HOSTS = ['api.dicebear.com', 'image.pollinations.ai'];
+        try {
+          const url = new URL(cleanForm.avatar_url);
+          if (!ALLOWED_AVATAR_HOSTS.includes(url.hostname)) {
+            toast('Avatar URL must be from DiceBear or Pollinations AI', 'error');
+            return;
+          }
+        } catch {
+          toast('Invalid avatar URL', 'error');
+          return;
+        }
+      }
+      // Sanitize text fields
+      if (cleanForm.display_name) cleanForm.display_name = cleanForm.display_name.slice(0, 50);
+      if (cleanForm.bio) cleanForm.bio = cleanForm.bio.slice(0, 500);
       const updated = await updateProfile(cleanForm);
       setProfile(updated);
       setEditing(false);
@@ -204,6 +221,7 @@ export default function Profile() {
                   placeholder="Display name"
                   value={editForm.display_name || ''}
                   onChange={e => setEditForm(f => ({ ...f, display_name: e.target.value }))}
+                  maxLength={50}
                 />
                 <textarea
                   className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white/70 text-sm w-full max-w-md resize-none focus:outline-none focus:border-accent"
@@ -211,6 +229,7 @@ export default function Profile() {
                   rows={2}
                   value={editForm.bio || ''}
                   onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))}
+                  maxLength={500}
                 />
                 <div className="flex gap-2">
                   <button onClick={handleSaveProfile} className="bg-accent hover:bg-accent/80 text-white px-4 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors">

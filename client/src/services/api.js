@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
-const OMDB_KEY = '4a3b711b';
+const OMDB_KEY = process.env.REACT_APP_OMDB_API_KEY || '4a3b711b';
 const OL_BASE = 'https://openlibrary.org';
 
 // ─── In-memory cache (5-minute TTL) ───
@@ -543,7 +543,9 @@ export async function multiSearch(query) {
 // ─── Library (Supabase) ───
 
 export async function getLibrary(filters = {}) {
-  let query = supabase.from('library').select('*').order('added_at', { ascending: false });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+  let query = supabase.from('library').select('*').eq('user_id', user.id).order('added_at', { ascending: false });
   if (filters.media_type) query = query.eq('media_type', filters.media_type);
   if (filters.status) query = query.eq('status', filters.status);
   const { data, error } = await query;
@@ -572,10 +574,13 @@ export async function addToLibrary(item) {
 }
 
 export async function updateLibraryItem(id, updates) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
   // Use maybeSingle so a 0-row result doesn't throw PGRST116
   const { data, error } = await supabase.from('library')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .maybeSingle();
   if (error) throw new Error(error.message || 'Update failed');
@@ -584,7 +589,9 @@ export async function updateLibraryItem(id, updates) {
 }
 
 export async function removeFromLibrary(id) {
-  const { error } = await supabase.from('library').delete().eq('id', id);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+  const { error } = await supabase.from('library').delete().eq('id', id).eq('user_id', user.id);
   if (error) throw error;
 }
 

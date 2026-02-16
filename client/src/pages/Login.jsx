@@ -71,9 +71,13 @@ function Login() {
                 type="text"
                 placeholder="Username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors"
                 required
+                minLength={3}
+                maxLength={20}
+                pattern="[a-zA-Z0-9_]{3,20}"
+                title="3-20 characters, letters, numbers, and underscores only"
               />
             )}
             <input
