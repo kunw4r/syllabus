@@ -81,9 +81,9 @@ function Navbar() {
       </nav>
 
       {/* Mobile top-right logo */}
-      <div className="fixed top-3 right-4 z-50 lg:hidden">
+      <div className="fixed top-4 right-4 z-50 lg:hidden">
         <NavLink to="/">
-          <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-7" />
+          <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Syllabus" className="h-10" />
         </NavLink>
       </div>
 
