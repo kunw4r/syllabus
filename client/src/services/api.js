@@ -2,6 +2,35 @@
 import { supabase } from './supabase';
 import { searchGoogleBooks, getGoogleBookDetails, mapGoogleBook } from './googleBooks';
 
+/**
+ * Try to enrich a book object with Google Books cover URLs if missing.
+ * Mutates the book object in-place if a better cover is found.
+ */
+async function enrichBookWithGoogleCover(book) {
+  if (book.cover_urls && book.cover_urls.length > 0) return book;
+  // Try ISBN first
+  let gbResults = [];
+  const isbns = (book.industry_identifiers || []).map(id => id.identifier)
+    .concat(book.isbn_13 || [], book.isbn_10 || [], book.isbn || []);
+  for (const isbn of isbns) {
+    gbResults = await searchGoogleBooks(`isbn:${isbn}`, 1);
+    if (gbResults.length > 0) break;
+  }
+  // If no ISBN match, try title+author
+  if (gbResults.length === 0 && book.title) {
+    const q = book.author ? `${book.title} ${book.author}` : book.title;
+    gbResults = await searchGoogleBooks(q, 1);
+  }
+  if (gbResults.length > 0) {
+    const gb = gbResults[0];
+    if (gb.cover_urls && gb.cover_urls.length > 0) {
+      book.cover_urls = gb.cover_urls;
+      book.poster_path = gb.poster_path;
+    }
+  }
+  return book;
+}
+
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.REACT_APP_TMDB_API_KEY;
 const OL_BASE = 'https://openlibrary.org';
@@ -663,10 +692,11 @@ export function getTrendingBooks() {
       const res = await fetch(`${OL_BASE}/trending/weekly.json?limit=30`);
       if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      return (data.works || [])
-        .map(mapOLBook)
-        .filter(b => b.cover_urls.length > 0)
-        .slice(0, 20);
+      let books = (data.works || []).map(mapOLBook).slice(0, 20);
+      // Enrich missing covers in parallel
+      await Promise.all(books.map(b => enrichBookWithGoogleCover(b)));
+      // Only filter out if still no cover after enrichment
+      return books.filter(b => b.cover_urls.length > 0);
     } catch { return []; }
   }, BOOK_CACHE_TTL);
 }
@@ -681,9 +711,9 @@ export function getBooksBySubject(subject) {
       );
       if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      return (data.works || [])
-        .map(mapSubjectWork)
-        .filter(b => b.cover_urls.length > 0);
+      let books = (data.works || []).map(mapSubjectWork);
+      await Promise.all(books.map(b => enrichBookWithGoogleCover(b)));
+      return books.filter(b => b.cover_urls.length > 0);
     } catch { return []; }
   }, BOOK_CACHE_TTL);
 }
