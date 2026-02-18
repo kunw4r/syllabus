@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/syllabus/static/css/main.daad4e79.css",
-    "main.js": "/syllabus/static/js/main.6aa1e011.js",
+    "main.js": "/syllabus/static/js/main.db15881c.js",
     "static/js/632.cb481220.chunk.js": "/syllabus/static/js/632.cb481220.chunk.js",
     "static/js/174.35b64c3b.chunk.js": "/syllabus/static/js/174.35b64c3b.chunk.js",
     "static/js/121.73e198d4.chunk.js": "/syllabus/static/js/121.73e198d4.chunk.js",
@@ -12,10 +12,10 @@
     "static/js/999.c1876157.chunk.js": "/syllabus/static/js/999.c1876157.chunk.js",
     "static/js/988.9c8164b2.chunk.js": "/syllabus/static/js/988.9c8164b2.chunk.js",
     "static/js/14.3d205b7e.chunk.js": "/syllabus/static/js/14.3d205b7e.chunk.js",
-    "static/js/942.ead0fd86.chunk.js": "/syllabus/static/js/942.ead0fd86.chunk.js",
+    "static/js/942.fd870ec1.chunk.js": "/syllabus/static/js/942.fd870ec1.chunk.js",
     "index.html": "/syllabus/index.html",
     "main.daad4e79.css.map": "/syllabus/static/css/main.daad4e79.css.map",
-    "main.6aa1e011.js.map": "/syllabus/static/js/main.6aa1e011.js.map",
+    "main.db15881c.js.map": "/syllabus/static/js/main.db15881c.js.map",
     "632.cb481220.chunk.js.map": "/syllabus/static/js/632.cb481220.chunk.js.map",
     "174.35b64c3b.chunk.js.map": "/syllabus/static/js/174.35b64c3b.chunk.js.map",
     "121.73e198d4.chunk.js.map": "/syllabus/static/js/121.73e198d4.chunk.js.map",
@@ -26,10 +26,10 @@
     "999.c1876157.chunk.js.map": "/syllabus/static/js/999.c1876157.chunk.js.map",
     "988.9c8164b2.chunk.js.map": "/syllabus/static/js/988.9c8164b2.chunk.js.map",
     "14.3d205b7e.chunk.js.map": "/syllabus/static/js/14.3d205b7e.chunk.js.map",
-    "942.ead0fd86.chunk.js.map": "/syllabus/static/js/942.ead0fd86.chunk.js.map"
+    "942.fd870ec1.chunk.js.map": "/syllabus/static/js/942.fd870ec1.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.daad4e79.css",
-    "static/js/main.6aa1e011.js"
+    "static/js/main.db15881c.js"
   ]
 }
