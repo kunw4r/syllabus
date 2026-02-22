@@ -8,11 +8,13 @@ import { getLibrary } from '@/lib/api/library';
 import { getTrendingMovies, getTrendingTV, searchMovies, searchTV } from '@/lib/api/tmdb';
 import { getTrendingBooks, searchBooks } from '@/lib/api/books';
 import { enrichItemsWithRatings, loadStaticScoreDB, applyStoredScores } from '@/lib/scoring';
+import { getAllRecommendations, type RecommendationRow as RecRowType } from '@/lib/services/recommendations';
 import MediaCard from '@/components/ui/MediaCard';
 import ScrollRow from '@/components/ui/ScrollRow';
 import SearchBar from '@/components/ui/SearchBar';
+import HeroBanner from '@/components/ui/HeroBanner';
+import RecommendationRow from '@/components/ui/RecommendationRow';
 import { SkeletonRow } from '@/components/ui/SkeletonCard';
-import { TMDB_IMG } from '@/lib/constants';
 
 interface LibraryItem {
   id: string;
@@ -22,6 +24,11 @@ interface LibraryItem {
   poster_url?: string;
   tmdb_id?: number;
   openlibrary_key?: string;
+  user_rating?: number;
+  external_rating?: number;
+  genres?: string;
+  added_at?: string;
+  updated_at?: string;
 }
 
 interface SearchResultsState {
@@ -40,6 +47,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<SearchResultsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
+  const [recommendations, setRecommendations] = useState<RecRowType[]>([]);
 
   const greetName = user?.user_metadata?.username || user?.email?.split('@')[0];
   const hour = new Date().getHours();
@@ -55,13 +63,13 @@ export default function Home() {
       getTrendingBooks(),
     ]);
 
-    // Phase 1: instant render with stored scores (zero OMDb calls)
+    // Phase 1: instant render with stored scores
     setTrendingMovies(applyStoredScores(movies, 'movie'));
     setTrendingTV(applyStoredScores(tv, 'tv'));
     setTrendingBooks(books);
     setLoading(false);
 
-    // Phase 2: background enrichment (batched OMDb calls)
+    // Phase 2: background enrichment
     enrichItemsWithRatings(movies, 'movie').then(setTrendingMovies);
     enrichItemsWithRatings(tv, 'tv').then(setTrendingTV);
 
@@ -69,8 +77,13 @@ export default function Home() {
       try {
         const lib = await getLibrary();
         setLibrary(lib);
+
+        // Phase 3: compute recommendations in background
+        if (lib.length >= 3) {
+          getAllRecommendations(lib).then(setRecommendations).catch(() => {});
+        }
       } catch {
-        // silently fail if library fetch errors
+        // silently fail
       }
     }
   }, [user]);
@@ -102,11 +115,22 @@ export default function Home() {
     }
   };
 
+  // Hero items: high-rated trending with backdrops
+  const heroItems = trendingMovies
+    .filter((m) => m.backdrop_path && (m.vote_average || 0) >= 6)
+    .slice(0, 5)
+    .map((m) => ({ ...m, media_type: 'movie' }));
+
   return (
     <div className="space-y-8">
+      {/* Hero Banner */}
+      {!loading && heroItems.length > 0 && !searchResults && (
+        <HeroBanner items={heroItems} />
+      )}
+
       {/* Greeting */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">
+        <h1 className={`font-black text-white ${heroItems.length > 0 && !searchResults ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}`}>
           {greeting}{greetName ? `, ${greetName}` : ''}
         </h1>
         <p className="text-sm text-white/40 mt-1">Discover something new today</p>
@@ -155,21 +179,21 @@ export default function Home() {
       {searchResults && (
         <div className="space-y-6">
           {searchResults.movies.length > 0 && (
-            <ScrollRow title={`Movies \u2014 "${searchResults.query}"`}>
+            <ScrollRow title={`Movies — "${searchResults.query}"`}>
               {searchResults.movies.map((m: any) => (
                 <MediaCard key={m.id} item={m} mediaType="movie" />
               ))}
             </ScrollRow>
           )}
           {searchResults.tv.length > 0 && (
-            <ScrollRow title={`TV Shows \u2014 "${searchResults.query}"`}>
+            <ScrollRow title={`TV Shows — "${searchResults.query}"`}>
               {searchResults.tv.map((m: any) => (
                 <MediaCard key={m.id} item={m} mediaType="tv" />
               ))}
             </ScrollRow>
           )}
           {searchResults.books.length > 0 && (
-            <ScrollRow title={`Books \u2014 "${searchResults.query}"`}>
+            <ScrollRow title={`Books — "${searchResults.query}"`}>
               {searchResults.books.map((b: any) => (
                 <MediaCard key={b.key || b.google_books_id} item={b} mediaType="book" />
               ))}
@@ -197,7 +221,7 @@ export default function Home() {
                   />
                 ) : (
                   <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-                    {(item.media_type || 'movie') === 'book' ? '\uD83D\uDCD6' : '\uD83C\uDFAC'}
+                    {(item.media_type || 'movie') === 'book' ? '📖' : '🎬'}
                   </div>
                 )}
               </div>
@@ -207,6 +231,13 @@ export default function Home() {
             </div>
           ))}
         </ScrollRow>
+      )}
+
+      {/* Recommendation rows */}
+      {!searchResults && recommendations.length > 0 && (
+        recommendations.map((row, i) => (
+          <RecommendationRow key={`${row.strategy}-${i}`} row={row} />
+        ))
       )}
 
       {/* Watchlist */}
@@ -228,7 +259,7 @@ export default function Home() {
                   />
                 ) : (
                   <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-                    {(item.media_type || 'movie') === 'book' ? '\uD83D\uDCD6' : '\uD83C\uDFAC'}
+                    {(item.media_type || 'movie') === 'book' ? '📖' : '🎬'}
                   </div>
                 )}
               </div>

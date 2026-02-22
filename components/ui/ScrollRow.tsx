@@ -4,7 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ScrollRowProps {
-  title?: string;
+  title?: ReactNode;
   children: ReactNode;
   className?: string;
 }

@@ -112,6 +112,35 @@ export const TV_GENRES = [
   { id: 10768, name: 'War & Politics' },
 ] as const;
 
+// ─── TMDB Genre ID → Name (reverse lookup for recommendations) ───
+
+export const GENRE_ID_TO_NAME: Record<number, string> = {
+  28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
+  99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+  27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance', 878: 'Sci-Fi',
+  10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western',
+  // TV-specific
+  10759: 'Action & Adventure', 10762: 'Kids', 10763: 'News', 10764: 'Reality',
+  10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics',
+};
+
+// ─── Scenario search suggestions (shown in auto-suggest) ───
+
+export const SCENARIO_SUGGESTIONS: { phrase: string; icon: string }[] = [
+  { phrase: 'feel good movies', icon: '😊' },
+  { phrase: 'mind bending sci-fi', icon: '🧠' },
+  { phrase: 'date night picks', icon: '💕' },
+  { phrase: 'scary horror films', icon: '👻' },
+  { phrase: 'funny comedies', icon: '😂' },
+  { phrase: 'inspiring true stories', icon: '⭐' },
+  { phrase: 'epic adventure films', icon: '🗺️' },
+  { phrase: 'emotional dramas', icon: '😢' },
+  { phrase: 'classic heist movies', icon: '🏦' },
+  { phrase: 'anime to binge watch', icon: '🎌' },
+  { phrase: 'family movie night', icon: '👨‍👩‍👧‍👦' },
+  { phrase: 'thriller suspense', icon: '🔪' },
+];
+
 // ─── Streaming provider ID → name + URL (Where to Watch) ───
 
 export const STREAMING_PROVIDERS: Record<number, { name: string; url: string }> = {
