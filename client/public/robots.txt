@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://kunw4r.github.io/syllabus/sitemap.xml

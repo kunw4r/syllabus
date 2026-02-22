@@ -17,6 +17,10 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
+# old CRA app (migrated to Next.js)
+client/
+server/
+
 # misc
 .DS_Store
 .history/
