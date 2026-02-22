@@ -25,13 +25,13 @@ const fs = require('fs');
 const path = require('path');
 
 // ─── Config ───
-const TMDB_KEY = process.env.TMDB_KEY || process.env.REACT_APP_TMDB_API_KEY || 'e78b9789ddab05e594a195dc997e9c3f';
+const TMDB_KEY = process.env.TMDB_KEY || process.env.TMDB_API_KEY || process.env.REACT_APP_TMDB_API_KEY || 'e78b9789ddab05e594a195dc997e9c3f';
 const OMDB_KEYS = [
-  process.env.OMDB_KEY_1 || '4a3b711b',
-  process.env.OMDB_KEY_2 || '91f420c8',
+  process.env.OMDB_KEY_1 || process.env.OMDB_API_KEY_1 || '4a3b711b',
+  process.env.OMDB_KEY_2 || process.env.OMDB_API_KEY_2 || '91f420c8',
 ].filter(Boolean);
 
-const SCORES_PATH = path.resolve(__dirname, '../client/public/data/scores.json');
+const SCORES_PATH = path.resolve(__dirname, '../public/data/scores.json');
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
 // Parse CLI args
