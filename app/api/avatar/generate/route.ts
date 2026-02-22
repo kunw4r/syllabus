@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-const TIMEOUTS = [20000, 30000, 40000]; // Retry with increasing timeouts
+const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY || '';
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabase();
@@ -10,57 +10,79 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
+  if (!TOGETHER_API_KEY) {
+    return NextResponse.json({ error: 'AI generation not configured' }, { status: 503 });
+  }
+
   const { prompt } = await request.json();
   if (!prompt || typeof prompt !== 'string') {
     return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
   }
 
-  const fullPrompt = encodeURIComponent(
-    `profile avatar portrait, ${prompt.trim()}, centered face, clean background, high quality, digital art`
-  );
-  const pollinationsUrl = `https://image.pollinations.ai/prompt/${fullPrompt}?width=256&height=256&nologo=true`;
+  const fullPrompt = `profile avatar portrait, ${prompt.trim()}, centered face, clean background, high quality, digital art`;
 
-  // Try fetching from Pollinations with retries
+  // Generate image with Together AI FLUX.1-schnell-Free
   let imageBlob: Blob | null = null;
 
-  for (let attempt = 0; attempt < TIMEOUTS.length; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), TIMEOUTS[attempt]);
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const res = await fetch(pollinationsUrl, { signal: controller.signal });
-      clearTimeout(timeoutId);
+    const res = await fetch('https://api.together.xyz/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TOGETHER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'black-forest-labs/FLUX.1-schnell-Free',
+        prompt: fullPrompt,
+        width: 256,
+        height: 256,
+        n: 1,
+        response_format: 'b64_json',
+      }),
+      signal: controller.signal,
+    });
 
-      if (!res.ok) continue;
+    clearTimeout(timeoutId);
 
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.startsWith('image/')) continue;
-
-      imageBlob = await res.blob();
-      break;
-    } catch {
-      // Timeout or network error — retry with longer timeout
-      continue;
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Together AI error:', res.status, err);
+      return NextResponse.json({ error: 'AI generation failed' }, { status: 502 });
     }
-  }
 
-  if (!imageBlob) {
-    return NextResponse.json({ error: 'AI generation timed out' }, { status: 504 });
+    const json = await res.json();
+    const b64 = json.data?.[0]?.b64_json;
+    if (!b64) {
+      return NextResponse.json({ error: 'No image returned' }, { status: 502 });
+    }
+
+    // Convert base64 to Blob
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    imageBlob = new Blob([bytes], { type: 'image/png' });
+  } catch (e: any) {
+    if (e?.name === 'AbortError') {
+      return NextResponse.json({ error: 'AI generation timed out' }, { status: 504 });
+    }
+    console.error('Together AI error:', e);
+    return NextResponse.json({ error: 'AI generation failed' }, { status: 502 });
   }
 
   // Upload to Supabase Storage
-  const ext = imageBlob.type.includes('png') ? 'png' : 'jpg';
-  const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+  const path = `${user.id}/avatar-${Date.now()}.png`;
 
   const { error: uploadError } = await supabase.storage
     .from('avatars')
     .upload(path, imageBlob, {
-      contentType: imageBlob.type,
+      contentType: 'image/png',
       cacheControl: '3600',
       upsert: false,
     });
 
   if (uploadError) {
+    console.error('Supabase upload error:', uploadError);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 
