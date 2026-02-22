@@ -21,6 +21,10 @@ next-env.d.ts
 client/
 server/
 
+# supabase local
+supabase/.temp/
+supabase/.branches/
+
 # misc
 .DS_Store
 .history/

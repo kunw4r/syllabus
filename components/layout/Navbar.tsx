@@ -10,7 +10,6 @@ import {
   TrophyIcon, FilmIcon, TvIcon, BookIcon, ActorsIcon, AwardsIcon,
   LogInIcon, LogOutIcon, XIcon,
 } from '@/components/layout/NavIcons';
-import SearchBar from '@/components/ui/SearchBar';
 
 interface NavItem {
   to: string;
@@ -80,10 +79,6 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <div className="px-3 mb-3">
-          <SearchBar variant="navbar" />
-        </div>
-
         <ul className="flex flex-1 flex-col gap-1 px-3">
           {navItems.map(({ to, Icon, label }) => {
             const active = isActive(pathname, to);
@@ -133,13 +128,10 @@ export default function Navbar() {
 
       {/* Mobile top bar */}
       <header className="fixed top-0 left-0 right-0 z-50 lg:hidden">
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-dark-900/80 backdrop-blur-xl border-b border-white/5">
+        <div className="flex items-center px-4 py-2.5 bg-dark-900/80 backdrop-blur-xl border-b border-white/5">
           <Link href="/" className="shrink-0">
             <Image src="/logo.png" alt="Syllabus" width={112} height={28} className="h-7 w-auto" priority />
           </Link>
-          <div className="flex-1 min-w-0">
-            <SearchBar variant="navbar" />
-          </div>
         </div>
       </header>
 
