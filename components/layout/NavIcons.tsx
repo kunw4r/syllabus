@@ -169,6 +169,36 @@ export function LogOutIcon({ size = 24, active }: IconProps) {
   );
 }
 
+export function ActorsIcon({ size = 24, active }: IconProps) {
+  return active ? (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={s}>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M2 21a7 7 0 0 1 14 0"/>
+      <path d="M19 8v6M16 11h6"/>
+    </svg>
+  ) : (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={s}>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M2 21a7 7 0 0 1 14 0"/>
+      <path d="M19 8v6M16 11h6"/>
+    </svg>
+  );
+}
+
+export function AwardsIcon({ size = 24, active }: IconProps) {
+  return active ? (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={s}>
+      <circle cx="12" cy="8" r="6"/>
+      <path d="M12 14v4M8 22h8M15.5 4.5l2.5-2.5M8.5 4.5 6 2"/>
+    </svg>
+  ) : (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={s}>
+      <circle cx="12" cy="8" r="6"/>
+      <path d="M12 14v4M8 22h8M15.5 4.5l2.5-2.5M8.5 4.5 6 2"/>
+    </svg>
+  );
+}
+
 export function XIcon({ size = 24, active }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={s}>

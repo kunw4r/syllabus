@@ -7,7 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   HomeIcon, CompassIcon, LibraryIcon, SocialIcon, ProfileIcon,
-  TrophyIcon, FilmIcon, TvIcon, BookIcon, LogInIcon, LogOutIcon, XIcon,
+  TrophyIcon, FilmIcon, TvIcon, BookIcon, ActorsIcon, AwardsIcon,
+  LogInIcon, LogOutIcon, XIcon,
 } from '@/components/layout/NavIcons';
 
 interface NavItem {
@@ -37,6 +38,8 @@ export default function Navbar() {
     { to: '/tv', Icon: TvIcon, label: 'TV Shows' },
     { to: '/books', Icon: BookIcon, label: 'Books' },
     { to: '/top100', Icon: TrophyIcon, label: 'Top 100' },
+    { to: '/actors', Icon: ActorsIcon, label: 'Actors' },
+    { to: '/awards', Icon: AwardsIcon, label: 'Awards' },
     ...(user ? [
       { to: '/library', Icon: LibraryIcon, label: 'Library' },
       { to: '/social', Icon: SocialIcon, label: 'Social' },
@@ -62,6 +65,8 @@ export default function Navbar() {
     { to: '/tv', Icon: TvIcon, label: 'TV Shows', color: 'from-cyan-500/20 to-cyan-600/10' },
     { to: '/books', Icon: BookIcon, label: 'Books', color: 'from-amber-500/20 to-amber-600/10' },
     { to: '/top100', Icon: TrophyIcon, label: 'Top 100', color: 'from-purple-500/20 to-purple-600/10' },
+    { to: '/actors', Icon: ActorsIcon, label: 'Actors', color: 'from-pink-500/20 to-pink-600/10' },
+    { to: '/awards', Icon: AwardsIcon, label: 'Awards', color: 'from-yellow-500/20 to-yellow-600/10' },
   ];
 
   return (

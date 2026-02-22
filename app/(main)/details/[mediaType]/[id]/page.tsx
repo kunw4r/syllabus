@@ -986,12 +986,10 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
               <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider">Cast</h3>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {data.credits.cast.slice(0, 10).map((actor: any) => (
-                  <a
+                  <div
                     key={actor.id}
-                    href={`https://www.google.com/search?q=${encodeURIComponent(actor.name + ' actor')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-shrink-0 w-[90px] group/actor text-center"
+                    onClick={() => router.push(`/actors/${actor.id}`)}
+                    className="flex-shrink-0 w-[90px] group/actor text-center cursor-pointer"
                   >
                     {actor.profile_path ? (
                       <img
@@ -1006,7 +1004,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                     )}
                     <p className="text-xs font-medium mt-2 truncate group-hover/actor:text-accent transition-colors">{actor.name}</p>
                     <p className="text-[10px] text-white/30 truncate">{actor.character}</p>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>
