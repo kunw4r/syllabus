@@ -7,16 +7,23 @@
  * ╚══════════════════════════════════════════════════════════════╝
  *
  * DATA FLOW:
- *   TMDB (top rated/popular/now playing)
+ *   TMDB (tiered: homepage → top100 → year backfill → decade backfill)
  *     → OMDb (IMDb + Rotten Tomatoes scores)
  *       → scores.json (static database served via GitHub Pages)
  *         → Website loads on startup (instant scores everywhere)
  *
+ * STRATEGY (4 tiers, highest priority first):
+ *   Tier 1: Homepage/browse titles (trending, now playing, popular, top rated)
+ *   Tier 2: Top 100 candidates (discover by vote_average)
+ *   Tier 3: Year backfill (2025 → 2000, ~160 titles per year)
+ *   Tier 4: Decade backfill (1990s → 1960s)
+ *
  * USAGE:
- *   node scripts/enrich.js                    # Full run
+ *   node scripts/enrich.js                    # Full run (all tiers)
  *   node scripts/enrich.js --limit 100        # Limit OMDb calls
  *   node scripts/enrich.js --movies-only      # Only movies
  *   node scripts/enrich.js --tv-only          # Only TV
+ *   node scripts/enrich.js --backfill-only    # Skip Tier 1+2, only backfill
  *
  * RUNS VIA: GitHub Actions daily at 2am UTC (see .github/workflows/enrich.yml)
  */
@@ -34,11 +41,18 @@ const OMDB_KEYS = [
 const SCORES_PATH = path.resolve(__dirname, '../public/data/scores.json');
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
+// Backfill boundaries
+const BACKFILL_START_YEAR = 2025;
+const BACKFILL_END_YEAR = 2000;
+const DECADE_START = 1990;
+const DECADE_END = 1960;
+
 // Parse CLI args
 const args = process.argv.slice(2);
 const CALL_LIMIT = parseInt(args.find((_, i, a) => a[i - 1] === '--limit') || '1800');
 const MOVIES_ONLY = args.includes('--movies-only');
 const TV_ONLY = args.includes('--tv-only');
+const BACKFILL_ONLY = args.includes('--backfill-only');
 
 // ─── OMDb key rotation ───
 let keyIdx = 0;
@@ -53,23 +67,25 @@ function getKey() {
   return null; // all exhausted
 }
 
+function hasBudget() {
+  return totalCalls < CALL_LIMIT && getKey() !== null;
+}
+
 async function omdbFetch(params) {
-  if (totalCalls >= CALL_LIMIT) return null;
-  const key = getKey();
-  if (!key) return null;
+  if (!hasBudget()) return null;
 
   for (let attempt = 0; attempt < OMDB_KEYS.length; attempt++) {
-    const k = OMDB_KEYS[(keyIdx + attempt) % OMDB_KEYS.length];
-    if (exhausted.has((keyIdx + attempt) % OMDB_KEYS.length)) continue;
+    const idx = (keyIdx + attempt) % OMDB_KEYS.length;
+    if (exhausted.has(idx)) continue;
 
-    const url = `https://www.omdbapi.com/?${params}&apikey=${k}`;
+    const url = `https://www.omdbapi.com/?${params}&apikey=${OMDB_KEYS[idx]}`;
     const res = await fetch(url);
     const data = await res.json();
     totalCalls++;
 
     if (data.Error === 'Request limit reached!') {
-      exhausted.add((keyIdx + attempt) % OMDB_KEYS.length);
-      log(`  ⚠ Key ${attempt + 1} exhausted (${totalCalls} calls so far)`);
+      exhausted.add(idx);
+      log(`  ⚠ Key ${idx + 1} exhausted (${totalCalls} calls so far)`);
       continue;
     }
     return data;
@@ -125,8 +141,18 @@ function computeScore(omdb) {
   return parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1));
 }
 
-// ─── Main enrichment logic ───
-async function loadExistingScores() {
+// Deduplicate an array of TMDB items by ID
+function dedup(items) {
+  const seen = new Set();
+  return items.filter(m => {
+    if (seen.has(m.id)) return false;
+    seen.add(m.id);
+    return true;
+  });
+}
+
+// ─── Score DB helpers ───
+function loadExistingScores() {
   try {
     const raw = fs.readFileSync(SCORES_PATH, 'utf-8');
     return JSON.parse(raw);
@@ -135,108 +161,227 @@ async function loadExistingScores() {
   }
 }
 
-async function fetchTMDBCatalog() {
-  const catalog = { movie: [], tv: [] };
-
-  if (!TV_ONLY) {
-    log('📽  Fetching TMDB movies...');
-    const [topRated, popular, nowPlaying, trending, topVoted] = await Promise.all([
-      tmdbPages('/movie/top_rated', 10),      // 200 movies
-      tmdbPages('/movie/popular', 5),          // 100 movies
-      tmdbPages('/movie/now_playing', 3),      // 60 movies
-      tmdbPages('/trending/movie/week', 3),    // 60 movies
-      // Top 100 source: discover sorted by vote_average — ensures coverage
-      tmdbPages('/discover/movie', 5, '&sort_by=vote_average.desc&vote_count.gte=1000'), // 100 movies
-    ]);
-    // Deduplicate by ID
-    const seen = new Set();
-    [...topRated, ...popular, ...nowPlaying, ...trending, ...topVoted].forEach(m => {
-      if (!seen.has(m.id)) { seen.add(m.id); catalog.movie.push(m); }
-    });
-    log(`   Found ${catalog.movie.length} unique movies`);
-  }
-
-  if (!MOVIES_ONLY) {
-    log('📺  Fetching TMDB TV shows...');
-    const [topRated, popular, trending, topVoted] = await Promise.all([
-      tmdbPages('/tv/top_rated', 10),          // 200 shows
-      tmdbPages('/tv/popular', 5),             // 100 shows
-      tmdbPages('/trending/tv/week', 3),       // 60 shows
-      // Top 100 source: discover sorted by vote_average — ensures coverage
-      tmdbPages('/discover/tv', 5, '&sort_by=vote_average.desc&vote_count.gte=500'), // 100 shows
-    ]);
-    const seen = new Set();
-    [...topRated, ...popular, ...trending, ...topVoted].forEach(s => {
-      if (!seen.has(s.id)) { seen.add(s.id); catalog.tv.push(s); }
-    });
-    log(`   Found ${catalog.tv.length} unique TV shows`);
-  }
-
-  return catalog;
+function saveScores(db) {
+  fs.mkdirSync(path.dirname(SCORES_PATH), { recursive: true });
+  fs.writeFileSync(SCORES_PATH, JSON.stringify(db));
 }
 
-async function enrichCatalog(catalog, db) {
-  const types = [];
-  if (!TV_ONLY) types.push(['movie', catalog.movie]);
-  if (!MOVIES_ONLY) types.push(['tv', catalog.tv]);
-
+// ─── Enrichment core ───
+// Enrich a list of TMDB items, returns count of new scores added
+async function enrichItems(items, type, db) {
   let newScores = 0;
-  let skipped = 0;
 
-  for (const [type, items] of types) {
-    log(`\n🔍  Enriching ${items.length} ${type === 'movie' ? 'movies' : 'TV shows'}...`);
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const id = String(item.id);
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const id = String(item.id);
+    // Skip if already in database
+    if (db[type][id]) continue;
 
-      // Skip if already in database
-      if (db[type][id]) { skipped++; continue; }
-
-      // Check call budget
-      if (totalCalls >= CALL_LIMIT || getKey() === null) {
-        log(`   ⏸  Budget reached (${totalCalls}/${CALL_LIMIT} calls). Stopping.`);
-        return { newScores, skipped };
-      }
-
-      // Get IMDb ID from TMDB
-      const title = item.title || item.name;
-      const year = (item.release_date || item.first_air_date || '').slice(0, 4);
-
-      // Try by title first (no need for extra TMDB call for imdb_id)
-      const omdbType = type === 'tv' ? 'series' : 'movie';
-      let params = `t=${encodeURIComponent(title)}&type=${omdbType}`;
-      if (year) params += `&y=${year}`;
-
-      const omdbData = await omdbFetch(params);
-      if (!omdbData) { skipped++; continue; }
-
-      const parsed = parseOMDb(omdbData);
-      const score = computeScore(parsed);
-
-      if (parsed || score) {
-        db[type][id] = {
-          t: title,                                    // title
-          s: score,                                    // syllabus score
-          i: parsed?.imdb || null,                     // imdb score
-          r: parsed?.rt || null,                       // rotten tomatoes %
-          ii: parsed?.imdb_id || null,                 // imdb id
-          y: year || null,                             // year
-        };
-        newScores++;
-      }
-
-      // Progress log every 50 items
-      if ((i + 1) % 50 === 0) {
-        log(`   ${type}: ${i + 1}/${items.length} processed (${newScores} new, ${totalCalls} API calls)`);
-      }
-
-      // Throttle: 200ms between calls to be respectful
-      await sleep(200);
+    // Check call budget
+    if (!hasBudget()) {
+      log(`   ⏸  Budget reached (${totalCalls}/${CALL_LIMIT} calls). Stopping tier.`);
+      break;
     }
+
+    const title = item.title || item.name;
+    const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+    const omdbType = type === 'tv' ? 'series' : 'movie';
+    let params = `t=${encodeURIComponent(title)}&type=${omdbType}`;
+    if (year) params += `&y=${year}`;
+
+    const omdbData = await omdbFetch(params);
+    if (!omdbData) continue;
+
+    const parsed = parseOMDb(omdbData);
+    const score = computeScore(parsed);
+
+    if (parsed || score) {
+      db[type][id] = {
+        t: title,
+        s: score,
+        i: parsed?.imdb || null,
+        r: parsed?.rt || null,
+        ii: parsed?.imdb_id || null,
+        y: year || null,
+      };
+      newScores++;
+    }
+
+    // Progress log every 50 items
+    if ((i + 1) % 50 === 0) {
+      log(`   ${type}: ${i + 1}/${items.length} processed (${newScores} new, ${totalCalls} calls)`);
+    }
+
+    await sleep(200);
   }
 
-  return { newScores, skipped };
+  return newScores;
+}
+
+// ─── Tier 1: Homepage & Browse titles ───
+async function fetchTier1(db) {
+  log('\n── TIER 1: Homepage & Browse Titles ──');
+
+  let totalNew = 0;
+
+  if (!TV_ONLY) {
+    log('📽  Fetching homepage/browse movies...');
+    const [trending, nowPlaying, topRated, popular] = await Promise.all([
+      tmdbPages('/trending/movie/week', 2),        // 40 titles
+      tmdbPages('/movie/now_playing', 3),           // 60 titles
+      tmdbPages('/movie/top_rated', 3),             // 60 titles
+      tmdbPages('/movie/popular', 5),               // 100 titles
+    ]);
+    const movies = dedup([...trending, ...nowPlaying, ...topRated, ...popular]);
+    log(`   ${movies.length} unique movies (${movies.filter(m => !db.movie[String(m.id)]).length} new)`);
+    totalNew += await enrichItems(movies, 'movie', db);
+  }
+
+  if (!MOVIES_ONLY && hasBudget()) {
+    log('📺  Fetching homepage/browse TV...');
+    const [trending, airingToday, topRated, popular] = await Promise.all([
+      tmdbPages('/trending/tv/week', 2),            // 40 titles
+      tmdbPages('/tv/airing_today', 3),             // 60 titles
+      tmdbPages('/tv/top_rated', 3),                // 60 titles
+      tmdbPages('/tv/popular', 5),                  // 100 titles
+    ]);
+    const shows = dedup([...trending, ...airingToday, ...topRated, ...popular]);
+    log(`   ${shows.length} unique TV shows (${shows.filter(s => !db.tv[String(s.id)]).length} new)`);
+    totalNew += await enrichItems(shows, 'tv', db);
+  }
+
+  log(`   Tier 1 done: +${totalNew} new scores (${totalCalls} calls used)`);
+  return totalNew;
+}
+
+// ─── Tier 2: Top 100 Candidates ───
+async function fetchTier2(db) {
+  log('\n── TIER 2: Top 100 Candidates ──');
+
+  let totalNew = 0;
+
+  if (!TV_ONLY) {
+    log('🏆  Fetching top-voted movies...');
+    const topMovies = dedup(await tmdbPages('/discover/movie', 10, '&sort_by=vote_average.desc&vote_count.gte=1000'));
+    log(`   ${topMovies.length} movies (${topMovies.filter(m => !db.movie[String(m.id)]).length} new)`);
+    totalNew += await enrichItems(topMovies, 'movie', db);
+  }
+
+  if (!MOVIES_ONLY && hasBudget()) {
+    log('🏆  Fetching top-voted TV...');
+    const topTV = dedup(await tmdbPages('/discover/tv', 10, '&sort_by=vote_average.desc&vote_count.gte=500'));
+    log(`   ${topTV.length} TV shows (${topTV.filter(s => !db.tv[String(s.id)]).length} new)`);
+    totalNew += await enrichItems(topTV, 'tv', db);
+  }
+
+  log(`   Tier 2 done: +${totalNew} new scores (${totalCalls} calls used)`);
+  return totalNew;
+}
+
+// ─── Tier 3: Year-Based Backfill ───
+async function fetchTier3(db) {
+  log('\n── TIER 3: Year-Based Backfill ──');
+
+  const startYear = db._meta.backfillYear ?? BACKFILL_START_YEAR;
+  let currentYear = startYear;
+  let totalNew = 0;
+  let yearsProcessed = 0;
+
+  while (currentYear >= BACKFILL_END_YEAR && hasBudget()) {
+    log(`\n📅  Backfilling year ${currentYear}...`);
+    let yearNew = 0;
+
+    if (!TV_ONLY && hasBudget()) {
+      const movies = dedup(await tmdbPages(
+        '/discover/movie', 5,
+        `&primary_release_year=${currentYear}&sort_by=popularity.desc&vote_count.gte=50`
+      ));
+      const newMovies = movies.filter(m => !db.movie[String(m.id)]).length;
+      log(`   ${currentYear} movies: ${movies.length} found, ${newMovies} new`);
+      yearNew += await enrichItems(movies, 'movie', db);
+    }
+
+    if (!MOVIES_ONLY && hasBudget()) {
+      const shows = dedup(await tmdbPages(
+        '/discover/tv', 3,
+        `&first_air_date_year=${currentYear}&sort_by=popularity.desc&vote_count.gte=50`
+      ));
+      const newShows = shows.filter(s => !db.tv[String(s.id)]).length;
+      log(`   ${currentYear} TV: ${shows.length} found, ${newShows} new`);
+      yearNew += await enrichItems(shows, 'tv', db);
+    }
+
+    totalNew += yearNew;
+    yearsProcessed++;
+    log(`   ${currentYear} complete: +${yearNew} scores`);
+
+    // Move to next year
+    currentYear--;
+
+    // Save progress after each year so we don't lose work on crash
+    db._meta.backfillYear = currentYear;
+    saveScores(db);
+  }
+
+  if (currentYear < BACKFILL_END_YEAR) {
+    log('   Year backfill complete! All years 2025-2000 covered.');
+    db._meta.backfillYear = 'done';
+  }
+
+  log(`   Tier 3 done: ${yearsProcessed} years, +${totalNew} new scores (${totalCalls} calls used)`);
+  return totalNew;
+}
+
+// ─── Tier 4: Decade Backfill (pre-2000) ───
+async function fetchTier4(db) {
+  log('\n── TIER 4: Decade Backfill ──');
+
+  const startDecade = db._meta.backfillDecade ?? DECADE_START;
+  let currentDecade = startDecade;
+  let totalNew = 0;
+
+  while (currentDecade >= DECADE_END && hasBudget()) {
+    const decadeEnd = currentDecade + 9;
+    log(`\n📅  Backfilling ${currentDecade}s (${currentDecade}-${decadeEnd})...`);
+    let decadeNew = 0;
+
+    if (!TV_ONLY && hasBudget()) {
+      const movies = dedup(await tmdbPages(
+        '/discover/movie', 5,
+        `&primary_release_date.gte=${currentDecade}-01-01&primary_release_date.lte=${decadeEnd}-12-31&sort_by=vote_count.desc`
+      ));
+      const newMovies = movies.filter(m => !db.movie[String(m.id)]).length;
+      log(`   ${currentDecade}s movies: ${movies.length} found, ${newMovies} new`);
+      decadeNew += await enrichItems(movies, 'movie', db);
+    }
+
+    if (!MOVIES_ONLY && hasBudget()) {
+      const shows = dedup(await tmdbPages(
+        '/discover/tv', 3,
+        `&first_air_date.gte=${currentDecade}-01-01&first_air_date.lte=${decadeEnd}-12-31&sort_by=vote_count.desc`
+      ));
+      const newShows = shows.filter(s => !db.tv[String(s.id)]).length;
+      log(`   ${currentDecade}s TV: ${shows.length} found, ${newShows} new`);
+      decadeNew += await enrichItems(shows, 'tv', db);
+    }
+
+    totalNew += decadeNew;
+    log(`   ${currentDecade}s complete: +${decadeNew} scores`);
+
+    // Move to previous decade
+    currentDecade -= 10;
+    db._meta.backfillDecade = currentDecade;
+    saveScores(db);
+  }
+
+  if (currentDecade < DECADE_END) {
+    log('   Decade backfill complete! All decades covered.');
+    db._meta.backfillDecade = 'done';
+  }
+
+  log(`   Tier 4 done: +${totalNew} new scores (${totalCalls} calls used)`);
+  return totalNew;
 }
 
 // ─── Entry point ───
@@ -244,40 +389,69 @@ async function main() {
   console.log('\n' + '═'.repeat(60));
   log('🚀  Syllabus Score Enrichment Agent starting...');
   log(`   Keys: ${OMDB_KEYS.length} | Budget: ${CALL_LIMIT} calls`);
+  if (BACKFILL_ONLY) log('   Mode: backfill-only (skipping Tier 1+2)');
+  if (MOVIES_ONLY) log('   Mode: movies-only');
+  if (TV_ONLY) log('   Mode: tv-only');
   console.log('═'.repeat(60) + '\n');
 
   // Load existing database
-  const db = await loadExistingScores();
-  const existingMovies = Object.keys(db.movie || {}).length;
-  const existingTV = Object.keys(db.tv || {}).length;
+  const db = loadExistingScores();
+  if (!db.movie) db.movie = {};
+  if (!db.tv) db.tv = {};
+  if (!db._meta) db._meta = {};
+
+  const existingMovies = Object.keys(db.movie).length;
+  const existingTV = Object.keys(db.tv).length;
   log(`📦  Existing database: ${existingMovies} movies, ${existingTV} TV shows`);
+  if (db._meta.backfillYear !== undefined) log(`   Backfill year: ${db._meta.backfillYear}`);
+  if (db._meta.backfillDecade !== undefined) log(`   Backfill decade: ${db._meta.backfillDecade}`);
 
-  // Fetch TMDB catalog
-  const catalog = await fetchTMDBCatalog();
+  let totalNew = 0;
 
-  // Enrich with OMDb scores
-  const { newScores, skipped } = await enrichCatalog(catalog, db);
+  // ── Tier 1: Homepage & Browse (always, unless --backfill-only) ──
+  if (!BACKFILL_ONLY && hasBudget()) {
+    totalNew += await fetchTier1(db);
+  }
+
+  // ── Tier 2: Top 100 Candidates (always, unless --backfill-only) ──
+  if (!BACKFILL_ONLY && hasBudget()) {
+    totalNew += await fetchTier2(db);
+  }
+
+  // ── Tier 3: Year backfill (2025 → 2000) ──
+  if (hasBudget() && db._meta.backfillYear !== 'done') {
+    totalNew += await fetchTier3(db);
+  }
+
+  // ── Tier 4: Decade backfill (1990s → 1960s) ──
+  if (hasBudget() && db._meta.backfillYear === 'done' && db._meta.backfillDecade !== 'done') {
+    totalNew += await fetchTier4(db);
+  }
 
   // Update metadata
-  db._meta = {
-    lastRun: new Date().toISOString(),
-    totalMovies: Object.keys(db.movie).length,
-    totalTV: Object.keys(db.tv).length,
-    omdbCallsThisRun: totalCalls,
-    newScoresThisRun: newScores,
-  };
+  db._meta.lastRun = new Date().toISOString();
+  db._meta.totalMovies = Object.keys(db.movie).length;
+  db._meta.totalTV = Object.keys(db.tv).length;
+  db._meta.omdbCallsThisRun = totalCalls;
+  db._meta.newScoresThisRun = totalNew;
 
-  // Write the database
-  fs.mkdirSync(path.dirname(SCORES_PATH), { recursive: true });
-  fs.writeFileSync(SCORES_PATH, JSON.stringify(db));
+  // Write final database
+  saveScores(db);
   const sizeKB = (Buffer.byteLength(JSON.stringify(db)) / 1024).toFixed(1);
 
   console.log('\n' + '═'.repeat(60));
   log('✅  Enrichment complete!');
   log(`   📊  ${db._meta.totalMovies} movies + ${db._meta.totalTV} TV shows`);
-  log(`   🆕  ${newScores} new scores added`);
+  log(`   🆕  ${totalNew} new scores added`);
   log(`   📱  ${totalCalls} OMDb API calls used`);
   log(`   💾  ${SCORES_PATH} (${sizeKB} KB)`);
+  if (db._meta.backfillYear !== 'done') {
+    log(`   📅  Next backfill year: ${db._meta.backfillYear ?? BACKFILL_START_YEAR}`);
+  } else if (db._meta.backfillDecade !== 'done') {
+    log(`   📅  Next backfill decade: ${db._meta.backfillDecade}s`);
+  } else {
+    log(`   🎉  All backfill complete!`);
+  }
   console.log('═'.repeat(60) + '\n');
 }
 
