@@ -1,67 +1,29 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
 
-    // Skip auth checks if Supabase is not configured
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.next();
-    }
+  // Check for Supabase auth cookie (sb-<project-ref>-auth-token)
+  const hasAuthCookie = request.cookies.getAll().some(
+    (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
+  );
 
-    // Dynamic import to avoid Edge runtime issues
-    const { createServerClient } = await import('@supabase/ssr');
-
-    let supabaseResponse = NextResponse.next({ request });
-
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value)
-            );
-            supabaseResponse = NextResponse.next({ request });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options)
-            );
-          },
-        },
-      }
-    );
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const pathname = request.nextUrl.pathname;
-
-    // Protected routes: redirect to /login if not authenticated
-    const protectedPaths = ['/library', '/profile', '/social'];
-    if (!user && protectedPaths.some((p) => pathname.startsWith(p))) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
-    }
-
-    // Redirect authenticated users away from /login
-    if (user && pathname === '/login') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/';
-      return NextResponse.redirect(url);
-    }
-
-    return supabaseResponse;
-  } catch {
-    // If anything fails, allow the request through
-    return NextResponse.next();
+  // Protected routes: redirect to /login if not authenticated
+  const protectedPaths = ['/library', '/profile', '/social'];
+  if (!hasAuthCookie && protectedPaths.some((p) => pathname.startsWith(p))) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
   }
+
+  // Redirect authenticated users away from /login
+  if (hasAuthCookie && pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
