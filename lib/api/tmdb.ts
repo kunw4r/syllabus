@@ -106,7 +106,7 @@ export function getTop100Movies(genreId: number | null = null) {
     const genreParam = genreId ? `&with_genres=${genreId}` : '';
     const minVotes = genreId ? 500 : 1000;
     const pages = await Promise.all(
-      [1, 2, 3, 4, 5].map((p) =>
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((p) =>
         tmdb('/discover/movie', `sort_by=vote_average.desc&vote_count.gte=${minVotes}${genreParam}&page=${p}`)
       )
     );
@@ -125,7 +125,7 @@ export function getTop100TV(genreId: number | null = null) {
     const genreParam = genreId ? `&with_genres=${genreId}` : '';
     const minVotes = genreId ? 200 : 500;
     const pages = await Promise.all(
-      [1, 2, 3, 4, 5].map((p) =>
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((p) =>
         tmdb('/discover/tv', `sort_by=vote_average.desc&vote_count.gte=${minVotes}${genreParam}&page=${p}`)
       )
     );

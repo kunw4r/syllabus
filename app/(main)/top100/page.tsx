@@ -264,7 +264,7 @@ function Top100Content() {
       const cachedItems = getCachedChart(chartKey);
       if (cachedItems && cachedItems.length > 0) {
         if (stale()) return;
-        setItems(cachedItems);
+        setItems(cachedItems.slice(0, 100));
         setLoading(false);
         const age = getChartAge(chartKey);
         setLastUpdated(age);
@@ -280,7 +280,7 @@ function Top100Content() {
         if (stale()) return;
         const enriched = await enrichChart(raw, mediaType, chartKey, onProgress);
         if (stale()) return;
-        setItems(enriched);
+        setItems(enriched.slice(0, 100));
         setLastUpdated(0);
         return;
       }
@@ -302,13 +302,13 @@ function Top100Content() {
         const rb = b.unified_rating ?? b.vote_average ?? 0;
         return rb - ra;
       });
-      setItems([...result]);
+      setItems(result.slice(0, 100));
       setLoading(false);
 
       // Enrich in background with progress bar
       const enriched = await enrichChart(result, mediaType, chartKey, onProgress);
       if (stale()) return;
-      setItems(enriched);
+      setItems(enriched.slice(0, 100));
       setLastUpdated(0);
     } else {
       setItems(result);
