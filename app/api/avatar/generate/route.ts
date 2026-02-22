@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const fullPrompt = encodeURIComponent(
     `profile avatar portrait, ${prompt.trim()}, centered face, clean background, high quality, digital art`
   );
-  const pollinationsUrl = `https://image.pollinations.ai/prompt/${fullPrompt}?width=256&height=256&nologo=true&model=flux`;
+  const pollinationsUrl = `https://image.pollinations.ai/prompt/${fullPrompt}?width=256&height=256&nologo=true`;
 
   // Try fetching from Pollinations with retries
   let imageBlob: Blob | null = null;

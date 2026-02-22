@@ -26,6 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = getClient();
 
   useEffect(() => {
+    // Clear corrupted Supabase cookies that cause "Invalid value" fetch errors
+    const clearCorruptedCookies = () => {
+      document.cookie.split(';').forEach((c) => {
+        const name = c.trim().split('=')[0];
+        if (name.startsWith('sb-') && name.endsWith('-auth-token')) {
+          const val = c.trim().split('=').slice(1).join('=');
+          // Corrupted if the value is empty, "undefined", or clearly broken
+          if (!val || val === 'undefined' || val === 'null' || val.length < 10) {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          }
+        }
+      });
+    };
+    clearCorruptedCookies();
+
     supabase.auth.getSession().then((res: any) => {
       setUser(res.data?.session?.user ?? null);
       setLoading(false);
@@ -41,26 +56,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   const signUp = async (email: string, password: string, username: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username },
-      },
-    });
-    if (error) return { data, error };
-    if (data?.user) {
-      await supabase
-        .from('profiles')
-        .upsert({ id: data.user.id, username }, { onConflict: 'id' })
-        .select();
+    const doSignUp = async () => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { username } },
+      });
+      if (error) return { data, error };
+      if (data?.user) {
+        await supabase
+          .from('profiles')
+          .upsert({ id: data.user.id, username }, { onConflict: 'id' })
+          .select();
+      }
+      return { data, error: null };
+    };
+
+    try {
+      return await doSignUp();
+    } catch (e: any) {
+      if (e?.message?.includes('Invalid value')) {
+        document.cookie.split(';').forEach((c) => {
+          const name = c.trim().split('=')[0];
+          if (name.startsWith('sb-')) {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          }
+        });
+        return await doSignUp();
+      }
+      return { data: null, error: e };
     }
-    return { data, error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      return { data, error };
+    } catch (e: any) {
+      // "Invalid value" fetch error = corrupted cookies — clear them and retry once
+      if (e?.message?.includes('Invalid value')) {
+        document.cookie.split(';').forEach((c) => {
+          const name = c.trim().split('=')[0];
+          if (name.startsWith('sb-')) {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          }
+        });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        return { data, error };
+      }
+      return { data: null, error: e };
+    }
   };
 
   const signOut = async () => {
