@@ -9,6 +9,7 @@
  * DATA FLOW:
  *   TMDB (tiered: homepage → top100 → year backfill → decade backfill)
  *     → OMDb (IMDb + Rotten Tomatoes scores)
+ *     → Jikan/MAL (anime scores, for Japanese animation titles)
  *       → scores.json (static database served via GitHub Pages)
  *         → Website loads on startup (instant scores everywhere)
  *
@@ -40,6 +41,7 @@ const OMDB_KEYS = [
 
 const SCORES_PATH = path.resolve(__dirname, '../public/data/scores.json');
 const TMDB_BASE = 'https://api.themoviedb.org/3';
+const JIKAN_BASE = 'https://api.jikan.moe/v4';
 
 // Backfill boundaries
 const BACKFILL_START_YEAR = 2025;
@@ -91,6 +93,37 @@ async function omdbFetch(params) {
     return data;
   }
   return null;
+}
+
+// ─── Jikan/MAL helpers ───
+let jikanCalls = 0;
+
+async function jikanFetch(title) {
+  const url = `${JIKAN_BASE}/anime?q=${encodeURIComponent(title)}&limit=1`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    jikanCalls++;
+    const anime = data.data?.[0];
+    if (!anime?.score) return null;
+    return { score: anime.score, mal_id: anime.mal_id };
+  } catch {
+    return null;
+  }
+}
+
+function isAnimeItem(item) {
+  return item.original_language === 'ja' &&
+    (item.genre_ids?.includes(16) || item.genres?.some(g => g.id === 16));
+}
+
+function computeAnimeScore(imdb, malScore) {
+  const scores = [];
+  if (imdb) scores.push(imdb);
+  if (malScore) scores.push(malScore);
+  if (scores.length === 0) return null;
+  return parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1));
 }
 
 // ─── TMDB helpers ───
@@ -170,6 +203,7 @@ function saveScores(db) {
 // Enrich a list of TMDB items, returns count of new scores added
 async function enrichItems(items, type, db) {
   let newScores = 0;
+  let animeCount = 0;
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -186,6 +220,7 @@ async function enrichItems(items, type, db) {
 
     const title = item.title || item.name;
     const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+    const anime = isAnimeItem(item);
     const omdbType = type === 'tv' ? 'series' : 'movie';
     let params = `t=${encodeURIComponent(title)}&type=${omdbType}`;
     if (year) params += `&y=${year}`;
@@ -194,26 +229,48 @@ async function enrichItems(items, type, db) {
     if (!omdbData) continue;
 
     const parsed = parseOMDb(omdbData);
-    const score = computeScore(parsed);
 
-    if (parsed || score) {
-      db[type][id] = {
-        t: title,
-        s: score,
-        i: parsed?.imdb || null,
-        r: parsed?.rt || null,
-        ii: parsed?.imdb_id || null,
-        y: year || null,
-      };
-      newScores++;
+    if (anime) {
+      // Anime: fetch MAL score via Jikan, compute avg(IMDb, MAL)
+      animeCount++;
+      const mal = await jikanFetch(title);
+      await sleep(1000); // Jikan rate limit: 1 req/sec
+
+      const score = computeAnimeScore(parsed?.imdb, mal?.score);
+      if (parsed || score) {
+        db[type][id] = {
+          t: title,
+          s: score,
+          i: parsed?.imdb || null,
+          r: null,
+          m: mal?.score || null,
+          ii: parsed?.imdb_id || null,
+          y: year || null,
+        };
+        newScores++;
+      }
+    } else {
+      // Non-anime: existing flow, avg(IMDb, RT/10)
+      const score = computeScore(parsed);
+      if (parsed || score) {
+        db[type][id] = {
+          t: title,
+          s: score,
+          i: parsed?.imdb || null,
+          r: parsed?.rt || null,
+          ii: parsed?.imdb_id || null,
+          y: year || null,
+        };
+        newScores++;
+      }
     }
 
     // Progress log every 50 items
     if ((i + 1) % 50 === 0) {
-      log(`   ${type}: ${i + 1}/${items.length} processed (${newScores} new, ${totalCalls} calls)`);
+      log(`   ${type}: ${i + 1}/${items.length} processed (${newScores} new, ${animeCount} anime, ${totalCalls} OMDb + ${jikanCalls} Jikan calls)`);
     }
 
-    await sleep(200);
+    if (!anime) await sleep(200);
   }
 
   return newScores;
@@ -233,8 +290,10 @@ async function fetchTier1(db) {
       tmdbPages('/movie/top_rated', 3),             // 60 titles
       tmdbPages('/movie/popular', 5),               // 100 titles
     ]);
-    const movies = dedup([...trending, ...nowPlaying, ...topRated, ...popular]);
-    log(`   ${movies.length} unique movies (${movies.filter(m => !db.movie[String(m.id)]).length} new)`);
+    const animeMovies = await tmdbPages('/discover/movie', 3,
+      '&with_genres=16&with_original_language=ja&sort_by=popularity.desc');
+    const movies = dedup([...trending, ...nowPlaying, ...topRated, ...popular, ...animeMovies]);
+    log(`   ${movies.length} unique movies (${movies.filter(m => !db.movie[String(m.id)]).length} new, incl. anime)`);
     totalNew += await enrichItems(movies, 'movie', db);
   }
 
@@ -246,8 +305,10 @@ async function fetchTier1(db) {
       tmdbPages('/tv/top_rated', 3),                // 60 titles
       tmdbPages('/tv/popular', 5),                  // 100 titles
     ]);
-    const shows = dedup([...trending, ...airingToday, ...topRated, ...popular]);
-    log(`   ${shows.length} unique TV shows (${shows.filter(s => !db.tv[String(s.id)]).length} new)`);
+    const animeTV = await tmdbPages('/discover/tv', 5,
+      '&with_genres=16&with_original_language=ja&sort_by=popularity.desc');
+    const shows = dedup([...trending, ...airingToday, ...topRated, ...popular, ...animeTV]);
+    log(`   ${shows.length} unique TV shows (${shows.filter(s => !db.tv[String(s.id)]).length} new, incl. anime)`);
     totalNew += await enrichItems(shows, 'tv', db);
   }
 
@@ -428,11 +489,17 @@ async function main() {
     totalNew += await fetchTier4(db);
   }
 
+  // Count anime entries
+  const animeMovies = Object.values(db.movie).filter(e => e.m != null).length;
+  const animeTV = Object.values(db.tv).filter(e => e.m != null).length;
+
   // Update metadata
   db._meta.lastRun = new Date().toISOString();
   db._meta.totalMovies = Object.keys(db.movie).length;
   db._meta.totalTV = Object.keys(db.tv).length;
+  db._meta.totalAnime = animeMovies + animeTV;
   db._meta.omdbCallsThisRun = totalCalls;
+  db._meta.jikanCallsThisRun = jikanCalls;
   db._meta.newScoresThisRun = totalNew;
 
   // Write final database
@@ -441,9 +508,9 @@ async function main() {
 
   console.log('\n' + '═'.repeat(60));
   log('✅  Enrichment complete!');
-  log(`   📊  ${db._meta.totalMovies} movies + ${db._meta.totalTV} TV shows`);
+  log(`   📊  ${db._meta.totalMovies} movies + ${db._meta.totalTV} TV shows (${db._meta.totalAnime} anime)`);
   log(`   🆕  ${totalNew} new scores added`);
-  log(`   📱  ${totalCalls} OMDb API calls used`);
+  log(`   📱  ${totalCalls} OMDb + ${jikanCalls} Jikan API calls used`);
   log(`   💾  ${SCORES_PATH} (${sizeKB} KB)`);
   if (db._meta.backfillYear !== 'done') {
     log(`   📅  Next backfill year: ${db._meta.backfillYear ?? BACKFILL_START_YEAR}`);
