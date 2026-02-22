@@ -7,6 +7,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'books.google.com' },
       { protocol: 'https', hostname: 'encrypted-tbn0.gstatic.com' },
       { protocol: 'https', hostname: 'api.dicebear.com' },
+      { protocol: 'https', hostname: '*.supabase.co' },
+      { protocol: 'https', hostname: 'image.pollinations.ai' },
     ],
   },
 };

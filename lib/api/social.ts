@@ -5,46 +5,30 @@ import { getLibrary } from '@/lib/api/library';
 // ─── Avatar Presets ───
 
 export const AVATAR_PRESETS: Record<string, string[]> = {
-  'Adventurer': [
-    'Neo', 'Trinity', 'Ripley', 'Goku', 'Totoro', 'Yoda',
-    'Athena', 'Zephyr', 'Cosmo', 'Pixel', 'Blaze', 'Orbit',
-  ].map(s => `https://api.dicebear.com/9.x/adventurer/svg?seed=${s}`),
+  'Anime & Manga': [
+    ...['Goku', 'Sailor', 'Naruto', 'Totoro'].map(s => `https://api.dicebear.com/9.x/adventurer/svg?seed=${s}`),
+    ...['Sakura', 'Akira', 'Miku', 'Shinra'].map(s => `https://api.dicebear.com/9.x/lorelei/svg?seed=${s}`),
+  ],
+  'Sci-Fi & Cyber': [
+    ...['Neon', 'Cipher', 'Glitch', 'Matrix'].map(s => `https://api.dicebear.com/9.x/glass/svg?seed=${s}`),
+    ...['Cortana', 'Replicant', 'Synth', 'Nova'].map(s => `https://api.dicebear.com/9.x/micah/svg?seed=${s}`),
+  ],
+  'Fantasy & Myth': [
+    ...['Athena', 'Druid', 'Phoenix', 'Merlin'].map(s => `https://api.dicebear.com/9.x/personas/svg?seed=${s}`),
+    ...['Elven', 'Dragon', 'Fae', 'Odin'].map(s => `https://api.dicebear.com/9.x/adventurer/svg?seed=${s}`),
+  ],
   'Portraits': [
-    'Sora', 'Luna', 'Kai', 'Ember', 'Storm', 'Phoenix',
-    'Aurora', 'Vesper', 'Cleo', 'Nyx', 'Zenith', 'Opal',
-  ].map(s => `https://api.dicebear.com/9.x/lorelei/svg?seed=${s}`),
-  'Personas': [
-    'Hero', 'Villain', 'Sage', 'Rebel', 'Ghost', 'Ninja',
-    'Druid', 'Rogue', 'Titan', 'Oracle', 'Drift', 'Hex',
-  ].map(s => `https://api.dicebear.com/9.x/personas/svg?seed=${s}`),
-  'Minimal': [
-    'Ace', 'Maverick', 'Raven', 'Atlas', 'Echo', 'Cipher',
-    'Nova', 'Flux', 'Prism', 'Quasar', 'Onyx', 'Aero',
-  ].map(s => `https://api.dicebear.com/9.x/notionists/svg?seed=${s}`),
-  'Pixel Art': [
-    'Mario', 'Zelda', 'Link', 'Samus', 'Kirby', 'Fox',
-    'Pikachu', 'Cloud', 'Sonic', 'Megaman', 'Pac', 'Snake',
-  ].map(s => `https://api.dicebear.com/9.x/pixel-art/svg?seed=${s}`),
-  'Big Smile': [
-    'Joy', 'Sunny', 'Breeze', 'Coral', 'Daisy', 'Mint',
-    'Fern', 'Copper', 'Sienna', 'Jade', 'Willow', 'Ivy',
-  ].map(s => `https://api.dicebear.com/9.x/big-smile/svg?seed=${s}`),
-  'Fun Emoji': [
-    'Happy', 'Cool', 'Chill', 'Zen', 'Fire', 'Sparkle',
-    'Wave', 'Star', 'Moon', 'Rain', 'Snow', 'Thunder',
-  ].map(s => `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${s}`),
-  'Thumbs': [
-    'Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot',
-    'Golf', 'Hotel', 'India', 'Juliet', 'Kilo', 'Lima',
-  ].map(s => `https://api.dicebear.com/9.x/thumbs/svg?seed=${s}`),
-  'Bottts': [
-    'Robo1', 'Mech', 'Droid', 'Bolt', 'Gear', 'Chip',
-    'Wire', 'Core', 'Node', 'Byte', 'Data', 'Grid',
-  ].map(s => `https://api.dicebear.com/9.x/bottts/svg?seed=${s}`),
-  'Shapes': [
-    'Ruby', 'Emerald', 'Sapphire', 'Diamond', 'Topaz', 'Amethyst',
-    'Pearl', 'Garnet', 'Citrine', 'Peridot', 'Tanzanite', 'Aqua',
-  ].map(s => `https://api.dicebear.com/9.x/shapes/svg?seed=${s}`),
+    ...['Luna', 'Ember', 'Storm', 'Aurora'].map(s => `https://api.dicebear.com/9.x/lorelei/svg?seed=${s}`),
+    ...['Vesper', 'Cleo', 'Kai', 'Raven'].map(s => `https://api.dicebear.com/9.x/open-peeps/svg?seed=${s}`),
+  ],
+  'Modern & Minimal': [
+    ...['Flux', 'Prism', 'Echo', 'Onyx'].map(s => `https://api.dicebear.com/9.x/glass/svg?seed=${s}`),
+    ...['Ace', 'Drift', 'Zen', 'Aero'].map(s => `https://api.dicebear.com/9.x/notionists/svg?seed=${s}`),
+  ],
+  'Classic Characters': [
+    ...['Hero', 'Rebel', 'Sage', 'Titan'].map(s => `https://api.dicebear.com/9.x/avataaars/svg?seed=${s}`),
+    ...['Maverick', 'Oracle', 'Ghost', 'Rogue'].map(s => `https://api.dicebear.com/9.x/micah/svg?seed=${s}`),
+  ],
 };
 
 // ─── Profiles ───
