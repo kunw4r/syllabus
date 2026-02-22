@@ -22,8 +22,7 @@ client/
 server/
 
 # supabase local
-supabase/.temp/
-supabase/.branches/
+supabase/
 
 # misc
 .DS_Store
