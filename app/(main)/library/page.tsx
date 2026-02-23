@@ -28,6 +28,7 @@ import {
   Search,
   Flame,
 } from 'lucide-react';
+import { m } from 'framer-motion';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
@@ -43,10 +44,32 @@ import {
   searchByScenario,
 } from '@/lib/api/tmdb';
 import { TMDB_IMG } from '@/lib/constants';
+import { FadeInView } from '@/components/motion/FadeInView';
+import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
+import DragDropShelf from '@/components/library/DragDropShelf';
+import VirtualShelf from '@/components/library/VirtualShelf';
 
 /* ================================================================
    STATS PANEL
    ================================================================ */
+
+function AnimatedNumber({ value }: { value: number }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    if (value === 0) { setDisplay(0); return; }
+    const duration = 600;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(eased * value));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [value]);
+  return <>{display}</>;
+}
 
 function StatCard({
   icon: Icon,
@@ -63,7 +86,7 @@ function StatCard({
     <div className="glass rounded-2xl p-4 flex items-center gap-3">
       <Icon size={20} className={color} />
       <div>
-        <p className="text-2xl font-black">{value}</p>
+        <p className="text-2xl font-black"><AnimatedNumber value={value} /></p>
         <p className="text-xs text-white/40">{label}</p>
       </div>
     </div>
@@ -123,52 +146,67 @@ function StatsPanel({ items }: { items: any[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
-          icon={Library}
-          label="Total"
-          value={stats.total}
-          color="text-accent"
-        />
-        <StatCard
-          icon={CheckCircle2}
-          label="Finished"
-          value={stats.finished}
-          color="text-green-400"
-        />
-        <StatCard
-          icon={Eye}
-          label="In Progress"
-          value={stats.watching}
-          color="text-blue-400"
-        />
-        <StatCard
-          icon={Clock}
-          label="Wishlist"
-          value={stats.want}
-          color="text-purple-400"
-        />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard
-          icon={Film}
-          label="Movies"
-          value={stats.movies}
-          color="text-rose-400"
-        />
-        <StatCard
-          icon={Tv}
-          label="TV Shows"
-          value={stats.tv}
-          color="text-cyan-400"
-        />
-        <StatCard
-          icon={BookOpen}
-          label="Books"
-          value={stats.books}
-          color="text-amber-400"
-        />
-      </div>
+      <StaggerContainer className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StaggerItem>
+          <StatCard icon={Library} label="Total" value={stats.total} color="text-accent" />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard icon={CheckCircle2} label="Finished" value={stats.finished} color="text-green-400" />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard icon={Eye} label="In Progress" value={stats.watching} color="text-blue-400" />
+        </StaggerItem>
+        <StaggerItem>
+          <StatCard icon={Clock} label="Wishlist" value={stats.want} color="text-purple-400" />
+        </StaggerItem>
+      </StaggerContainer>
+
+      {/* Completion radial + media type breakdown */}
+      <FadeInView delay={0.2}>
+        <div className="glass rounded-2xl p-5">
+          <h3 className="text-sm font-semibold text-white/40 mb-4">Library Breakdown</h3>
+          <div className="flex items-center gap-6">
+            {/* Radial completion chart */}
+            <div className="relative flex-shrink-0" style={{ width: 80, height: 80 }}>
+              <svg width={80} height={80} className="-rotate-90">
+                <circle cx={40} cy={40} r={34} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={6} />
+                <circle
+                  cx={40} cy={40} r={34} fill="none" stroke="#22c55e" strokeWidth={6} strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 34}
+                  strokeDashoffset={2 * Math.PI * 34 - (stats.total > 0 ? (stats.finished / stats.total) : 0) * 2 * Math.PI * 34}
+                  className="transition-all duration-1000 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-lg font-black">{stats.total > 0 ? Math.round((stats.finished / stats.total) * 100) : 0}%</span>
+                <span className="text-[8px] text-white/30">done</span>
+              </div>
+            </div>
+            {/* Type bars */}
+            <div className="flex-1 space-y-2">
+              {[
+                { label: 'Movies', count: stats.movies, color: 'bg-rose-400', icon: Film },
+                { label: 'TV Shows', count: stats.tv, color: 'bg-cyan-400', icon: Tv },
+                { label: 'Books', count: stats.books, color: 'bg-amber-400', icon: BookOpen },
+              ].map((t) => (
+                <div key={t.label} className="flex items-center gap-2">
+                  <t.icon size={14} className="text-white/30 flex-shrink-0" />
+                  <span className="text-xs text-white/50 w-16">{t.label}</span>
+                  <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                    <m.div
+                      initial={{ width: 0 }}
+                      animate={{ width: stats.total > 0 ? `${(t.count / stats.total) * 100}%` : '0%' }}
+                      transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
+                      className={`h-full rounded-full ${t.color}`}
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-white/60 w-6 text-right">{t.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FadeInView>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="glass rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-3 flex items-center gap-2">
@@ -740,6 +778,7 @@ export default function LibraryPage() {
   const [userRating, setUserRating] = useState(0);
   const [reviewStatus, setReviewStatus] = useState('watching');
   const [activeTab, setActiveTab] = useState('shelf');
+  const [viewMode, setViewMode] = useState<'grid' | 'shelf' | 'kanban'>('grid');
   const toast = useToast();
   const router = useRouter();
 
@@ -901,9 +940,19 @@ export default function LibraryPage() {
     title: 'Title',
   };
 
+  // Pinned favourites (rated 9+)
+  const pinnedFavourites = useMemo(() => {
+    return [...allItems]
+      .filter((i) => i.user_rating && i.user_rating >= 9)
+      .sort((a, b) => b.user_rating - a.user_rating)
+      .slice(0, 5);
+  }, [allItems]);
+
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">My Library</h1>
+      <FadeInView>
+        <h1 className="font-serif text-3xl font-bold mb-6">My Library</h1>
+      </FadeInView>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-8 bg-dark-700/50 rounded-2xl p-1 w-fit">
@@ -911,7 +960,7 @@ export default function LibraryPage() {
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+            className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
               activeTab === t.key
                 ? 'bg-accent text-white shadow-lg shadow-accent/20'
                 : 'text-white/40 hover:text-white/70'
@@ -926,56 +975,103 @@ export default function LibraryPage() {
       {/* Shelf Tab */}
       {activeTab === 'shelf' && (
         <div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className="flex gap-1.5">
+          {/* Pinned Favourites */}
+          {pinnedFavourites.length > 0 && (
+            <FadeInView>
+              <div className="mb-8">
+                <h2 className="text-sm font-semibold text-white/40 mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <Award size={14} className="text-gold" /> Top Rated
+                </h2>
+                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+                  {pinnedFavourites.map((item) => (
+                    <div
+                      key={item.id}
+                      className="shrink-0 w-[160px] sm:w-[200px] cursor-pointer group"
+                      onClick={() => handleCardClick(item)}
+                    >
+                      <div className="aspect-[2/3] rounded-xl overflow-hidden ring-2 ring-gold/30 group-hover:ring-gold/60 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-gold/10 relative">
+                        {item.poster_path ? (
+                          <img src={item.poster_path} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
+                            {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2 bg-gold/90 backdrop-blur-sm rounded-lg px-2 py-0.5 flex items-center gap-1">
+                          <Star size={12} className="text-dark-900 fill-dark-900" />
+                          <span className="text-xs font-black text-dark-900">
+                            {Number(item.user_rating) % 1 === 0 ? item.user_rating : Number(item.user_rating).toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-sm font-medium text-white/70 truncate group-hover:text-gold transition-colors">
+                        {item.title}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeInView>
+          )}
+
+          {/* Floating Pill Filter Bar */}
+          <div className="sticky top-0 z-20 py-3 -mx-4 px-4 bg-dark-900/80 backdrop-blur-xl border-b border-white/[0.04]">
+            <div className="flex flex-wrap items-center gap-2">
               {Object.entries(typeLabels).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setTypeFilter(key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     typeFilter === key
-                      ? 'bg-accent border-accent text-white'
-                      : 'border-white/10 text-white/40 hover:text-white'
+                      ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {label}
                 </button>
               ))}
-            </div>
-            <div className="w-px h-6 bg-white/10 hidden sm:block" />
-            <div className="flex gap-1.5">
+              <div className="w-px h-5 bg-white/10" />
               {Object.entries(statusLabels).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setFilter(key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     filter === key
-                      ? 'bg-white/10 border-white/20 text-white'
-                      : 'border-white/5 text-white/30 hover:text-white/60'
+                      ? 'bg-white/15 text-white border border-white/20'
+                      : 'bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10'
                   }`}
                 >
                   {label}
                 </button>
               ))}
+              <div className="w-px h-5 bg-white/10" />
+              {Object.entries(sortLabels).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => toggleSort(key)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] transition-all ${
+                    sortBy === key
+                      ? 'bg-white/10 text-white font-medium'
+                      : 'text-white/25 hover:text-white/50'
+                  }`}
+                >
+                  {label} {sortBy === key && (sortDir === 'desc' ? '\u2193' : '\u2191')}
+                </button>
+              ))}
+              <div className="w-px h-5 bg-white/10 ml-auto" />
+              {/* View toggle */}
+              {(['grid', 'shelf', 'kanban'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setViewMode(v)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] capitalize transition-all ${
+                    viewMode === v ? 'bg-accent/20 text-accent font-medium' : 'text-white/25 hover:text-white/50'
+                  }`}
+                >
+                  {v === 'kanban' ? 'Board' : v === 'shelf' ? 'Shelf' : 'Grid'}
+                </button>
+              ))}
             </div>
-          </div>
-          <div className="flex items-center gap-2 mb-6">
-            <ArrowUpDown size={14} className="text-white/30" />
-            <span className="text-xs text-white/30">Sort:</span>
-            {Object.entries(sortLabels).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => toggleSort(key)}
-                className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
-                  sortBy === key
-                    ? 'bg-white/10 text-white font-medium'
-                    : 'text-white/30 hover:text-white/60'
-                }`}
-              >
-                {label}{' '}
-                {sortBy === key && (sortDir === 'desc' ? '\u2193' : '\u2191')}
-              </button>
-            ))}
           </div>
 
           {filteredItems.length === 0 ? (
@@ -988,12 +1084,20 @@ export default function LibraryPage() {
                 Browse movies, TV shows, or books and add them to your library
               </p>
             </div>
+          ) : viewMode === 'kanban' ? (
+            <DragDropShelf
+              items={filteredItems}
+              onStatusChange={handleStatusChange}
+              onCardClick={handleCardClick}
+            />
+          ) : viewMode === 'shelf' ? (
+            <VirtualShelf items={filteredItems} onCardClick={handleCardClick} />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
-                  className="group relative rounded-2xl overflow-hidden bg-dark-700/50 border border-white/5 transition-all duration-300 hover:border-white/10 hover:-translate-y-1 cursor-pointer"
+                  className="group relative rounded-2xl overflow-hidden bg-dark-700/50 border border-white/5 transition-all duration-300 hover:border-white/10 cursor-pointer hover:[transform:perspective(800px)_rotateY(-3deg)_rotateX(2deg)_scale(1.02)] hover:shadow-xl hover:shadow-black/30"
                   onClick={() => handleCardClick(item)}
                 >
                   {item.poster_path ? (

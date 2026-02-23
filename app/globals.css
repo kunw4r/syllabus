@@ -40,8 +40,45 @@
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+}
+
+/* Book 3D shadow */
+.book-shadow {
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.4),
+    1px 1px 2px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+.book-shadow::after {
+  content: '';
+  position: absolute;
+  top: 2%;
+  right: -4px;
+  width: 4px;
+  height: 96%;
+  background: linear-gradient(to right, #D4A843, #a67c2e);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.7;
 }
 
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -108,12 +108,18 @@ export default function MediaCard({
     }
   };
 
+  const isBook = mediaType === 'book';
+
   return (
     <div
       className="group cursor-pointer shrink-0 w-[140px] sm:w-[160px]"
       onClick={handleClick}
     >
-      <div className="relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300">
+      <div
+        className={`relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 ${
+          isBook ? 'book-shadow' : ''
+        }`}
+      >
         {poster ? (
           <img
             src={poster}
@@ -123,7 +129,7 @@ export default function MediaCard({
           />
         ) : (
           <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-            🎬
+            {isBook ? '\u{1F4DA}' : '\u{1F3AC}'}
           </div>
         )}
 
@@ -136,17 +142,22 @@ export default function MediaCard({
           </div>
         )}
 
+        {/* Hover info overlay */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 pt-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {year && <p className="text-[10px] text-white/60">{year}</p>}
+        </div>
+
         {showAdd && user && !added && (
           <button
             onClick={handleAdd}
-            className="absolute bottom-2 right-2 bg-accent/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent active:scale-90"
+            className="absolute bottom-2 right-2 bg-accent/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent active:scale-90 z-10"
           >
             <Plus size={16} className="text-white" />
           </button>
         )}
 
         {added && (
-          <div className="absolute bottom-2 right-2 bg-green-500/80 backdrop-blur-sm rounded-full p-1.5">
+          <div className="absolute bottom-2 right-2 bg-green-500/80 backdrop-blur-sm rounded-full p-1.5 z-10">
             <Check size={16} className="text-white" />
           </div>
         )}
