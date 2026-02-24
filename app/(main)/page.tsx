@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Library, Eye, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { getLibrary } from '@/lib/api/library';
-import { getTrendingMovies, getTrendingTV, searchMovies, searchTV } from '@/lib/api/tmdb';
-import { getTrendingBooks, searchBooks } from '@/lib/api/books';
+import { getTrendingMovies, getTrendingTV } from '@/lib/api/tmdb';
+import { getTrendingBooks } from '@/lib/api/books';
 import { enrichItemsWithRatings, loadStaticScoreDB, applyStoredScores } from '@/lib/scoring';
 import { getAllRecommendations, type RecommendationRow as RecRowType } from '@/lib/services/recommendations';
 import MediaCard from '@/components/ui/MediaCard';
@@ -34,20 +34,12 @@ interface LibraryItem {
   updated_at?: string;
 }
 
-interface SearchResultsState {
-  movies: any[];
-  tv: any[];
-  books: any[];
-  query: string;
-}
-
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
   const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
   const [trendingTV, setTrendingTV] = useState<any[]>([]);
   const [trendingBooks, setTrendingBooks] = useState<any[]>([]);
-  const [searchResults, setSearchResults] = useState<SearchResultsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recommendations, setRecommendations] = useState<RecRowType[]>([]);
@@ -92,13 +84,8 @@ export default function Home() {
     load();
   }, [load]);
 
-  const handleSearch = async (query: string) => {
-    const [movies, tv, books] = await Promise.all([
-      searchMovies(query),
-      searchTV(query),
-      searchBooks(query),
-    ]);
-    setSearchResults({ movies, tv, books, query });
+  const handleSearch = (query: string) => {
+    router.push(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const continueWatching = library.filter((i) => i.status === 'watching').slice(0, 20);
@@ -123,14 +110,14 @@ export default function Home() {
   return (
     <div className="space-y-8">
       {/* Hero Banner */}
-      {!loading && heroItems.length > 0 && !searchResults && (
+      {!loading && heroItems.length > 0 && (
         <HeroBanner items={heroItems} />
       )}
 
       {/* Greeting */}
       <FadeInView>
         <div>
-          <h1 className={`font-black text-white ${heroItems.length > 0 && !searchResults ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}`}>
+          <h1 className={`font-black text-white ${heroItems.length > 0 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}`}>
             {greeting}{greetName ? `, ${greetName}` : ''}
           </h1>
           <p className="text-sm text-white/40 mt-1">Discover something new today</p>
@@ -184,39 +171,6 @@ export default function Home() {
         <SearchBar onSearch={handleSearch} placeholder="Search movies, TV shows & books..." />
       </FadeInView>
 
-      {/* Search results */}
-      {searchResults && (
-        <div className="space-y-6">
-          {searchResults.movies.length > 0 && (
-            <FadeInView>
-              <ScrollRow title={`Movies \u2014 \u201C${searchResults.query}\u201D`}>
-                {searchResults.movies.map((m: any) => (
-                  <MediaCard key={m.id} item={m} mediaType="movie" />
-                ))}
-              </ScrollRow>
-            </FadeInView>
-          )}
-          {searchResults.tv.length > 0 && (
-            <FadeInView delay={0.1}>
-              <ScrollRow title={`TV Shows \u2014 \u201C${searchResults.query}\u201D`}>
-                {searchResults.tv.map((m: any) => (
-                  <MediaCard key={m.id} item={m} mediaType="tv" />
-                ))}
-              </ScrollRow>
-            </FadeInView>
-          )}
-          {searchResults.books.length > 0 && (
-            <FadeInView delay={0.2}>
-              <ScrollRow title={`Books \u2014 \u201C${searchResults.query}\u201D`}>
-                {searchResults.books.map((b: any) => (
-                  <MediaCard key={b.key || b.google_books_id} item={b} mediaType="book" />
-                ))}
-              </ScrollRow>
-            </FadeInView>
-          )}
-        </div>
-      )}
-
       {/* Continue Watching — Spotlight shelf */}
       {continueWatching.length > 0 && (
         <FadeInView>
@@ -267,7 +221,7 @@ export default function Home() {
       )}
 
       {/* Recommendation rows */}
-      {!searchResults && recommendations.length > 0 && (
+      {recommendations.length > 0 && (
         recommendations.map((row, i) => (
           <FadeInView key={`${row.strategy}-${i}`} delay={i * 0.05}>
             <RecommendationRow row={row} />

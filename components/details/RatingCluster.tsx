@@ -74,15 +74,12 @@ export default function RatingCluster({
           href={`https://www.imdb.com/title/${imdbId}/`}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#f5c518]/[0.08] border border-[#f5c518]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#f5c518]/[0.15] transition-colors cursor-pointer flex flex-col justify-center"
+          className="bg-[#f5c518]/[0.08] border border-[#f5c518]/20 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#f5c518]/[0.15] transition-colors cursor-pointer flex flex-col justify-center gap-1.5"
         >
-          {/* IMDb logo inline */}
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <span className="text-[10px] font-black bg-[#f5c518] text-black px-1.5 py-0.5 rounded">IMDb</span>
-          </div>
-          <p className="text-xl font-black text-[#f5c518]">{extRatings.imdb.score}</p>
+          <span className="inline-block text-xs font-black bg-[#f5c518] text-black px-2 py-0.5 rounded-md tracking-tight mx-auto">IMDb</span>
+          <p className="text-2xl font-black text-[#f5c518] leading-none">{extRatings.imdb.score}</p>
           {extRatings.imdb.votes && (
-            <p className="text-[9px] text-white/20">{extRatings.imdb.votes} votes</p>
+            <p className="text-[9px] text-white/25">{extRatings.imdb.votes} votes</p>
           )}
         </m.a>
       )}
@@ -97,33 +94,15 @@ export default function RatingCluster({
           href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(title)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-white/[0.08] transition-colors cursor-pointer flex flex-col justify-center"
+          className="bg-[#FA320A]/[0.06] border border-[#FA320A]/15 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#FA320A]/[0.12] transition-colors cursor-pointer flex flex-col justify-center gap-1.5"
         >
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <span className="text-[10px] font-bold text-red-400">RT</span>
-          </div>
-          <p className="text-xl font-black">
-            <span className={parseInt(extRatings.rt.score) >= 60 ? 'text-red-400' : 'text-green-400'}>
+          <span className="inline-block text-[10px] font-black bg-[#FA320A] text-white px-2 py-0.5 rounded-md tracking-tight mx-auto">Rotten Tomatoes</span>
+          <p className="text-2xl font-black leading-none">
+            <span className={parseInt(extRatings.rt.score) >= 60 ? 'text-[#FA320A]' : 'text-green-400'}>
               {extRatings.rt.score}
             </span>
           </p>
         </m.a>
-      )}
-
-      {/* Metacritic */}
-      {extRatings?.metacritic && (
-        <m.div
-          custom={3}
-          variants={ratingVariants}
-          initial="hidden"
-          animate="visible"
-          className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center"
-        >
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <span className="text-[10px] font-bold text-yellow-500">M</span>
-          </div>
-          <p className="text-xl font-black text-yellow-500">{extRatings.metacritic.score}</p>
-        </m.div>
       )}
 
       {/* MAL (anime only) */}
@@ -136,14 +115,12 @@ export default function RatingCluster({
           href={malData.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#2e51a2]/10 border border-[#2e51a2]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#2e51a2]/20 transition-colors flex flex-col justify-center"
+          className="bg-[#2e51a2]/10 border border-[#2e51a2]/20 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#2e51a2]/20 transition-colors flex flex-col justify-center gap-1.5"
         >
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <span className="text-[10px] font-bold text-[#2e51a2]">MAL</span>
-          </div>
-          <p className="text-xl font-black text-[#2e51a2]">{malData.score}</p>
+          <span className="inline-block text-[10px] font-black bg-[#2e51a2] text-white px-2 py-0.5 rounded-md tracking-tight mx-auto">MAL</span>
+          <p className="text-2xl font-black text-[#2e51a2] leading-none">{malData.score}</p>
           {malData.scored_by && (
-            <p className="text-[9px] text-white/20">{malData.scored_by.toLocaleString()} votes</p>
+            <p className="text-[9px] text-white/25">{malData.scored_by.toLocaleString()} votes</p>
           )}
         </m.a>
       )}
@@ -158,10 +135,10 @@ export default function RatingCluster({
           href={`https://www.crunchyroll.com/search?q=${encodeURIComponent(title)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#f47521]/10 border border-[#f47521]/20 rounded-xl px-4 py-3 text-center min-w-[90px] hover:bg-[#f47521]/20 transition-colors flex flex-col justify-center"
+          className="bg-[#f47521]/10 border border-[#f47521]/20 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#f47521]/20 transition-colors flex flex-col justify-center gap-1.5"
         >
-          <p className="text-xl font-black text-[#f47521]">CR</p>
-          <p className="text-[10px] text-white/30 mt-0.5 flex items-center justify-center gap-1">Crunchyroll <ExternalLink size={10} /></p>
+          <span className="inline-block text-[10px] font-black bg-[#f47521] text-white px-2 py-0.5 rounded-md tracking-tight mx-auto">Crunchyroll</span>
+          <p className="text-[10px] text-white/30 flex items-center justify-center gap-1">Watch <ExternalLink size={10} /></p>
         </m.a>
       )}
 

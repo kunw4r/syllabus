@@ -142,8 +142,9 @@ export function getTrendingBooks() {
       const res = await fetch(`${OL_BASE}/trending/weekly.json?limit=30`);
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
-      let books = (data.works || []).map(mapOLBook).slice(0, 20);
-      await enrichBatch(books);
+      const books = (data.works || []).map(mapOLBook).slice(0, 20);
+      // Return immediately with OL covers; enrich with Google covers in background
+      enrichBatch(books).catch(() => {});
       return books.filter((b: any) => b.cover_urls.length > 0);
     } catch { return []; }
   });

@@ -116,9 +116,7 @@ export default function MediaCard({
       onClick={handleClick}
     >
       <div
-        className={`relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 ${
-          isBook ? 'book-shadow' : ''
-        }`}
+        className="relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30"
       >
         {poster ? (
           <img

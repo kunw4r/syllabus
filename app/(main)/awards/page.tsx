@@ -43,9 +43,10 @@ const EMMY_SUBTABS = [
 
 async function fetchTmdbDetails(
   entries: AwardEntry[],
-  mediaType: 'movie' | 'tv'
+  mediaType: 'movie' | 'tv',
+  onBatch?: (items: EnrichedEntry[]) => void
 ): Promise<EnrichedEntry[]> {
-  const BATCH = 5;
+  const BATCH = 10;
   const results: EnrichedEntry[] = [];
 
   for (let i = 0; i < entries.length; i += BATCH) {
@@ -78,6 +79,7 @@ async function fetchTmdbDetails(
       })
     );
     results.push(...fetched);
+    onBatch?.(results.slice());
   }
 
   return results;
@@ -206,11 +208,16 @@ export default function AwardsPage() {
       // Sort newest first
       entries = [...entries].sort((a, b) => b.year - a.year);
 
-      // Fetch TMDB details
-      const enriched = await fetchTmdbDetails(entries, mediaType);
+      // Fetch TMDB details — show items progressively as batches arrive
+      const enriched = await fetchTmdbDetails(entries, mediaType, (partial) => {
+        if (stale()) return;
+        applyStoredScores(partial, mediaType);
+        setItems(partial);
+        if (loading) setLoading(false);
+      });
       if (stale()) return;
 
-      // Apply locally stored scores
+      // Apply locally stored scores to final set
       applyStoredScores(enriched, mediaType);
       setItems(enriched);
       setLoading(false);
