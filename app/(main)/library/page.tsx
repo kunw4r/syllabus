@@ -42,8 +42,11 @@ import {
   discoverByMood,
   getCuratedPicks,
   searchByScenario,
+  getMovieDetails,
+  getTVDetails,
 } from '@/lib/api/tmdb';
 import { TMDB_IMG } from '@/lib/constants';
+import { loadStaticScoreDB, getSyllabusScore } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 import DragDropShelf from '@/components/library/DragDropShelf';
@@ -343,8 +346,8 @@ function RecCard({
         </div>
       )}
       {item._source && (
-        <div className="absolute top-2 left-2 bg-accent/80 backdrop-blur-md rounded-lg px-1.5 py-0.5 text-[9px] font-medium max-w-[100px] truncate">
-          &because; {item._source}
+        <div className="absolute top-2 left-2 bg-accent/80 backdrop-blur-md rounded-lg px-1.5 py-0.5 text-[9px] font-medium max-w-[120px] truncate">
+          Because: {item._source}
         </div>
       )}
       <button
@@ -519,6 +522,7 @@ function ForYouPanel({ items }: { items: any[] }) {
     if (!user) return toast('Please log in first', 'error');
     const title = item.title || item.name;
     try {
+      const syllabusScore = getSyllabusScore(item.media_type || 'movie', item.id);
       await addToLibrary({
         tmdb_id: item.id,
         media_type: item.media_type || 'movie',
@@ -526,7 +530,7 @@ function ForYouPanel({ items }: { items: any[] }) {
         poster_url: item.poster_path
           ? `${TMDB_IMG}${item.poster_path}`
           : null,
-        external_rating: item.vote_average || null,
+        external_rating: syllabusScore ?? item.vote_average ?? null,
         genres: item.genre_ids ? item.genre_ids.join(',') : '',
       });
       toast(`Added "${title}" to your library!`, 'success');
@@ -783,7 +787,43 @@ export default function LibraryPage() {
   const loadLibrary = useCallback(async () => {
     try {
       const data = await getLibrary();
+
+      // Enrich ratings from scores.json so library matches detail pages
+      await loadStaticScoreDB();
+      for (const item of data) {
+        if (item.tmdb_id && item.media_type && item.media_type !== 'book') {
+          const score = getSyllabusScore(item.media_type, item.tmdb_id);
+          if (score != null) item.external_rating = score;
+        }
+      }
+
       setAllItems(data);
+
+      // Background: fix items missing poster_url
+      const needsPoster = data.filter(
+        (i: any) => !i.poster_url && i.tmdb_id && i.media_type !== 'book',
+      );
+      if (needsPoster.length > 0) {
+        const updated: any[] = [];
+        for (const item of needsPoster) {
+          try {
+            const details =
+              item.media_type === 'tv'
+                ? await getTVDetails(item.tmdb_id)
+                : await getMovieDetails(item.tmdb_id);
+            if (details?.poster_path) {
+              const url = `${TMDB_IMG}${details.poster_path}`;
+              item.poster_url = url;
+              updated.push(item);
+              // Persist to DB
+              updateLibraryItem(item.id, { poster_url: url }).catch(() => {});
+            }
+          } catch {
+            /* best-effort */
+          }
+        }
+        if (updated.length > 0) setAllItems([...data]);
+      }
     } catch (err) {
       console.error('Failed to load library:', err);
     } finally {
