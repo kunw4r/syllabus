@@ -54,8 +54,8 @@ function SortableCard({ item, onClick }: { item: any; onClick: () => void }) {
       className="w-[100px] sm:w-[120px] cursor-grab active:cursor-grabbing shrink-0"
     >
       <div className="aspect-[2/3] rounded-lg overflow-hidden ring-1 ring-white/10 hover:ring-accent/50 transition-all">
-        {item.poster_path ? (
-          <img src={item.poster_path} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+        {item.poster_url ? (
+          <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
         ) : (
           <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-2xl">
             {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
@@ -71,8 +71,8 @@ function CardOverlay({ item }: { item: any }) {
   return (
     <div className="w-[100px] sm:w-[120px] opacity-90 rotate-3 scale-105">
       <div className="aspect-[2/3] rounded-lg overflow-hidden ring-2 ring-accent shadow-2xl shadow-accent/30">
-        {item.poster_path ? (
-          <img src={item.poster_path} alt={item.title} className="w-full h-full object-cover" />
+        {item.poster_url ? (
+          <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-2xl">
             {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}

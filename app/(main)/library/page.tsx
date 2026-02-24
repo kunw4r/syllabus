@@ -277,9 +277,9 @@ function StatsPanel({ items }: { items: any[] }) {
                 <span className="text-2xl font-black text-white/10">
                   #{idx + 1}
                 </span>
-                {item.poster_path && (
+                {item.poster_url && (
                   <img
-                    src={item.poster_path}
+                    src={item.poster_url}
                     alt=""
                     className="w-10 h-14 rounded-lg object-cover"
                   />
@@ -523,13 +523,11 @@ function ForYouPanel({ items }: { items: any[] }) {
         tmdb_id: item.id,
         media_type: item.media_type || 'movie',
         title,
-        poster_path: item.poster_path
+        poster_url: item.poster_path
           ? `${TMDB_IMG}${item.poster_path}`
           : null,
-        overview: item.overview || '',
         external_rating: item.vote_average || null,
         genres: item.genre_ids ? item.genre_ids.join(',') : '',
-        release_date: item.release_date || item.first_air_date || '',
       });
       toast(`Added "${title}" to your library!`, 'success');
     } catch (err: any) {
@@ -783,9 +781,14 @@ export default function LibraryPage() {
   const router = useRouter();
 
   const loadLibrary = useCallback(async () => {
-    const data = await getLibrary();
-    setAllItems(data);
-    setLoading(false);
+    try {
+      const data = await getLibrary();
+      setAllItems(data);
+    } catch (err) {
+      console.error('Failed to load library:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -990,8 +993,8 @@ export default function LibraryPage() {
                       onClick={() => handleCardClick(item)}
                     >
                       <div className="aspect-[2/3] rounded-xl overflow-hidden ring-2 ring-gold/30 group-hover:ring-gold/60 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-gold/10 relative">
-                        {item.poster_path ? (
-                          <img src={item.poster_path} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                        {item.poster_url ? (
+                          <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
                         ) : (
                           <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
                             {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
@@ -1100,9 +1103,9 @@ export default function LibraryPage() {
                   className="group relative rounded-2xl overflow-hidden bg-dark-700/50 border border-white/5 transition-all duration-300 hover:border-white/10 cursor-pointer hover:[transform:perspective(800px)_rotateY(-3deg)_rotateX(2deg)_scale(1.02)] hover:shadow-xl hover:shadow-black/30"
                   onClick={() => handleCardClick(item)}
                 >
-                  {item.poster_path ? (
+                  {item.poster_url ? (
                     <img
-                      src={item.poster_path}
+                      src={item.poster_url}
                       alt={item.title}
                       loading="lazy"
                       className="w-full aspect-[2/3] object-cover"
@@ -1257,9 +1260,9 @@ export default function LibraryPage() {
             </div>
 
             <div className="flex items-center gap-3 mb-6">
-              {reviewItem.poster_path && (
+              {reviewItem.poster_url && (
                 <img
-                  src={reviewItem.poster_path}
+                  src={reviewItem.poster_url}
                   alt=""
                   className="w-12 h-16 rounded-lg object-cover"
                 />

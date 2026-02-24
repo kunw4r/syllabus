@@ -37,9 +37,9 @@ export default function VirtualShelf({ items, onCardClick }: VirtualShelfProps) 
               >
                 <div className="relative">
                   <div className="aspect-[2/3] rounded-md overflow-hidden ring-1 ring-white/5 group-hover:ring-accent/50 transition-all duration-300 group-hover:-translate-y-2 shadow-lg shadow-black/40">
-                    {item.poster_path ? (
+                    {item.poster_url ? (
                       <img
-                        src={item.poster_path}
+                        src={item.poster_url}
                         alt={item.title}
                         className="w-full h-full object-cover"
                         loading="lazy"
