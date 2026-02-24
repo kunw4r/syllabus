@@ -824,6 +824,14 @@ export default function LibraryPage() {
     return result;
   }, [allItems, typeFilter, filter, sortBy, sortDir]);
 
+  // Pinned favourites (rated 9+)
+  const pinnedFavourites = useMemo(() => {
+    return [...allItems]
+      .filter((i) => i.user_rating && i.user_rating >= 9)
+      .sort((a, b) => b.user_rating - a.user_rating)
+      .slice(0, 5);
+  }, [allItems]);
+
   const handleRemove = async (id: string) => {
     const item = allItems.find((i) => i.id === id);
     try {
@@ -942,14 +950,6 @@ export default function LibraryPage() {
     external: 'Score',
     title: 'Title',
   };
-
-  // Pinned favourites (rated 9+)
-  const pinnedFavourites = useMemo(() => {
-    return [...allItems]
-      .filter((i) => i.user_rating && i.user_rating >= 9)
-      .sort((a, b) => b.user_rating - a.user_rating)
-      .slice(0, 5);
-  }, [allItems]);
 
   return (
     <div>
