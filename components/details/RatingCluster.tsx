@@ -27,6 +27,72 @@ const ratingVariants = {
   }),
 };
 
+// Liquid glass pill — Apple-style frosted appearance
+function GlassPill({ label, color }: { label: string; color: string }) {
+  return (
+    <span
+      className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xl border shrink-0"
+      style={{
+        background: `linear-gradient(135deg, ${color}30 0%, ${color}18 100%)`,
+        borderColor: `${color}40`,
+        color: color,
+        boxShadow: `0 1px 8px ${color}15, inset 0 1px 0 ${color}20`,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+// Uniform rating card — glass pill on the left, score on the right
+function RatingCard({
+  index,
+  label,
+  color,
+  score,
+  subtitle,
+  href,
+}: {
+  index: number;
+  label: string;
+  color: string;
+  score: string | number;
+  subtitle?: string;
+  href?: string;
+}) {
+  const Tag = href ? m.a : m.div;
+  const linkProps = href
+    ? { href, target: '_blank' as const, rel: 'noopener noreferrer' }
+    : {};
+
+  return (
+    <Tag
+      custom={index}
+      variants={ratingVariants}
+      initial="hidden"
+      animate="visible"
+      {...linkProps}
+      className={`
+        flex items-center gap-3 rounded-2xl px-4 py-3.5
+        bg-white/[0.04] backdrop-blur-md
+        border border-white/[0.08]
+        ${href ? 'cursor-pointer hover:bg-white/[0.07] hover:border-white/[0.14]' : ''}
+        transition-all duration-200
+      `}
+    >
+      <GlassPill label={label} color={color} />
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-2xl font-black leading-none" style={{ color }}>
+          {score}
+        </span>
+        {subtitle && (
+          <span className="text-[10px] text-white/25">{subtitle}</span>
+        )}
+      </div>
+    </Tag>
+  );
+}
+
 export default function RatingCluster({
   avgScore,
   tmdbScore,
@@ -42,10 +108,10 @@ export default function RatingCluster({
 }: RatingClusterProps) {
   const syllabusScore = avgScore || getSyllabusScore(mediaType, dataId);
   const displayScore = syllabusScore || (tmdbScore ? tmdbScore.toFixed(1) : null);
-  const label = syllabusScore ? 'Syllabus Score' : 'TMDB';
+  const label = syllabusScore ? 'Syllabus' : 'TMDB';
 
   return (
-    <div className="flex flex-wrap items-stretch gap-3 mb-6">
+    <div className="flex flex-wrap items-center gap-2.5 mb-6">
       {/* Syllabus / TMDB Score */}
       {displayScore && (
         <m.div
@@ -53,76 +119,60 @@ export default function RatingCluster({
           variants={ratingVariants}
           initial="hidden"
           animate="visible"
-          className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3.5 bg-white/[0.04] backdrop-blur-md border border-white/[0.08]"
         >
-          <div className="flex items-center justify-center gap-1.5 mb-1">
-            <Star size={16} className="text-gold fill-gold" />
-            <span className="text-xl font-black">{displayScore}</span>
-            <span className="text-white/30 text-xs">/ 10</span>
+          <span
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xl border shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #e9456030 0%, #e9456018 100%)',
+              borderColor: '#e9456040',
+              color: '#e94560',
+              boxShadow: '0 1px 8px #e9456015, inset 0 1px 0 #e9456020',
+            }}
+          >
+            <Star size={11} className="fill-current" />
+            {label}
+          </span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-black leading-none text-white">{displayScore}</span>
+            <span className="text-[10px] text-white/25">/ 10</span>
           </div>
-          <p className="text-[10px] text-white/40 uppercase tracking-wider">{label}</p>
         </m.div>
       )}
 
       {/* IMDb */}
       {extRatings?.imdb && (
-        <m.a
-          custom={1}
-          variants={ratingVariants}
-          initial="hidden"
-          animate="visible"
+        <RatingCard
+          index={1}
+          label="IMDb"
+          color="#f5c518"
+          score={extRatings.imdb.score}
+          subtitle={extRatings.imdb.votes ? `${extRatings.imdb.votes}` : undefined}
           href={`https://www.imdb.com/title/${imdbId}/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#f5c518]/[0.08] border border-[#f5c518]/20 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#f5c518]/[0.15] transition-colors cursor-pointer flex flex-col justify-center gap-1.5"
-        >
-          <span className="inline-block text-xs font-black bg-[#f5c518] text-black px-2 py-0.5 rounded-md tracking-tight mx-auto">IMDb</span>
-          <p className="text-2xl font-black text-[#f5c518] leading-none">{extRatings.imdb.score}</p>
-          {extRatings.imdb.votes && (
-            <p className="text-[9px] text-white/25">{extRatings.imdb.votes} votes</p>
-          )}
-        </m.a>
+        />
       )}
 
       {/* Rotten Tomatoes */}
       {extRatings?.rt && (
-        <m.a
-          custom={2}
-          variants={ratingVariants}
-          initial="hidden"
-          animate="visible"
+        <RatingCard
+          index={2}
+          label="Rotten Tomatoes"
+          color="#FA320A"
+          score={extRatings.rt.score}
           href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(title)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#FA320A]/[0.06] border border-[#FA320A]/15 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#FA320A]/[0.12] transition-colors cursor-pointer flex flex-col justify-center gap-1.5"
-        >
-          <span className="inline-block text-[10px] font-black bg-[#FA320A] text-white px-2 py-0.5 rounded-md tracking-tight mx-auto">Rotten Tomatoes</span>
-          <p className="text-2xl font-black leading-none">
-            <span className={parseInt(extRatings.rt.score) >= 60 ? 'text-[#FA320A]' : 'text-green-400'}>
-              {extRatings.rt.score}
-            </span>
-          </p>
-        </m.a>
+        />
       )}
 
       {/* MAL (anime only) */}
       {isAnime && malData?.score && (
-        <m.a
-          custom={3}
-          variants={ratingVariants}
-          initial="hidden"
-          animate="visible"
+        <RatingCard
+          index={3}
+          label="MAL"
+          color="#2e51a2"
+          score={malData.score}
+          subtitle={malData.scored_by ? `${malData.scored_by.toLocaleString()}` : undefined}
           href={malData.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#2e51a2]/10 border border-[#2e51a2]/20 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#2e51a2]/20 transition-colors flex flex-col justify-center gap-1.5"
-        >
-          <span className="inline-block text-[10px] font-black bg-[#2e51a2] text-white px-2 py-0.5 rounded-md tracking-tight mx-auto">MAL</span>
-          <p className="text-2xl font-black text-[#2e51a2] leading-none">{malData.score}</p>
-          {malData.scored_by && (
-            <p className="text-[9px] text-white/25">{malData.scored_by.toLocaleString()} votes</p>
-          )}
-        </m.a>
+        />
       )}
 
       {/* Crunchyroll (anime only) */}
@@ -135,18 +185,20 @@ export default function RatingCluster({
           href={`https://www.crunchyroll.com/search?q=${encodeURIComponent(title)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#f47521]/10 border border-[#f47521]/20 rounded-xl px-4 py-3 text-center min-w-[100px] hover:bg-[#f47521]/20 transition-colors flex flex-col justify-center gap-1.5"
+          className="flex items-center gap-2 rounded-2xl px-4 py-3.5 bg-white/[0.04] backdrop-blur-md border border-white/[0.08] cursor-pointer hover:bg-white/[0.07] hover:border-white/[0.14] transition-all duration-200"
         >
-          <span className="inline-block text-[10px] font-black bg-[#f47521] text-white px-2 py-0.5 rounded-md tracking-tight mx-auto">Crunchyroll</span>
-          <p className="text-[10px] text-white/30 flex items-center justify-center gap-1">Watch <ExternalLink size={10} /></p>
+          <GlassPill label="Crunchyroll" color="#f47521" />
+          <span className="text-[11px] text-white/30 flex items-center gap-1">
+            Watch <ExternalLink size={10} />
+          </span>
         </m.a>
       )}
 
       {/* Loading shimmer */}
       {!ratingsLoaded && (
-        <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 text-center min-w-[90px] animate-pulse flex flex-col justify-center">
-          <div className="h-5 w-12 bg-dark-600 rounded mx-auto mb-1" />
-          <div className="h-2 w-8 bg-dark-600 rounded mx-auto" />
+        <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5 bg-white/[0.03] border border-white/[0.05] animate-pulse">
+          <div className="h-6 w-14 rounded-full bg-white/5" />
+          <div className="h-6 w-10 rounded bg-white/5" />
         </div>
       )}
     </div>
