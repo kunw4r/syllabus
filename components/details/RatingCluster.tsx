@@ -23,7 +23,7 @@ const ratingVariants = {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { delay: i * 0.1, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] },
+    transition: { delay: i * 0.1, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] as const },
   }),
 };
 
