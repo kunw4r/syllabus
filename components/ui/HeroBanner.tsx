@@ -15,6 +15,7 @@ interface HeroItem {
   backdrop_path?: string;
   poster_path?: string;
   vote_average?: number;
+  unified_rating?: number | null;
   media_type?: string;
 }
 
@@ -115,14 +116,17 @@ export default function HeroBanner({ items }: HeroBannerProps) {
               transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               {/* Rating badge */}
-              {current.vote_average != null && current.vote_average > 0 && (
-                <div className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1 mb-3">
-                  <Star size={14} className="text-gold fill-gold" />
-                  <span className="text-sm font-bold text-gold">
-                    {current.vote_average.toFixed(1)}
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const displayScore = current.unified_rating ?? current.vote_average;
+                return displayScore != null && displayScore > 0 ? (
+                  <div className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1 mb-3">
+                    <Star size={14} className="text-gold fill-gold" />
+                    <span className="text-sm font-bold text-gold">
+                      {displayScore.toFixed(1)}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
 
               <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-white leading-tight mb-2">
                 {title}
