@@ -23,9 +23,9 @@ interface DragDropShelfProps {
 }
 
 const STATUS_CONFIG = {
-  want: { label: 'Wishlist', icon: Clock, color: 'border-purple-500/30 bg-purple-500/5', accent: 'text-purple-400' },
+  want: { label: 'Up Next', icon: Clock, color: 'border-purple-500/30 bg-purple-500/5', accent: 'text-purple-400' },
   watching: { label: 'In Progress', icon: Eye, color: 'border-blue-500/30 bg-blue-500/5', accent: 'text-blue-400' },
-  finished: { label: 'Finished', icon: CheckCircle2, color: 'border-green-500/30 bg-green-500/5', accent: 'text-green-400' },
+  finished: { label: 'Completed', icon: CheckCircle2, color: 'border-green-500/30 bg-green-500/5', accent: 'text-green-400' },
 };
 
 function SortableCard({ item, onClick }: { item: any; onClick: () => void }) {

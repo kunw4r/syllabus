@@ -135,7 +135,9 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
       toast('Added to library!', 'success');
       setTimeout(() => setJustAdded(false), 600);
     } catch (err: any) {
-      toast(err?.message === 'Already in your library' ? 'Already in your library' : 'Could not add', 'error');
+      const msg = err?.message || 'Could not add';
+      toast(msg === 'Already in your library' ? msg : `Could not add: ${msg}`, 'error');
+      console.error('addToLibrary failed:', err);
     }
   };
 
@@ -145,7 +147,7 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
       try {
         await updateLibraryItem(libItem.id, { status: newStatus });
         setLibItem((prev: any) => ({ ...prev, status: newStatus }));
-        const labels: Record<string, string> = { want: 'Wishlist', watching: 'In Progress', finished: 'Finished' };
+        const labels: Record<string, string> = { want: 'Up Next', watching: 'In Progress', finished: 'Completed' };
         toast(`Moved to ${labels[newStatus]}`, 'info');
       } catch { toast('Failed to update status', 'error'); }
     }
@@ -192,9 +194,9 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
         <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Add to Library</p>
         <div className="flex flex-wrap gap-2">
           {([
-            { key: 'watching', icon: Eye, label: 'Watching', cls: 'bg-blue-500 hover:bg-blue-600' },
-            { key: 'want', icon: Clock, label: 'Wishlist', cls: 'bg-purple-500 hover:bg-purple-600' },
-            { key: 'finished', icon: CheckCircle2, label: 'Finished', cls: 'bg-green-500 hover:bg-green-600' },
+            { key: 'watching', icon: Eye, label: 'In Progress', cls: 'bg-blue-500 hover:bg-blue-600' },
+            { key: 'want', icon: Clock, label: 'Up Next', cls: 'bg-purple-500 hover:bg-purple-600' },
+            { key: 'finished', icon: CheckCircle2, label: 'Completed', cls: 'bg-green-500 hover:bg-green-600' },
           ] as const).map((s) => (
             <m.button
               key={s.key}
@@ -246,9 +248,9 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
       {/* Status buttons (always visible) */}
       <div className="px-4 py-3 flex gap-2">
         {([
-          { key: 'want', icon: Clock, label: 'Wishlist', active: 'bg-purple-500 text-white border-purple-400' },
+          { key: 'want', icon: Clock, label: 'Up Next', active: 'bg-purple-500 text-white border-purple-400' },
           { key: 'watching', icon: Eye, label: 'In Progress', active: 'bg-blue-500 text-white border-blue-400' },
-          { key: 'finished', icon: CheckCircle2, label: 'Finished', active: 'bg-green-500 text-white border-green-400' },
+          { key: 'finished', icon: CheckCircle2, label: 'Completed', active: 'bg-green-500 text-white border-green-400' },
         ] as const).map((s) => (
           <button key={s.key} onClick={() => handleStatusChange(s.key)}
             className={`flex-1 py-2 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all duration-200 ${
@@ -578,7 +580,6 @@ function BookDetailView({ workKey }: { workKey: string }) {
               media_type: 'book',
               title: data.title,
               poster_url: data.poster_path,
-              overview: data.description?.slice(0, 500) || '',
               external_rating: data.rating,
             }}
           />
@@ -879,10 +880,8 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
               media_type: mediaType,
               title: data.title || data.name,
               poster_url: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
-              overview: data.overview,
               external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
               genres: data.genres?.map((g: any) => g.name).join(', '),
-              release_date: data.release_date || data.first_air_date,
             }}
           />
         </div>

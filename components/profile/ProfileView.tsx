@@ -153,9 +153,9 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard icon={Library} label="Total" value={stats.total} color="text-accent" />
-        <StatCard icon={CheckCircle2} label="Finished" value={stats.finished} color="text-green-400" />
+        <StatCard icon={CheckCircle2} label="Completed" value={stats.finished} color="text-green-400" />
         <StatCard icon={Eye} label="In Progress" value={stats.watching} color="text-blue-400" />
-        <StatCard icon={Clock} label="Wishlist" value={stats.want} color="text-purple-400" />
+        <StatCard icon={Clock} label="Up Next" value={stats.want} color="text-purple-400" />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -228,7 +228,7 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
                   <span className="text-white/70">
                     {a.action === 'followed' ? `Followed ${a.title}` :
                      a.action === 'rated' ? `Rated "${a.title}" ${a.rating}/10` :
-                     a.action === 'finished' ? `Finished "${a.title}"` :
+                     a.action === 'finished' ? `Completed "${a.title}"` :
                      `${a.action.charAt(0).toUpperCase() + a.action.slice(1)} "${a.title}"`}
                   </span>
                 </div>
@@ -338,7 +338,7 @@ function LibraryTab({ library }: { library: LibraryItem[] }) {
                     item.status === 'watching' ? 'bg-blue-500/80' :
                     'bg-purple-500/80'
                   } text-white`}>
-                    {item.status === 'finished' ? 'Done' : item.status === 'watching' ? 'Active' : 'Want'}
+                    {item.status === 'finished' ? 'Completed' : item.status === 'watching' ? 'In Progress' : 'Up Next'}
                   </span>
                 </div>
               </div>

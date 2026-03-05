@@ -42,30 +42,47 @@ export async function getLibrary(filters: LibraryFilters = {}) {
   return data || [];
 }
 
+// Only pass columns that exist in the library table
+const LIBRARY_COLUMNS = new Set([
+  'status', 'media_type', 'title', 'poster_url', 'genres',
+  'external_rating', 'user_rating', 'review',
+  'tmdb_id', 'openlibrary_key',
+]);
+
+function pickLibraryFields(item: Record<string, unknown>) {
+  const clean: Record<string, unknown> = {};
+  for (const key of Object.keys(item)) {
+    if (LIBRARY_COLUMNS.has(key)) clean[key] = item[key];
+  }
+  return clean;
+}
+
 export async function addToLibrary(item: Record<string, unknown>) {
   const { supabase, user } = await getAuthenticatedUser();
 
-  // Duplicate check
-  let dupeQuery = supabase
-    .from('library')
-    .select('id')
-    .eq('user_id', user.id);
+  // Duplicate check — only when we have a media identifier
+  if (item.tmdb_id || item.openlibrary_key) {
+    let dupeQuery = supabase
+      .from('library')
+      .select('id')
+      .eq('user_id', user.id);
 
-  if (item.tmdb_id) {
-    dupeQuery = dupeQuery.eq('tmdb_id', item.tmdb_id as number);
-  } else if (item.openlibrary_key) {
-    dupeQuery = dupeQuery.eq('openlibrary_key', item.openlibrary_key as string);
+    if (item.tmdb_id) {
+      dupeQuery = dupeQuery.eq('tmdb_id', item.tmdb_id as number);
+    } else {
+      dupeQuery = dupeQuery.eq('openlibrary_key', item.openlibrary_key as string);
+    }
+
+    const { data: existing } = await dupeQuery;
+    if (existing && existing.length > 0) throw new Error('Already in your library');
   }
-
-  const { data: existing } = await dupeQuery;
-  if (existing && existing.length > 0) throw new Error('Already in your library');
 
   const { data, error } = await supabase
     .from('library')
     .insert({
       user_id: user.id,
       status: 'watching',
-      ...item,
+      ...pickLibraryFields(item),
     })
     .select()
     .single();

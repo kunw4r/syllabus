@@ -154,13 +154,13 @@ function StatsPanel({ items }: { items: any[] }) {
           <StatCard icon={Library} label="Total" value={stats.total} color="text-accent" />
         </StaggerItem>
         <StaggerItem>
-          <StatCard icon={CheckCircle2} label="Finished" value={stats.finished} color="text-green-400" />
+          <StatCard icon={CheckCircle2} label="Completed" value={stats.finished} color="text-green-400" />
         </StaggerItem>
         <StaggerItem>
           <StatCard icon={Eye} label="In Progress" value={stats.watching} color="text-blue-400" />
         </StaggerItem>
         <StaggerItem>
-          <StatCard icon={Clock} label="Wishlist" value={stats.want} color="text-purple-400" />
+          <StatCard icon={Clock} label="Up Next" value={stats.want} color="text-purple-400" />
         </StaggerItem>
       </StaggerContainer>
 
@@ -889,7 +889,7 @@ export default function LibraryPage() {
       await updateLibraryItem(id, { status: newStatus });
       const item = allItems.find((i) => i.id === id);
       toast(
-        `"${item?.title}" \u2192 ${newStatus === 'want' ? 'Wishlist' : newStatus === 'watching' ? 'In Progress' : 'Finished'}`,
+        `"${item?.title}" \u2192 ${newStatus === 'want' ? 'Up Next' : newStatus === 'watching' ? 'In Progress' : 'Completed'}`,
         'info',
       );
       loadLibrary();
@@ -980,9 +980,9 @@ export default function LibraryPage() {
   };
   const statusLabels: Record<string, string> = {
     all: 'All',
-    want: 'Wishlist',
+    want: 'Up Next',
     watching: 'In Progress',
-    finished: 'Finished',
+    finished: 'Completed',
   };
   const sortLabels: Record<string, string> = {
     added: 'Date Added',
@@ -1177,19 +1177,19 @@ export default function LibraryPage() {
                         {
                           key: 'want',
                           icon: Clock,
-                          label: 'Wishlist',
+                          label: 'Up Next',
                           activeClass: 'bg-purple-500 text-white',
                         },
                         {
                           key: 'watching',
                           icon: Eye,
-                          label: 'Watching',
+                          label: 'In Progress',
                           activeClass: 'bg-blue-500 text-white',
                         },
                         {
                           key: 'finished',
                           icon: CheckCircle2,
-                          label: 'Done',
+                          label: 'Completed',
                           activeClass: 'bg-green-500 text-white',
                         },
                       ].map((s) => (
@@ -1244,15 +1244,15 @@ export default function LibraryPage() {
                   >
                     {item.status === 'want' ? (
                       <>
-                        <Clock size={12} /> Wishlist
+                        <Clock size={12} /> Up Next
                       </>
                     ) : item.status === 'watching' ? (
                       <>
-                        <Eye size={12} /> Watching
+                        <Eye size={12} /> In Progress
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 size={12} /> Done
+                        <CheckCircle2 size={12} /> Completed
                       </>
                     )}
                   </div>
@@ -1325,7 +1325,7 @@ export default function LibraryPage() {
                   {
                     key: 'want',
                     icon: Clock,
-                    label: 'Wishlist',
+                    label: 'Up Next',
                     active:
                       'bg-purple-500 border-purple-400 text-white',
                   },
@@ -1338,7 +1338,7 @@ export default function LibraryPage() {
                   {
                     key: 'finished',
                     icon: CheckCircle2,
-                    label: 'Finished',
+                    label: 'Completed',
                     active:
                       'bg-green-500 border-green-400 text-white',
                   },
