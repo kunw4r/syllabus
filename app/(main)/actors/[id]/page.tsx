@@ -183,20 +183,24 @@ export default function ActorDetailPage() {
   if (loading) {
     return (
       <div className="min-w-0 animate-pulse">
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-8">
           <div className="w-8 h-8 rounded bg-white/5" />
           <div className="h-4 w-16 rounded bg-white/5" />
         </div>
-        <div className="flex flex-col sm:flex-row gap-6 mb-8">
-          <div className="w-40 h-52 rounded-2xl bg-white/5 flex-shrink-0" />
-          <div className="flex-1 space-y-3">
-            <div className="h-8 w-48 rounded bg-white/5" />
-            <div className="h-4 w-32 rounded bg-white/5" />
-            <div className="h-4 w-64 rounded bg-white/5" />
-            <div className="h-20 w-full rounded bg-white/5" />
+        <div className="flex flex-col sm:flex-row gap-8 mb-10">
+          <div className="w-48 sm:w-56 aspect-[2/3] rounded-2xl bg-white/5 flex-shrink-0" />
+          <div className="flex-1 space-y-4">
+            <div className="h-9 w-56 rounded bg-white/5" />
+            <div className="h-4 w-40 rounded bg-white/5" />
+            <div className="flex gap-3">
+              <div className="h-20 w-24 rounded-xl bg-white/5" />
+              <div className="h-20 w-24 rounded-xl bg-white/5" />
+              <div className="h-20 w-24 rounded-xl bg-white/5" />
+            </div>
+            <div className="h-24 w-full rounded bg-white/5" />
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {Array.from({ length: 10 }, (_, i) => (
             <div key={i} className="aspect-[2/3] rounded-xl bg-white/5" />
           ))}
@@ -218,34 +222,38 @@ export default function ActorDetailPage() {
       {/* Back button */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm mb-6 transition-colors"
+        className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm mb-8 transition-colors"
       >
         <ChevronLeft size={18} /> Back
       </button>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-6 mb-8">
-        {/* Photo */}
-        {person.profile_path ? (
-          <img
-            src={`${TMDB_PROFILE_LG}${person.profile_path}`}
-            alt={person.name}
-            className="w-40 h-52 rounded-2xl object-cover border-2 border-white/[0.06] flex-shrink-0"
-          />
-        ) : (
-          <div className="w-40 h-52 rounded-2xl bg-dark-600 flex items-center justify-center text-white/20 text-4xl font-bold border-2 border-white/[0.06] flex-shrink-0">
-            {person.name?.charAt(0)}
-          </div>
-        )}
+      {/* Hero Header */}
+      <div className="flex flex-col sm:flex-row gap-8 mb-10">
+        {/* Photo — larger, with glow */}
+        <div className="relative flex-shrink-0">
+          {person.profile_path ? (
+            <img
+              src={`${TMDB_PROFILE_LG}${person.profile_path}`}
+              alt={person.name}
+              className="w-48 sm:w-56 aspect-[2/3] rounded-2xl object-cover ring-1 ring-white/[0.08]"
+            />
+          ) : (
+            <div className="w-48 sm:w-56 aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/15 text-5xl font-bold ring-1 ring-white/[0.08]">
+              {person.name?.charAt(0)}
+            </div>
+          )}
+          {/* Ambient glow behind photo */}
+          <div className="absolute -inset-4 -z-10 rounded-3xl bg-accent/10 blur-2xl opacity-40" />
+        </div>
 
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-black mb-2">{person.name}</h1>
+          <h1 className="text-3xl sm:text-4xl font-black mb-3 leading-tight">{person.name}</h1>
 
-          {/* Meta */}
-          <div className="flex flex-wrap gap-3 text-sm text-white/40 mb-3">
+          {/* Meta pills */}
+          <div className="flex flex-wrap gap-2 text-sm text-white/40 mb-4">
             {person.birthday && (
-              <span className="flex items-center gap-1.5">
-                <Calendar size={14} />
+              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                <Calendar size={13} className="text-white/30" />
                 {new Date(person.birthday).toLocaleDateString('en-US', {
                   month: 'long',
                   day: 'numeric',
@@ -259,29 +267,29 @@ export default function ActorDetailPage() {
               </span>
             )}
             {person.place_of_birth && (
-              <span className="flex items-center gap-1.5">
-                <MapPin size={14} />
+              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                <MapPin size={13} className="text-white/30" />
                 {person.place_of_birth}
               </span>
             )}
           </div>
 
-          {/* Stats */}
-          <div className="flex gap-4 mb-4">
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2 text-center">
-              <p className="text-lg font-bold">{movieCredits.length}</p>
-              <p className="text-[10px] text-white/30 uppercase">Movies</p>
+          {/* Glassmorphic Stats */}
+          <div className="flex gap-3 mb-5">
+            <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
+              <p className="text-xl font-black">{movieCredits.length}</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider">Movies</p>
             </div>
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2 text-center">
-              <p className="text-lg font-bold">{tvCredits.length}</p>
-              <p className="text-[10px] text-white/30 uppercase">TV Shows</p>
+            <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
+              <p className="text-xl font-black">{tvCredits.length}</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider">TV Shows</p>
             </div>
             {careerStart && careerEnd && (
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2 text-center">
-                <p className="text-lg font-bold">
+              <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
+                <p className="text-xl font-black">
                   {careerEnd - careerStart}
                 </p>
-                <p className="text-[10px] text-white/30 uppercase">Year Career</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">Year Career</p>
               </div>
             )}
           </div>
@@ -299,7 +307,7 @@ export default function ActorDetailPage() {
               {person.biography.length > 300 && (
                 <button
                   onClick={() => setBioExpanded(!bioExpanded)}
-                  className="text-accent text-xs mt-1 hover:underline"
+                  className="text-accent text-xs mt-1.5 hover:underline font-medium"
                 >
                   {bioExpanded ? 'Show less' : 'Read more'}
                 </button>
@@ -311,45 +319,43 @@ export default function ActorDetailPage() {
 
       {/* Awards Summary */}
       {awards && (awards.totalOscarWins > 0 || awards.totalEmmyWins > 0 || awards.totalWins > 5) && (
-        <div className="mb-8 bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider flex items-center gap-2">
+        <div className="mb-10 bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
+          <h3 className="text-sm font-semibold text-white/50 mb-4 uppercase tracking-wider flex items-center gap-2">
             <Award size={14} className="text-gold" /> Awards Across Filmography
           </h3>
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {awards.totalOscarWins > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-gold font-bold">{awards.totalOscarWins}</span>
-                <span className="text-white/40">
-                  Oscar Win{awards.totalOscarWins > 1 ? 's' : ''} across{' '}
-                  {awards.oscarWinningFilms.length} film{awards.oscarWinningFilms.length > 1 ? 's' : ''}
-                </span>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-black text-gold">{awards.totalOscarWins}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5">
+                  Oscar Win{awards.totalOscarWins > 1 ? 's' : ''}
+                </p>
               </div>
             )}
             {awards.totalOscarNoms > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-white/60 font-bold">{awards.totalOscarNoms}</span>
-                <span className="text-white/40">Oscar Nominations</span>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-black text-white/60">{awards.totalOscarNoms}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5">Oscar Noms</p>
               </div>
             )}
             {awards.totalEmmyWins > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-gold font-bold">{awards.totalEmmyWins}</span>
-                <span className="text-white/40">
-                  Emmy Win{awards.totalEmmyWins > 1 ? 's' : ''} across{' '}
-                  {awards.emmyWinningShows.length} show{awards.emmyWinningShows.length > 1 ? 's' : ''}
-                </span>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-black text-gold">{awards.totalEmmyWins}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5">
+                  Emmy Win{awards.totalEmmyWins > 1 ? 's' : ''}
+                </p>
               </div>
             )}
             {awards.totalWins > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-white/60 font-bold">{awards.totalWins}</span>
-                <span className="text-white/40">Total Wins</span>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-black text-white/60">{awards.totalWins}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5">Total Wins</p>
               </div>
             )}
             {awards.totalNoms > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-white/60 font-bold">{awards.totalNoms}</span>
-                <span className="text-white/40">Total Nominations</span>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-black text-white/60">{awards.totalNoms}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5">Total Noms</p>
               </div>
             )}
           </div>
@@ -357,8 +363,8 @@ export default function ActorDetailPage() {
       )}
 
       {/* Filmography Controls */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <h2 className="text-lg font-bold mr-2">Filmography</h2>
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <h2 className="text-xl font-black mr-2">Filmography</h2>
 
         {/* Tab toggle */}
         <div className="flex gap-2">
@@ -405,7 +411,7 @@ export default function ActorDetailPage() {
 
       {/* Progress bar */}
       {progress !== null && progress < 100 && (
-        <div className="mb-4">
+        <div className="mb-5">
           <div className="flex items-center justify-between text-[11px] text-white/30 mb-1.5">
             <span>Scoring titles...</span>
             <span>{Math.round(progress)}%</span>
@@ -425,7 +431,7 @@ export default function ActorDetailPage() {
           <p className="text-lg">No {tab === 'movies' ? 'movie' : 'TV'} credits found</p>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {credits.map((c: any) => (
             <div key={`${c.id}-${c.character}`}>
               <MediaCard
@@ -433,7 +439,7 @@ export default function ActorDetailPage() {
                 mediaType={tab === 'movies' ? 'movie' : 'tv'}
               />
               {c.character && (
-                <p className="text-[10px] text-white/25 mt-1 truncate px-0.5 max-w-[240px] sm:max-w-[280px]">
+                <p className="text-[10px] text-white/25 mt-1.5 truncate px-0.5">
                   as {c.character}
                 </p>
               )}
