@@ -11,25 +11,25 @@
 // Representative color for text/icons — brighter/neon at higher scores
 // 8.5+ gets granular gradient transitions for a dynamic top-tier feel
 export function getRatingHex(val: number): string {
-  if (val <= 2) return '#a855f7';   // purple
-  if (val <= 4) return '#f43f5e';   // rose-red
-  if (val <= 5.5) return '#fb923c'; // orange
-  if (val <= 6.5) return '#facc15'; // yellow
-  if (val <= 7.5) return '#a3e635'; // lime
-  if (val <= 8.5) return '#4ade80'; // neon green
+  if (val <= 2) return '#bf5af2';   // purple (neon)
+  if (val <= 4) return '#ff375f';   // rose-red (neon)
+  if (val <= 5.5) return '#ff8a2b'; // orange (neon)
+  if (val <= 6.5) return '#ffe020'; // yellow (electric)
+  if (val <= 7.5) return '#b5ff3a'; // lime (neon)
+  if (val <= 8.5) return '#50ff8a'; // neon green (electric)
   // 8.5+ smooth transition: green → cyan → sky → tron
-  if (val <= 8.8) return '#34d399'; // emerald-green (gradient begins)
-  if (val <= 9.2) return '#22d3ee'; // cyan (own color emerges)
-  if (val <= 9.5) return '#38bdf8'; // sky blue (neon)
-  if (val <= 9.7) return '#22b8ff'; // bright blue (flowing toward tron)
-  if (val < 10) return '#00ccff';   // near-tron cyan (almost there)
+  if (val <= 8.8) return '#3dffc2'; // emerald (neon)
+  if (val <= 9.2) return '#30f0ff'; // cyan (neon)
+  if (val <= 9.5) return '#40c8ff'; // sky blue (neon)
+  if (val <= 9.7) return '#20bbff'; // bright blue (flowing toward tron)
+  if (val < 10) return '#00ddff';   // near-tron cyan (almost there)
   return '#00e5ff';                  // tron cyan — electric neon
 }
 
 // Badge background — dark frosted glass for all scores
 // The star icon and number text carry the neon color instead
 export function getRatingBg(): string {
-  return 'rgba(0, 0, 0, 0.45)';
+  return 'rgba(0, 0, 0, 0.55)';
 }
 
 // Neon glow around the badge — colored halo on the dark glass
