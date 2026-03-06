@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Star, Film, Tv, Calendar, MapPin, ChevronLeft, Award, ArrowUpDown,
+  Heart, Users, Ruler,
 } from 'lucide-react';
 import MediaCard from '@/components/ui/MediaCard';
 import {
@@ -153,6 +154,53 @@ export default function ActorDetailPage() {
 
   const credits = tab === 'movies' ? movieCredits : tvCredits;
 
+  // Parse personal details from biography
+  const personalDetails = useMemo(() => {
+    if (!person?.biography) return {};
+    const bio = person.biography;
+    const details: { spouse?: string; children?: string; height?: string } = {};
+
+    // Spouse patterns
+    const spousePatterns = [
+      /(?:married|wed)\s+(?:to\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})/i,
+      /(?:spouse|wife|husband|partner)(?:\s+is)?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})/i,
+      /(?:married)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+in/i,
+    ];
+    for (const pattern of spousePatterns) {
+      const match = bio.match(pattern);
+      if (match) { details.spouse = match[1].trim(); break; }
+    }
+
+    // Children patterns
+    const childPatterns = [
+      /(\w+)\s+children/i,
+      /(?:has|have)\s+(\d+)\s+(?:children|kids|daughters?|sons?)/i,
+      /(?:father|mother)\s+of\s+(\w+)/i,
+    ];
+    const numberWords: Record<string, string> = { one: '1', two: '2', three: '3', four: '4', five: '5', six: '6' };
+    for (const pattern of childPatterns) {
+      const match = bio.match(pattern);
+      if (match) {
+        const val = match[1].toLowerCase();
+        details.children = numberWords[val] || match[1];
+        break;
+      }
+    }
+
+    // Height patterns
+    const heightPatterns = [
+      /(\d['′']\s*\d{1,2}["″"]?)/,
+      /((?:1[5-9]|2[0-2])\d\s*cm)/i,
+      /(\d\.\d{1,2}\s*m(?:eters?)?)\b/i,
+    ];
+    for (const pattern of heightPatterns) {
+      const match = bio.match(pattern);
+      if (match) { details.height = match[1].trim(); break; }
+    }
+
+    return details;
+  }, [person?.biography]);
+
   // Person info
   const age = person?.birthday
     ? Math.floor(
@@ -272,6 +320,24 @@ export default function ActorDetailPage() {
                 {person.place_of_birth}
               </span>
             )}
+            {personalDetails.spouse && (
+              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                <Heart size={13} className="text-white/30" />
+                {personalDetails.spouse}
+              </span>
+            )}
+            {personalDetails.children && (
+              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                <Users size={13} className="text-white/30" />
+                {personalDetails.children} children
+              </span>
+            )}
+            {personalDetails.height && (
+              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                <Ruler size={13} className="text-white/30" />
+                {personalDetails.height}
+              </span>
+            )}
           </div>
 
           {/* Glassmorphic Stats */}
@@ -287,9 +353,9 @@ export default function ActorDetailPage() {
             {careerStart && careerEnd && (
               <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
                 <p className="text-xl font-black">
-                  {careerEnd - careerStart}
+                  {careerStart}–{careerEnd === new Date().getFullYear() ? 'Now' : careerEnd}
                 </p>
-                <p className="text-[10px] text-white/30 uppercase tracking-wider">Year Career</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">Career</p>
               </div>
             )}
           </div>
