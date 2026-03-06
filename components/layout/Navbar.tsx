@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -10,7 +10,6 @@ import {
   TrophyIcon, FilmIcon, TvIcon, BookIcon, ActorsIcon, AwardsIcon,
   StudiosIcon, LogInIcon, LogOutIcon, XIcon,
 } from '@/components/layout/NavIcons';
-import { Search, ChevronDown, Menu, X } from 'lucide-react';
 
 interface NavItem {
   to: string;
@@ -31,21 +30,14 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
 
-  // Track scroll for background opacity
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
 
   const primaryNav: NavItem[] = [
     { to: '/', Icon: HomeIcon, label: 'Home' },
@@ -87,34 +79,45 @@ export default function Navbar() {
     { to: '/awards', Icon: AwardsIcon, label: 'Awards', color: 'from-yellow-500/20 to-yellow-600/10' },
   ];
 
+  const allLinks = [...primaryNav, ...userNav];
+
   return (
     <>
-      {/* ── Desktop Top Navbar ── */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block transition-all duration-500 ${
-          scrolled
-            ? 'bg-dark-900/95 backdrop-blur-xl shadow-lg shadow-black/20'
-            : 'bg-gradient-to-b from-dark-900/80 to-transparent'
-        }`}
-      >
-        <div className="flex items-center h-16 px-6 xl:px-10">
+      {/* ── Desktop Navbar — full bar at top, floating pill on scroll ── */}
+      <div className="fixed top-0 left-0 right-0 z-50 hidden lg:flex justify-center pointer-events-none">
+        <nav
+          className={`pointer-events-auto flex items-center transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+            scrolled
+              ? 'mt-3 h-11 px-2 gap-0.5 bg-dark-800/85 backdrop-blur-2xl rounded-full border border-white/[0.08] shadow-2xl shadow-black/40'
+              : 'mt-0 h-16 px-6 xl:px-10 w-full bg-gradient-to-b from-dark-900/80 to-transparent'
+          }`}
+        >
           {/* Logo */}
-          <Link href="/" className="shrink-0 mr-8">
-            <Image src="/logo.png" alt="Syllabus" width={140} height={32} className="h-8 w-auto" priority />
+          <Link href="/" className={`shrink-0 transition-all duration-500 ${scrolled ? 'mr-2' : 'mr-8'}`}>
+            <Image
+              src="/logo.png"
+              alt="Syllabus"
+              width={140}
+              height={32}
+              className={`transition-all duration-500 ${scrolled ? 'h-5 w-auto' : 'h-8 w-auto'}`}
+              priority
+            />
           </Link>
 
-          {/* Primary nav links */}
-          <div className="flex items-center gap-1">
-            {primaryNav.map(({ to, label }) => {
+          {scrolled && <div className="w-px h-5 bg-white/10 mx-1" />}
+
+          {/* Nav links */}
+          <div className="flex items-center gap-0.5">
+            {allLinks.map(({ to, label }) => {
               const active = isActive(pathname, to);
               return (
                 <Link
                   key={to}
                   href={to}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    active
-                      ? 'text-white font-semibold'
-                      : 'text-white/60 hover:text-white/90'
+                  className={`transition-all duration-300 rounded-full font-medium ${
+                    scrolled
+                      ? `text-xs px-2.5 py-1 ${active ? 'text-white bg-white/10' : 'text-white/55 hover:text-white hover:bg-white/[0.06]'}`
+                      : `text-sm px-3 py-1.5 ${active ? 'text-white font-semibold' : 'text-white/60 hover:text-white/90'}`
                   }`}
                 >
                   {label}
@@ -123,43 +126,28 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right side */}
-          <div className="ml-auto flex items-center gap-3">
-            {userNav.map(({ to, label }) => {
-              const active = isActive(pathname, to);
-              return (
-                <Link
-                  key={to}
-                  href={to}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    active
-                      ? 'text-white font-semibold'
-                      : 'text-white/60 hover:text-white/90'
-                  }`}
+          {/* Auth button — only in expanded mode */}
+          {!scrolled && (
+            <div className="ml-auto flex items-center gap-3">
+              {user ? (
+                <button
+                  onClick={signOut}
+                  className="text-sm text-white/40 hover:text-white transition-colors"
                 >
-                  {label}
-                </Link>
-              );
-            })}
-
-            {user ? (
-              <button
-                onClick={signOut}
-                className="text-sm text-white/40 hover:text-white transition-colors ml-2"
-              >
-                Sign Out
-              </button>
-            ) : (
-              <button
-                onClick={() => router.push('/login')}
-                className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
-              >
-                Sign In
-              </button>
-            )}
-          </div>
-        </div>
-      </nav>
+                  Sign Out
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push('/login')}
+                  className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          )}
+        </nav>
+      </div>
 
       {/* ── Mobile Top Bar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 lg:hidden">

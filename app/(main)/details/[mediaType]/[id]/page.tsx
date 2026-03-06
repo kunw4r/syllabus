@@ -1053,42 +1053,13 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   const directors = crew.filter((c: any) => c.job === 'Director').slice(0, 3);
   const starring = castList.slice(0, 5).map((c: any) => c.name).join(', ');
 
-  // Section nav items
-  const sectionItems = [
-    ...(videoList.length > 0 ? [{ id: 'trailers', label: 'Trailers' }] : []),
-    { id: 'details', label: 'More Details' },
-    ...(recommendations.length > 0 ? [{ id: 'recommendations', label: 'More to Watch' }] : []),
-  ];
-
   return (
     <div>
       {/* Full-page transparent backdrop */}
       <HeroBackdrop backdropPath={data.backdrop_path} />
 
-      {/* ── Floating Section Nav ── */}
-      <div className="sticky top-0 lg:top-0 z-40 flex justify-center pt-3 pb-2">
-        <nav className="flex items-center gap-1 bg-dark-800/80 backdrop-blur-xl rounded-full border border-white/[0.08] px-2 py-1.5 shadow-lg">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1 text-white/50 hover:text-white px-3 py-1.5 rounded-full text-sm transition-colors"
-          >
-            <ChevronLeft size={16} strokeWidth={2.5} /> Back
-          </button>
-          <div className="w-px h-5 bg-white/10 mx-1" />
-          {sectionItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                const el = document.getElementById(item.id);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
-              className="text-sm text-accent/80 hover:text-accent px-3 py-1.5 rounded-full hover:bg-white/[0.05] transition-colors"
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {/* Spacer for top navbar */}
+      <div className="h-4" />
 
       {/* ── Hero Image Container (full-bleed) ── */}
       <div className="px-4 sm:px-6 lg:px-10">
