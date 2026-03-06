@@ -460,6 +460,27 @@ export function ToeiLogo({ size = 48, className }: LogoProps) {
   );
 }
 
+// ── Apple Studios — apple silhouette ──
+export function AppleStudiosLogo({ size = 48, className }: LogoProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="white" className={className}>
+      <path d="M33.3 25.2c-.1-3.8 3.1-5.7 3.2-5.8-1.8-2.6-4.5-2.9-5.4-3-2.3-.2-4.5 1.4-5.7 1.4-1.2 0-3-1.3-5-1.3-2.6 0-4.9 1.5-6.2 3.8-2.7 4.6-.7 11.4 1.9 15.2 1.3 1.9 2.8 3.9 4.8 3.8 1.9-.1 2.7-1.2 5-1.2 2.3 0 3 1.2 5 1.2 2.1 0 3.4-1.9 4.7-3.8 1.5-2.2 2.1-4.3 2.1-4.4 0-.1-4.1-1.6-4.4-5.9z" opacity="0.85" />
+      <path d="M29.2 13.8c1.1-1.3 1.8-3.1 1.6-4.8-1.5.1-3.4 1-4.5 2.3-1 1.1-1.8 2.9-1.6 4.7 1.7.1 3.5-1 4.5-2.2z" opacity="0.85" />
+      <text x="24" y="46" textAnchor="middle" fontSize="5.5" fontWeight="600" fill="white" opacity="0.5" fontFamily="system-ui">STUDIOS</text>
+    </svg>
+  );
+}
+
+// ── Toho — stylized T ──
+export function TohoLogo({ size = 48, className }: LogoProps) {
+  return (
+    <svg width={size} height={size * 0.5} viewBox="0 0 80 36" fill="white" className={className}>
+      <text x="40" y="24" textAnchor="middle" fontSize="22" fontWeight="800" letterSpacing="6" fill="white" opacity="0.85" fontFamily="system-ui">TOHO</text>
+      <rect x="12" y="28" width="56" height="1.5" rx="0.75" opacity="0.3" />
+    </svg>
+  );
+}
+
 // ── Export map ──
 export const STUDIO_LOGOS: Record<string, React.ComponentType<LogoProps>> = {
   disney: DisneyLogo,
@@ -495,4 +516,6 @@ export const STUDIO_LOGOS: Record<string, React.ComponentType<LogoProps>> = {
   korean: KoreanLogo,
   anime: AnimeLogo,
   toei: ToeiLogo,
+  'apple-studios': AppleStudiosLogo,
+  toho: TohoLogo,
 };

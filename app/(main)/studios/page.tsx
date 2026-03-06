@@ -143,6 +143,15 @@ const TIER_2 = [
     accent: 'rgba(180,140,50,0.10)',
     streakColor: 'rgba(220,180,80,0.05)',
   },
+  {
+    slug: 'illumination',
+    name: 'Illumination',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(90,80,20,0.5) 0%, rgba(45,40,10,0.8) 50%, rgba(18,16,6,0.95) 100%)',
+    border: 'rgba(220,200,50,0.20)',
+    glow: '0 0 40px rgba(180,160,30,0.12), 0 0 80px rgba(140,120,20,0.06)',
+    accent: 'rgba(200,180,40,0.10)',
+    streakColor: 'rgba(240,220,60,0.05)',
+  },
 ];
 
 const TIER_3 = [
@@ -229,6 +238,24 @@ const TIER_3 = [
     glow: '0 0 40px rgba(30,70,150,0.12), 0 0 80px rgba(20,50,120,0.06)',
     accent: 'rgba(40,85,170,0.10)',
     streakColor: 'rgba(60,120,220,0.05)',
+  },
+  {
+    slug: 'apple-studios',
+    name: 'Apple Studios',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(50,50,50,0.5) 0%, rgba(25,25,25,0.8) 50%, rgba(10,10,10,0.95) 100%)',
+    border: 'rgba(170,170,170,0.18)',
+    glow: '0 0 40px rgba(120,120,120,0.08), 0 0 80px rgba(90,90,90,0.04)',
+    accent: 'rgba(150,150,150,0.08)',
+    streakColor: 'rgba(200,200,200,0.04)',
+  },
+  {
+    slug: 'toho',
+    name: 'Toho',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(100,20,20,0.5) 0%, rgba(50,10,10,0.8) 50%, rgba(20,6,6,0.95) 100%)',
+    border: 'rgba(200,60,60,0.20)',
+    glow: '0 0 40px rgba(160,40,40,0.12), 0 0 80px rgba(120,20,20,0.06)',
+    accent: 'rgba(180,50,50,0.10)',
+    streakColor: 'rgba(220,80,80,0.05)',
   },
 ];
 
