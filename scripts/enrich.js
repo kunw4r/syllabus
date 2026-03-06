@@ -37,6 +37,7 @@ const TMDB_KEY = process.env.TMDB_KEY || process.env.TMDB_API_KEY || process.env
 const OMDB_KEYS = [
   process.env.OMDB_KEY_1 || process.env.OMDB_API_KEY_1 || '4a3b711b',
   process.env.OMDB_KEY_2 || process.env.OMDB_API_KEY_2 || '91f420c8',
+  process.env.OMDB_KEY_3 || process.env.OMDB_API_KEY_3 || '2f3fd1aa',
 ].filter(Boolean);
 
 const SCORES_PATH = path.resolve(__dirname, '../public/data/scores.json');
@@ -51,7 +52,7 @@ const DECADE_END = 1960;
 
 // Parse CLI args
 const args = process.argv.slice(2);
-const CALL_LIMIT = parseInt(args.find((_, i, a) => a[i - 1] === '--limit') || '1800');
+const CALL_LIMIT = parseInt(args.find((_, i, a) => a[i - 1] === '--limit') || '2700');
 const MOVIES_ONLY = args.includes('--movies-only');
 const TV_ONLY = args.includes('--tv-only');
 const BACKFILL_ONLY = args.includes('--backfill-only');

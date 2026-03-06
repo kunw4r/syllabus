@@ -23,7 +23,8 @@ jobs:
           TMDB_KEY: ${{ secrets.TMDB_KEY }}
           OMDB_KEY_1: ${{ secrets.OMDB_KEY_1 }}
           OMDB_KEY_2: ${{ secrets.OMDB_KEY_2 }}
-        run: node scripts/enrich.js --limit 1800
+          OMDB_KEY_3: ${{ secrets.OMDB_KEY_3 }}
+        run: node scripts/enrich.js --limit 2700
 
       - name: Commit updated scores
         run: |

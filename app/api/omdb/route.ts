@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const OMDB_KEYS = [
   process.env.OMDB_API_KEY_1,
   process.env.OMDB_API_KEY_2,
+  process.env.OMDB_API_KEY_3,
 ].filter(Boolean) as string[];
 
 let keyIdx = 0;
