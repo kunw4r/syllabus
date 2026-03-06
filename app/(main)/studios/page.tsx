@@ -274,8 +274,8 @@ function FeaturedStudioCard({
           src={featured.image!}
           alt={featured.name}
           fill
-          className="object-cover group-hover:scale-[1.08] transition-transform duration-500 ease-out"
-          style={{ objectPosition: featured.imagePosition || 'center 55%', transform: 'scale(1.06)' }}
+          className="object-cover group-hover:scale-[1.15] transition-transform duration-500 ease-out"
+          style={{ objectPosition: featured.imagePosition || 'center center', transform: 'scale(1.12)' }}
           sizes="(max-width: 640px) 100vw, 50vw"
           priority
         />
