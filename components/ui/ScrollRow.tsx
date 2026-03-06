@@ -45,7 +45,7 @@ export default function ScrollRow({
       )}
       <div
         ref={ref}
-        className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide pb-16 -mb-14"
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
       >
         {children}
       </div>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Plus, Check, Play, Info } from 'lucide-react';
+import { Star, Plus, Check } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
@@ -138,9 +138,8 @@ export default function MediaCard({
       <div
         className="group/card relative cursor-pointer shrink-0 w-[240px] sm:w-[280px] min-w-0 z-0 hover:z-30"
       >
-        {/* Main card — scales up on hover */}
         <div
-          className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 transition-all duration-300 ease-out group-hover/card:scale-[1.35] group-hover/card:ring-0 group-hover/card:shadow-2xl group-hover/card:shadow-black/80 group-hover/card:rounded-2xl"
+          className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 transition-all duration-300 ease-out group-hover/card:scale-[1.08] group-hover/card:ring-white/20 group-hover/card:shadow-2xl group-hover/card:shadow-black/60"
           onClick={handleClick}
         >
           {displayImg ? (
@@ -156,13 +155,13 @@ export default function MediaCard({
             </div>
           )}
 
-          {/* Bottom gradient — heavier on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-300 group-hover/card:from-black/90 group-hover/card:via-black/40" />
+          {/* Gradient — stronger on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover/card:from-black/80 group-hover/card:via-black/30 transition-all duration-300" />
 
-          {/* Rating badge — visible by default, hides on hover */}
+          {/* Rating badge */}
           {rating != null && (
             <div
-              className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10 transition-opacity duration-200 group-hover/card:opacity-0"
+              className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10"
               style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
             >
               <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
@@ -172,74 +171,39 @@ export default function MediaCard({
             </div>
           )}
 
-          {/* Default title overlay — hides on hover */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 transition-opacity duration-200 group-hover/card:opacity-0">
+          {/* Title + year — always visible */}
+          <div className="absolute bottom-0 left-0 right-0 p-3">
             <p className="text-sm font-semibold text-white truncate drop-shadow-lg">
               {title}
             </p>
             {year && <p className="text-[10px] text-white/40 mt-0.5">{year}</p>}
           </div>
 
-          {/* ── Hover overlay: action buttons + genres ── */}
-          <div className="absolute inset-0 flex flex-col justify-between p-3.5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-            {/* Top-right: Add + Info buttons */}
-            <div className="flex flex-col items-end gap-2">
-              {showAdd && user && !added ? (
-                <button
-                  onClick={handleAdd}
-                  className="w-10 h-10 rounded-full border-2 border-white/60 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/60 transition-all active:scale-90"
-                  title="Add to Library"
-                >
-                  <Plus size={20} className="text-white" />
-                </button>
-              ) : added ? (
-                <div
-                  className="w-10 h-10 rounded-full border-2 border-green-500/60 bg-green-500/20 backdrop-blur-sm flex items-center justify-center"
-                  title="In Library"
-                >
-                  <Check size={20} className="text-green-400" />
-                </div>
-              ) : null}
-
+          {/* Hover action buttons — small, top-left */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
+            {showAdd && user && !added ? (
               <button
-                onClick={(e) => { e.stopPropagation(); handleClick(); }}
-                className="w-10 h-10 rounded-full border-2 border-white/60 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/60 transition-all active:scale-90"
-                title="More Info"
+                onClick={handleAdd}
+                className="w-7 h-7 rounded-full border border-white/50 bg-black/50 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/70 transition-all active:scale-90"
+                title="Add to Library"
               >
-                <Info size={18} className="text-white" />
+                <Plus size={14} className="text-white" />
               </button>
-            </div>
-
-            {/* Bottom: Play button + Genres */}
-            <div className="flex items-end justify-between">
-              <div>
-                <button
-                  onClick={handleClick}
-                  className="w-12 h-12 rounded-full border-2 border-white bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-all active:scale-90 mb-2"
-                  title="Play"
-                >
-                  <Play size={22} className="text-white fill-white ml-0.5" />
-                </button>
-                {genreNames.length > 0 && (
-                  <p className="text-sm font-semibold text-white/80 drop-shadow-lg">
-                    {genreNames.join(' \u00B7 ')}
-                  </p>
-                )}
+            ) : added ? (
+              <div className="w-7 h-7 rounded-full border border-green-500/60 bg-green-500/20 backdrop-blur-sm flex items-center justify-center">
+                <Check size={14} className="text-green-400" />
               </div>
-
-              {rating != null && (
-                <div
-                  className="rounded-md px-2 py-1 flex items-center gap-1 backdrop-blur-md border border-white/10"
-                  style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
-                >
-                  <Star size={11} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-                  <span className="text-sm font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
-                    {typeof rating === 'number' ? rating.toFixed(1) : rating}
-                  </span>
-                </div>
-              )}
-            </div>
+            ) : null}
           </div>
+
+          {/* Genre tags — bottom, on hover */}
+          {genreNames.length > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
+              <p className="text-[10px] text-white/60 drop-shadow-lg truncate">
+                {genreNames.join(' · ')}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
