@@ -195,7 +195,7 @@ export default function BooksPage() {
           {/* Hero Banner */}
           {hero && (
             <div
-              className="relative -mx-4 sm:-mx-6 lg:-mx-10 -mt-2 mb-10 h-[36vh] sm:h-[44vh] min-h-[260px] overflow-hidden rounded-b-3xl bg-gradient-to-br from-accent/20 via-dark-800 to-dark-900 cursor-pointer group"
+              className="relative -mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-2 mb-10 h-[36vh] sm:h-[44vh] min-h-[260px] overflow-hidden rounded-b-3xl bg-gradient-to-br from-accent/20 via-dark-800 to-dark-900 cursor-pointer group"
               onClick={() => navigateToBook(hero)}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />

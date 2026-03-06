@@ -212,7 +212,7 @@ export default function TVPage() {
           <h2 className="text-xl font-semibold mb-5">
             Results for &ldquo;{query}&rdquo;
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="flex flex-wrap gap-4">
             {results.map((t: any) => (
               <MediaCard key={t.id} item={t} mediaType="tv" />
             ))}
@@ -222,7 +222,7 @@ export default function TVPage() {
         <>
           {/* Hero Banner */}
           {hero?.backdrop_path && (
-            <div className="relative -mx-4 sm:-mx-6 lg:-mx-10 -mt-2 mb-10 h-[50vh] sm:h-[60vh] min-h-[320px] overflow-hidden rounded-b-3xl">
+            <div className="relative -mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-2 mb-10 h-[50vh] sm:h-[60vh] min-h-[320px] overflow-hidden rounded-b-3xl">
               <img
                 src={`${TMDB_IMG_ORIGINAL}${hero.backdrop_path}`}
                 alt=""
@@ -347,9 +347,7 @@ export default function TVPage() {
                 ) : shows?.length > 0 ? (
                   <ScrollRow title={g.name}>
                     {shows.map((t: any) => (
-                      <div key={t.id} className="flex-shrink-0 w-[150px]">
-                        <MediaCard item={t} mediaType="tv" />
-                      </div>
+                      <MediaCard key={t.id} item={t} mediaType="tv" />
                     ))}
                   </ScrollRow>
                 ) : null}
@@ -360,9 +358,7 @@ export default function TVPage() {
           {/* Top Rated */}
           <ScrollRow title="Top Rated of All Time">
             {topRated.map((t) => (
-              <div key={t.id} className="flex-shrink-0 w-[150px]">
-                <MediaCard item={t} mediaType="tv" />
-              </div>
+              <MediaCard key={t.id} item={t} mediaType="tv" />
             ))}
           </ScrollRow>
         </>

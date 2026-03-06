@@ -309,20 +309,17 @@ export default function StudioPage() {
               </ScrollRow>
             )}
 
-            {/* More movies grid — deduplicated */}
+            {/* More movies — deduplicated */}
             {(() => {
               const shownIds = new Set([...popular, ...topRated, ...newReleases].map((m: any) => m.id));
               const moreItems = filterBySearch([...page2, ...page3].filter((m: any) => !shownIds.has(m.id)));
               if (moreItems.length === 0) return null;
               return (
-                <div className="mt-8">
-                  <h2 className="text-lg sm:text-xl font-bold text-white mb-4">More from {studio.name}</h2>
-                  <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
-                    {moreItems.map((m: any) => (
-                      <MediaCard key={m.id} item={m} mediaType="movie" />
-                    ))}
-                  </div>
-                </div>
+                <ScrollRow title={`More from ${studio.name}`}>
+                  {moreItems.map((m: any) => (
+                    <MediaCard key={m.id} item={m} mediaType="movie" />
+                  ))}
+                </ScrollRow>
               );
             })()}
 
@@ -340,14 +337,11 @@ export default function StudioPage() {
             <SkeletonRow />
           </div>
         ) : filterBySearch(tvPopular).length > 0 ? (
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-white mb-4">TV Shows</h2>
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
-              {filterBySearch(tvPopular).map((s: any) => (
-                <MediaCard key={s.id} item={s} mediaType="tv" />
-              ))}
-            </div>
-          </div>
+          <ScrollRow title="TV Shows">
+            {filterBySearch(tvPopular).map((s: any) => (
+              <MediaCard key={s.id} item={s} mediaType="tv" />
+            ))}
+          </ScrollRow>
         ) : (
           <p className="text-white/30 text-sm py-10 text-center">
             {searchQuery ? `No TV shows matching "${searchQuery}"` : `No TV shows found for ${studio.name}`}

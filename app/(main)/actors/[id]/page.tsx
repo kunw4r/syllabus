@@ -425,15 +425,15 @@ export default function ActorDetailPage() {
           <p className="text-lg">No {tab === 'movies' ? 'movie' : 'TV'} credits found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="flex flex-wrap gap-4">
           {credits.map((c: any) => (
-            <div key={`${c.id}-${c.character}`} className="w-full">
+            <div key={`${c.id}-${c.character}`}>
               <MediaCard
                 item={c}
                 mediaType={tab === 'movies' ? 'movie' : 'tv'}
               />
               {c.character && (
-                <p className="text-[10px] text-white/25 mt-1 truncate px-0.5">
+                <p className="text-[10px] text-white/25 mt-1 truncate px-0.5 max-w-[240px] sm:max-w-[280px]">
                   as {c.character}
                 </p>
               )}
