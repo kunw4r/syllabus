@@ -138,6 +138,8 @@ export default function DragDropShelf({ items, onStatusChange, onCardClick }: Dr
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {(Object.entries(STATUS_CONFIG) as [string, typeof STATUS_CONFIG.want][]).map(([status, config]) => {
           const zoneItems = zones[status as keyof typeof zones];
+          // Hide empty columns unless dragging (need drop targets)
+          if (zoneItems.length === 0 && !activeItem) return null;
           return (
             <div
               key={status}

@@ -319,50 +319,57 @@ function RecCard({
   onAdd: () => void;
 }) {
   const title = item.title || item.name;
+  const score = Number(item.unified_rating ?? item.vote_average);
   return (
     <div
-      className="min-w-[160px] max-w-[160px] group relative rounded-2xl overflow-hidden bg-dark-700/50 border border-white/5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:border-white/10 shrink-0"
+      className="min-w-[150px] max-w-[150px] sm:min-w-[160px] sm:max-w-[160px] group relative cursor-pointer shrink-0"
       onClick={onClick}
     >
-      {item.poster_path ? (
-        <img
-          src={
-            item.poster_path?.startsWith('http')
-              ? item.poster_path
-              : `${TMDB_IMG}${item.poster_path}`
-          }
-          alt={title}
-          loading="lazy"
-          className="w-full aspect-[2/3] object-cover"
-        />
-      ) : (
-        <div className="w-full aspect-[2/3] bg-dark-600 flex items-center justify-center text-white/30 text-xs p-3 text-center">
-          {title}
-        </div>
-      )}
-      {(item.unified_rating || item.vote_average) > 0 && (
-        <div className="absolute top-2 right-2 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.unified_rating ?? item.vote_average)), boxShadow: getRatingGlow(Number(item.unified_rating ?? item.vote_average)) }}>
-          <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }} />
-          <span className="drop-shadow-sm" style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }}>{Number(item.unified_rating ?? item.vote_average).toFixed(1)}</span>
-        </div>
-      )}
-      {item._source && (
-        <div className="absolute top-2 left-2 bg-accent/80 backdrop-blur-md rounded-lg px-1.5 py-0.5 text-[9px] font-medium max-w-[120px] truncate">
-          Because: {item._source}
-        </div>
-      )}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onAdd();
-        }}
-        className="absolute bottom-14 right-2 w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200"
+      <div className="relative aspect-[2/3] rounded-lg overflow-hidden transition-all duration-300 group-hover:scale-[1.04] group-hover:shadow-2xl group-hover:shadow-black/50"
+        style={{ boxShadow: '4px 4px 12px rgba(0,0,0,0.4), -1px -1px 4px rgba(255,255,255,0.03)' }}
       >
-        <Plus size={16} />
-      </button>
-      <div className="p-2.5">
-        <p className="text-xs font-semibold truncate">{title}</p>
-        <p className="text-[10px] text-white/30 capitalize">
+        {item.poster_path ? (
+          <img
+            src={
+              item.poster_path?.startsWith('http')
+                ? item.poster_path
+                : `${TMDB_IMG}${item.poster_path}`
+            }
+            alt={title}
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-dark-600 to-dark-800 flex items-center justify-center text-white/15 text-xs p-3 text-center">
+            {title}
+          </div>
+        )}
+        {score > 0 && (
+          <div className="absolute top-2 right-2 backdrop-blur-md border border-white/10 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 text-xs font-semibold" style={{ background: getRatingBg(score), boxShadow: getRatingGlow(score) }}>
+            <Star size={9} className="fill-current" style={{ color: getRatingHex(score) }} />
+            <span className="text-[11px] drop-shadow-sm" style={{ color: getRatingHex(score) }}>{score.toFixed(1)}</span>
+          </div>
+        )}
+        {item._source && (
+          <div className="absolute top-2 left-2 bg-accent/80 backdrop-blur-md rounded-md px-1.5 py-0.5 text-[9px] font-medium max-w-[110px] truncate">
+            {item._source}
+          </div>
+        )}
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd();
+          }}
+          className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 active:scale-90 z-10"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+      <div className="mt-2 px-0.5">
+        <p className="text-[13px] font-medium text-white/80 truncate group-hover:text-white transition-colors leading-tight">{title}</p>
+        <p className="text-[11px] text-white/25 capitalize mt-0.5">
           {item.media_type}
         </p>
       </div>
@@ -564,17 +571,20 @@ function ForYouPanel({ items }: { items: any[] }) {
   );
 
   return (
-    <div className="space-y-10">
-      {/* AI Scenario Search */}
-      <div>
-        <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
-          <Search size={20} className="text-accent" />
-          What Are You In The Mood For?
-        </h2>
-        <p className="text-sm text-white/40 mb-4">
-          Describe what you&apos;re looking for and we&apos;ll find the perfect
-          pick
-        </p>
+    <div className="space-y-12">
+      {/* ── AI Scenario Search ── */}
+      <section>
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
+              <Search size={16} className="text-accent" />
+            </div>
+            What Are You In The Mood For?
+          </h2>
+          <p className="text-sm text-white/35 ml-[42px]">
+            Describe what you&apos;re looking for and we&apos;ll find the perfect pick
+          </p>
+        </div>
 
         <form onSubmit={handleScenarioSearch} className="flex gap-2 mb-3">
           <div className="flex-1 relative">
@@ -600,13 +610,12 @@ function ForYouPanel({ items }: { items: any[] }) {
           </button>
         </form>
 
-        {/* Example chips */}
         <div className="flex flex-wrap gap-2 mb-4">
           {scenarioExamples.map((ex) => (
             <button
               key={ex}
               onClick={() => setScenarioQuery(ex)}
-              className="text-xs px-3 py-1.5 rounded-full border border-white/10 text-white/40 hover:text-white hover:border-white/20 transition-all"
+              className="text-xs px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-white/40 hover:text-white hover:border-white/15 hover:bg-white/[0.05] transition-all"
             >
               {ex}
             </button>
@@ -637,28 +646,31 @@ function ForYouPanel({ items }: { items: any[] }) {
             No results -- try describing it differently!
           </p>
         ) : null}
-      </div>
+      </section>
 
-      {/* Curated Must-Watch */}
-      <div>
-        <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
-          <Flame size={20} className="text-orange-400" />
-          Must Watch
-        </h2>
-        <p className="text-sm text-white/40 mb-4">
-          Highly-rated films loved by critics and audiences -- all 6+ on IMDB
-        </p>
+      {/* ── Curated Must-Watch ── */}
+      <section>
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center">
+              <Flame size={16} className="text-orange-400" />
+            </div>
+            Must Watch
+          </h2>
+          <p className="text-sm text-white/35 ml-[42px]">
+            Highly-rated films loved by critics and audiences
+          </p>
+        </div>
 
-        {/* Genre tabs */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-2 mb-4">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-2 mb-5">
           {genreTabs.map((gTab) => (
             <button
               key={gTab.key}
               onClick={() => setCuratedGenre(gTab.key)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 curatedGenre === gTab.key
-                  ? 'bg-accent border-accent text-white'
-                  : 'border-white/10 text-white/40 hover:text-white hover:border-white/20'
+                  ? 'bg-accent text-white'
+                  : 'bg-white/[0.04] text-white/35 hover:text-white/70 hover:bg-white/[0.08]'
               }`}
             >
               {gTab.label}
@@ -686,17 +698,21 @@ function ForYouPanel({ items }: { items: any[] }) {
             No picks found for this genre
           </p>
         )}
-      </div>
+      </section>
 
-      {/* AI Recommendations */}
-      <div>
-        <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
-          <Sparkles size={20} className="text-accent" />
-          Recommended For You
-        </h2>
-        <p className="text-sm text-white/40 mb-5">
-          Based on your highest-rated and currently watching
-        </p>
+      {/* ── AI Recommendations ── */}
+      <section>
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
+              <Sparkles size={16} className="text-accent" />
+            </div>
+            Recommended For You
+          </h2>
+          <p className="text-sm text-white/35 ml-[42px]">
+            Based on your highest-rated and currently watching
+          </p>
+        </div>
 
         {loadingRecs ? (
           <SkeletonRowLocal />
@@ -712,36 +728,38 @@ function ForYouPanel({ items }: { items: any[] }) {
             ))}
           </div>
         ) : (
-          <div className="glass rounded-2xl p-8 text-center">
-            <Sparkles size={32} className="text-white/20 mx-auto mb-3" />
-            <p className="text-white/50 text-sm">
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-10 text-center">
+            <Sparkles size={28} className="text-white/10 mx-auto mb-3" />
+            <p className="text-white/40 text-sm">
               Finish and rate some items to get personalized picks
             </p>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Mood Discovery */}
-      <div>
-        <h2 className="text-xl font-bold mb-1">Switch It Up</h2>
-        <p className="text-sm text-white/40 mb-5">
-          Pick a vibe and discover something new
-        </p>
+      {/* ── Mood Discovery ── */}
+      <section>
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold mb-1">Switch It Up</h2>
+          <p className="text-sm text-white/35">
+            Pick a vibe and discover something new
+          </p>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {moods.map((mood) => (
             <button
               key={mood.key}
               onClick={() => handleMood(mood.key)}
-              className={`glass rounded-2xl p-4 text-left transition-all duration-200 hover:scale-[1.02] ${
+              className={`rounded-2xl p-4 text-left transition-all duration-200 hover:scale-[1.02] border ${
                 activeMood === mood.key
-                  ? 'border-accent/50 bg-accent/10'
-                  : 'hover:border-white/20'
+                  ? 'border-accent/40 bg-accent/10'
+                  : 'border-white/[0.06] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]'
               }`}
             >
-              <mood.icon size={24} className={`${mood.color} mb-2`} />
+              <mood.icon size={22} className={`${mood.color} mb-2`} />
               <p className="text-sm font-semibold">{mood.label}</p>
-              <p className="text-[10px] text-white/30 mt-0.5">{mood.desc}</p>
+              <p className="text-[10px] text-white/25 mt-0.5">{mood.desc}</p>
             </button>
           ))}
         </div>
@@ -764,7 +782,7 @@ function ForYouPanel({ items }: { items: any[] }) {
             No picks found -- try another mood!
           </p>
         ) : null}
-      </div>
+      </section>
     </div>
   );
 }
@@ -1000,35 +1018,38 @@ export default function LibraryPage() {
     title: 'Title',
   };
 
+  const hasActiveFilter = typeFilter !== 'all' || filter !== 'all';
+
   return (
     <div>
+      {/* ── Header row: title + tabs ── */}
       <FadeInView>
-        <h1 className="font-serif text-3xl font-bold mb-6">My Library</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="font-serif text-3xl font-bold">My Library</h1>
+          <div className="flex gap-1 bg-dark-700/50 rounded-xl p-1">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === t.key
+                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                <t.icon size={15} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </FadeInView>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-8 bg-dark-700/50 rounded-2xl p-1 w-fit">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-              activeTab === t.key
-                ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-          >
-            <t.icon size={16} />
-            {t.label}
-          </button>
-        ))}
-      </div>
 
       {/* Shelf Tab */}
       {activeTab === 'shelf' && (
         <div>
-          {/* Pinned Favourites */}
-          {pinnedFavourites.length > 0 && (
+          {/* Pinned Favourites — only when no filters active */}
+          {!hasActiveFilter && pinnedFavourites.length > 0 && (
             <FadeInView>
               <div className="mb-8">
                 <h2 className="text-sm font-semibold text-white/40 mb-3 uppercase tracking-wider flex items-center gap-2">
@@ -1066,58 +1087,66 @@ export default function LibraryPage() {
             </FadeInView>
           )}
 
-          {/* Floating Pill Filter Bar */}
-          <div className="sticky top-0 z-20 py-3 -mx-4 px-4 bg-dark-900/80 backdrop-blur-xl border-b border-white/[0.04]">
-            <div className="flex flex-wrap items-center gap-2">
+          {/* ── Filter & View Controls ── */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6">
+            {/* Type filters */}
+            <div className="flex gap-1">
               {Object.entries(typeLabels).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setTypeFilter(key)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                     typeFilter === key
-                      ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                      ? 'bg-accent text-white'
+                      : 'text-white/35 hover:text-white/70 hover:bg-white/5'
                   }`}
                 >
                   {label}
                 </button>
               ))}
-              <div className="w-px h-5 bg-white/10" />
+            </div>
+
+            <div className="w-px h-4 bg-white/10" />
+
+            {/* Status filters */}
+            <div className="flex gap-1">
               {Object.entries(statusLabels).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setFilter(key)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                     filter === key
-                      ? 'bg-white/15 text-white border border-white/20'
-                      : 'bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10'
+                      ? 'bg-white/12 text-white'
+                      : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                   }`}
                 >
                   {label}
                 </button>
               ))}
-              <div className="w-px h-5 bg-white/10" />
+            </div>
+
+            {/* Right side: sort + view mode */}
+            <div className="flex items-center gap-1 ml-auto">
               {Object.entries(sortLabels).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => toggleSort(key)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] transition-all ${
+                  className={`px-2 py-1 rounded-md text-[11px] transition-all ${
                     sortBy === key
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'text-white/25 hover:text-white/50'
+                      ? 'bg-white/10 text-white/80 font-medium'
+                      : 'text-white/20 hover:text-white/50'
                   }`}
                 >
-                  {label} {sortBy === key && (sortDir === 'desc' ? '\u2193' : '\u2191')}
+                  {label}{sortBy === key ? (sortDir === 'desc' ? ' \u2193' : ' \u2191') : ''}
                 </button>
               ))}
-              <div className="w-px h-5 bg-white/10 ml-auto" />
-              {/* View toggle */}
+              <div className="w-px h-4 bg-white/10 mx-1" />
               {(['grid', 'shelf', 'kanban'] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => setViewMode(v)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] capitalize transition-all ${
-                    viewMode === v ? 'bg-accent/20 text-accent font-medium' : 'text-white/25 hover:text-white/50'
+                  className={`px-2.5 py-1 rounded-md text-[11px] transition-all ${
+                    viewMode === v ? 'bg-accent/20 text-accent font-medium' : 'text-white/20 hover:text-white/50'
                   }`}
                 >
                   {v === 'kanban' ? 'Board' : v === 'shelf' ? 'Shelf' : 'Grid'}
@@ -1127,15 +1156,27 @@ export default function LibraryPage() {
           </div>
 
           {filteredItems.length === 0 ? (
-            <div className="text-center py-20 text-white/40">
-              <Library size={40} className="mx-auto mb-3 text-white/10" />
-              <h3 className="text-lg font-medium text-white/60 mb-2">
-                Nothing here yet
-              </h3>
-              <p className="text-sm">
-                Browse movies, TV shows, or books and add them to your library
-              </p>
-            </div>
+            allItems.length === 0 ? (
+              <div className="text-center py-20 text-white/40">
+                <Library size={40} className="mx-auto mb-3 text-white/10" />
+                <h3 className="text-lg font-medium text-white/60 mb-2">
+                  Nothing here yet
+                </h3>
+                <p className="text-sm">
+                  Browse movies, TV shows, or books and add them to your library
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-sm text-white/30">No items match your filters</p>
+                <button
+                  onClick={() => { setTypeFilter('all'); setFilter('all'); }}
+                  className="mt-3 text-xs text-accent hover:text-accent-hover transition-colors"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )
           ) : viewMode === 'kanban' ? (
             <DragDropShelf
               items={filteredItems}
