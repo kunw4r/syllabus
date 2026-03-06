@@ -108,7 +108,10 @@ function RankedCard({
     : 'text-white/60';
 
   const isLandscape = layout === 'landscape';
-  const displayImg = isLandscape && !isBook && backdrop ? backdrop : poster;
+  const hasBackdrop = !isBook && backdrop && !imgBroken;
+  const displayImg = isLandscape && hasBackdrop ? backdrop : poster;
+  // In landscape mode without a backdrop, show poster centered over blurred bg
+  const posterFallbackLandscape = isLandscape && !isBook && !hasBackdrop && poster && !imgBroken;
 
   return (
     <div
@@ -123,6 +126,25 @@ function RankedCard({
               alt={title}
               className="h-full w-auto max-w-[90%] object-contain"
             />
+          </div>
+        ) : posterFallbackLandscape ? (
+          /* Poster centered over blurred version for landscape cards without backdrops */
+          <div className="absolute inset-0 bg-dark-800">
+            <img
+              src={poster!}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-40"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <img
+                src={poster!}
+                alt={title}
+                className="h-full w-auto max-w-[45%] object-contain drop-shadow-2xl group-hover:scale-105 transition-transform duration-500"
+                onError={() => setImgBroken(true)}
+                loading="lazy"
+              />
+            </div>
           </div>
         ) : displayImg && !imgBroken ? (
           <img
@@ -221,7 +243,7 @@ function Top100Content() {
     const parsed = Number(g);
     return isNaN(parsed) ? g : parsed;
   });
-  const [viewLayout, setViewLayout] = useState<ViewLayout>('poster');
+  const [viewLayout, setViewLayout] = useState<ViewLayout>('landscape');
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<number | null>(null);
