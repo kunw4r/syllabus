@@ -437,6 +437,7 @@ export default function ActorDetailPage() {
               <MediaCard
                 item={c}
                 mediaType={tab === 'movies' ? 'movie' : 'tv'}
+                variant="poster"
               />
               {c.character && (
                 <p className="text-[10px] text-white/25 mt-1.5 truncate px-0.5">

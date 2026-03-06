@@ -275,7 +275,7 @@ export default function MediaCard({
   // ── Poster card (2:3 vertical) — premium book style ──
   return (
     <div
-      className="group cursor-pointer shrink-0 w-[150px] sm:w-[170px]"
+      className={`group cursor-pointer ${variant ? 'w-full' : 'shrink-0 w-[150px] sm:w-[170px]'}`}
       onClick={handleClick}
     >
       <div
