@@ -13,7 +13,7 @@ import {
   getChartAge,
   applyStoredScores,
 } from '@/lib/scoring';
-import { MOVIE_GENRES, TV_GENRES, TMDB_IMG } from '@/lib/constants';
+import { MOVIE_GENRES, TV_GENRES, TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 // ─── Genre lists ───
@@ -53,14 +53,15 @@ const TABS = [
   { key: 'books', label: 'Books', icon: BookOpen },
 ] as const;
 
-// ─── RankedItem sub-component ───
+// ─── RankedCard sub-component ───
 
-function RankedItem({
+function RankedCard({
   rank,
   item,
   title,
   year,
   poster,
+  backdrop,
   mediaType,
 }: {
   rank: number;
@@ -68,29 +69,16 @@ function RankedItem({
   title: string;
   year: string;
   poster: string | null;
+  backdrop: string | null;
   mediaType: string;
 }) {
   const router = useRouter();
   const [imgBroken, setImgBroken] = useState(false);
 
-  const rankColor =
-    rank === 1
-      ? 'text-gold'
-      : rank === 2
-        ? 'text-gray-300'
-        : rank === 3
-          ? 'text-amber-600'
-          : 'text-white/20';
-
   const isBook = mediaType === 'book';
   const rating = isBook
     ? item.rating
     : (item.unified_rating ?? item.vote_average);
-  const ratingLabel = isBook
-    ? ''
-    : item.unified_rating != null
-      ? 'Syllabus'
-      : '';
 
   const handleClick = () => {
     if (isBook) {
@@ -101,85 +89,88 @@ function RankedItem({
     }
   };
 
+  // Top 3 get gold/silver/bronze accent
+  const rankAccent =
+    rank === 1 ? 'from-yellow-500/30 to-yellow-600/10 border-yellow-500/30'
+    : rank === 2 ? 'from-gray-300/20 to-gray-400/10 border-gray-300/20'
+    : rank === 3 ? 'from-amber-600/20 to-amber-700/10 border-amber-600/20'
+    : 'from-white/[0.03] to-white/[0.01] border-white/[0.06]';
+
+  const rankColor =
+    rank === 1 ? 'text-yellow-400'
+    : rank === 2 ? 'text-gray-300'
+    : rank === 3 ? 'text-amber-500'
+    : 'text-white/15';
+
+  // Use backdrop for movies/TV, poster for books
+  const displayImg = !isBook && backdrop ? backdrop : poster;
+
   return (
     <div
-      className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] hover:border-white/[0.08] transition-all cursor-pointer group"
+      className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br ${rankAccent} cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-black/30 transition-all duration-300`}
       onClick={handleClick}
     >
-      {/* Rank */}
-      <span
-        className={`text-2xl sm:text-3xl font-black w-10 sm:w-14 text-center flex-shrink-0 ${rankColor}`}
-      >
-        {rank}
-      </span>
+      {/* Background image */}
+      <div className="relative aspect-[16/9]">
+        {isBook ? (
+          <div className="absolute inset-0 bg-dark-700 flex items-center justify-center">
+            <BookCover
+              coverUrls={item.cover_urls || (poster ? [poster] : [])}
+              alt={title}
+              className="h-full w-auto max-w-[60%] object-contain"
+            />
+          </div>
+        ) : displayImg && !imgBroken ? (
+          <img
+            src={displayImg}
+            alt={title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImgBroken(true)}
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-5xl">
+            {isBook ? '\u{1F4DA}' : '\u{1F3AC}'}
+          </div>
+        )}
 
-      {/* Poster */}
-      {isBook ? (
-        <BookCover
-          coverUrls={item.cover_urls || (poster ? [poster] : [])}
-          alt={title}
-          className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform object-cover aspect-[2/3]"
-        />
-      ) : poster && !imgBroken ? (
-        <img
-          src={poster}
-          alt={title}
-          className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform object-cover aspect-[2/3]"
-          onError={() => setImgBroken(true)}
-          onLoad={(e) => {
-            if ((e.target as HTMLImageElement).naturalWidth <= 1)
-              setImgBroken(true);
-          }}
-        />
-      ) : (
-        <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-dark-600 flex-shrink-0 flex items-center justify-center aspect-[2/3]">
-          <BookOpen size={16} className="text-white/20" />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+        {/* Rank number — large, bottom-left */}
+        <div className="absolute bottom-3 left-4">
+          <span className={`text-5xl sm:text-6xl font-black ${rankColor} drop-shadow-lg`} style={{ WebkitTextStroke: rank <= 3 ? 'none' : '1px rgba(255,255,255,0.08)' }}>
+            {rank}
+          </span>
         </div>
-      )}
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm sm:text-base truncate">{title}</p>
-        <p className="text-xs text-white/30 mt-0.5">
-          {year}
-          {isBook && item.author ? ` \u00b7 ${item.author}` : ''}
-          {!isBook && item.genres?.length > 0
-            ? ` \u00b7 ${item.genres.map((g: any) => g.name).join(', ')}`
-            : ''}
-        </p>
-        {isBook &&
-          (item.already_read > 0 || item.want_to_read > 0) && (
-            <p className="text-[10px] text-white/20 mt-0.5 flex items-center gap-1">
-              <Users size={12} />
-              {(
-                (item.already_read || 0) +
-                (item.want_to_read || 0) +
-                (item.currently_reading || 0)
-              ).toLocaleString()}{' '}
-              readers
-            </p>
-          )}
-      </div>
-
-      {/* Rating */}
-      {rating > 0 && (
-        <div className="flex flex-col items-end flex-shrink-0">
-          <div className="flex items-center gap-1.5 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}>
-            <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-sm font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
+        {/* Rating badge — top-right */}
+        {rating > 0 && (
+          <div
+            className="absolute top-3 right-3 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1"
+            style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+          >
+            <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
-            <span className="text-[10px] text-white/20 hidden sm:inline">
-              / 10
-            </span>
           </div>
-          {ratingLabel && (
-            <span className="text-[9px] text-white/15 mt-0.5">
-              {ratingLabel}
-            </span>
-          )}
+        )}
+
+        {/* Title + meta — bottom, next to rank */}
+        <div className="absolute bottom-3 left-20 sm:left-24 right-3">
+          <p className="font-bold text-base sm:text-lg text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+            {title}
+          </p>
+          <p className="text-xs text-white/40 mt-0.5 truncate">
+            {year}
+            {isBook && item.author ? ` \u00b7 ${item.author}` : ''}
+            {!isBook && item.genres?.length > 0
+              ? ` \u00b7 ${item.genres.map((g: any) => g.name).join(', ')}`
+              : ''}
+          </p>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -197,16 +188,9 @@ export default function Top100Page() {
           </div>
           <p className="text-white/40 text-sm">The highest rated of all time, ranked by Syllabus Score.</p>
         </div>
-        <div className="space-y-2">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] animate-pulse">
-              <div className="w-10 sm:w-14 h-6 rounded bg-white/5" />
-              <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-white/5" />
-              <div className="flex-1">
-                <div className="h-4 w-3/4 rounded bg-white/5 mb-2" />
-                <div className="h-3 w-1/2 rounded bg-white/5" />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 9 }, (_, i) => (
+            <div key={i} className="aspect-[16/9] rounded-2xl bg-white/[0.02] animate-pulse" />
           ))}
         </div>
       </div>
@@ -220,7 +204,6 @@ function Top100Content() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Restore tab & genre from URL params (preserves state on back-nav)
   const [tab, setTab] = useState<string>(
     () => searchParams.get('tab') || 'movies',
   );
@@ -235,7 +218,6 @@ function Top100Content() {
   const [progress, setProgress] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
-  // Race-condition guard: increment on every fetch, ignore stale responses
   const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (t: string, g: number | string | null) => {
@@ -248,19 +230,11 @@ function Top100Content() {
     const mediaType = t === 'movies' ? 'movie' : t === 'shows' ? 'tv' : 'book';
     const chartKey = `${mediaType}:${g || 'all'}`;
 
-    // Progress callback
-    const onProgress = ({
-      completed,
-      total,
-    }: {
-      completed: number;
-      total: number;
-    }) => {
+    const onProgress = ({ completed, total }: { completed: number; total: number }) => {
       if (stale()) return;
       setProgress(total > 0 ? Math.round((completed / total) * 100) : 100);
     };
 
-    // Phase 1: Try instant load from chart cache (0 API calls)
     if (t !== 'books') {
       const cachedItems = getCachedChart(chartKey);
       if (cachedItems && cachedItems.length > 0) {
@@ -270,10 +244,8 @@ function Top100Content() {
         const age = getChartAge(chartKey);
         setLastUpdated(age);
 
-        // If cache is < 24h old, we're done
         if (age < 24 * 60 * 60 * 1000) return;
 
-        // Cache is stale: re-fetch and re-enrich in background
         const raw =
           t === 'movies'
             ? await getTop100Movies(g as number | null)
@@ -287,7 +259,6 @@ function Top100Content() {
       }
     }
 
-    // Phase 2: No cache -- fetch from APIs
     let result: any[] = [];
     if (t === 'movies') result = await getTop100Movies(g as number | null);
     else if (t === 'shows') result = await getTop100TV(g as number | null);
@@ -296,7 +267,6 @@ function Top100Content() {
     if (stale()) return;
 
     if (t !== 'books') {
-      // Show immediately with any locally stored scores
       applyStoredScores(result, mediaType);
       result.sort((a, b) => {
         const ra = a.unified_rating ?? a.vote_average ?? 0;
@@ -306,7 +276,6 @@ function Top100Content() {
       setItems(result.slice(0, 100));
       setLoading(false);
 
-      // Enrich in background with progress bar
       const enriched = await enrichChart(result, mediaType, chartKey, onProgress);
       if (stale()) return;
       setItems(enriched.slice(0, 100));
@@ -321,7 +290,6 @@ function Top100Content() {
     fetchData(tab, genre);
   }, [tab, genre, fetchData]);
 
-  // Sync tab & genre to URL search params
   useEffect(() => {
     const params = new URLSearchParams();
     if (tab !== 'movies') params.set('tab', tab);
@@ -344,7 +312,6 @@ function Top100Content() {
   const mediaType =
     tab === 'movies' ? 'movie' : tab === 'shows' ? 'tv' : 'book';
 
-  // Format "last updated" time
   const updatedLabel = (() => {
     if (lastUpdated === null || lastUpdated === undefined) return null;
     if (lastUpdated === 0) return 'Just now';
@@ -391,7 +358,7 @@ function Top100Content() {
       </div>
 
       {/* Genre Filter Pills */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
+      <div className="flex flex-wrap gap-1.5 mb-6">
         {genres.map((g) => (
           <button
             key={g.id ?? 'all'}
@@ -407,9 +374,9 @@ function Top100Content() {
         ))}
       </div>
 
-      {/* Progress bar during background enrichment */}
+      {/* Progress bar */}
       {progress !== null && progress < 100 && (
-        <div className="mb-4">
+        <div className="mb-6">
           <div className="flex items-center justify-between text-[11px] text-white/30 mb-1.5">
             <span>Scoring titles...</span>
             <span>{Math.round(progress)}%</span>
@@ -424,19 +391,9 @@ function Top100Content() {
       )}
 
       {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] animate-pulse"
-            >
-              <div className="w-10 sm:w-14 h-6 rounded bg-white/5" />
-              <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-white/5" />
-              <div className="flex-1">
-                <div className="h-4 w-3/4 rounded bg-white/5 mb-2" />
-                <div className="h-3 w-1/2 rounded bg-white/5" />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 9 }, (_, i) => (
+            <div key={i} className="aspect-[16/9] rounded-2xl bg-white/[0.02] animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -445,7 +402,7 @@ function Top100Content() {
           <p className="text-sm mt-1">Try a different category</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((item, i) => {
             const title = item.title || item.name;
             const isBook = mediaType === 'book';
@@ -457,15 +414,19 @@ function Top100Content() {
               : item.poster_path
                 ? `${TMDB_IMG}${item.poster_path}`
                 : null;
+            const backdrop = !isBook && item.backdrop_path
+              ? `${TMDB_IMG_ORIGINAL}${item.backdrop_path}`
+              : null;
 
             return (
-              <RankedItem
+              <RankedCard
                 key={item.id || item.key || i}
                 rank={i + 1}
                 item={item}
                 title={title}
                 year={year}
                 poster={poster}
+                backdrop={backdrop}
                 mediaType={mediaType}
               />
             );

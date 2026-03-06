@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, Award, Film, Tv } from 'lucide-react';
-import { TMDB_IMG } from '@/lib/constants';
+import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 import {
   enrichChart,
@@ -21,6 +21,7 @@ interface AwardEntry {
 
 interface EnrichedEntry extends AwardEntry {
   poster_path?: string;
+  backdrop_path?: string;
   vote_average?: number;
   unified_rating?: number | null;
   overview?: string;
@@ -63,6 +64,7 @@ async function fetchTmdbDetails(
             ...entry,
             id: entry.tmdb_id,
             poster_path: data.poster_path,
+            backdrop_path: data.backdrop_path,
             vote_average: data.vote_average,
             overview: data.overview,
             name: mediaType === 'tv' ? data.name : undefined,
@@ -86,9 +88,9 @@ async function fetchTmdbDetails(
   return results;
 }
 
-// ─── RankedItem sub-component (adapted from Top 100) ───
+// ─── AwardCard sub-component ───
 
-function AwardItem({
+function AwardCard({
   entry,
   mediaType,
 }: {
@@ -99,65 +101,66 @@ function AwardItem({
   const [imgBroken, setImgBroken] = useState(false);
 
   const rating = entry.unified_rating ?? entry.vote_average;
-  const ratingLabel = entry.unified_rating != null ? 'Syllabus' : '';
+  const backdrop = entry.backdrop_path ? `${TMDB_IMG_ORIGINAL}${entry.backdrop_path}` : null;
   const poster = entry.poster_path ? `${TMDB_IMG}${entry.poster_path}` : null;
+  const displayImg = backdrop || poster;
 
   return (
     <div
-      className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] hover:border-white/[0.08] transition-all cursor-pointer group"
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-white/[0.01] cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-black/30 transition-all duration-300"
       onClick={() => router.push(`/details/${mediaType}/${entry.tmdb_id}`)}
     >
-      {/* Year */}
-      <span className="text-lg sm:text-xl font-bold w-14 sm:w-16 text-center flex-shrink-0 text-white/25">
-        {entry.year}
-      </span>
-
-      {/* Poster */}
-      {poster && !imgBroken ? (
-        <img
-          src={poster}
-          alt={entry.title}
-          className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform object-cover aspect-[2/3]"
-          onError={() => setImgBroken(true)}
-          loading="lazy"
-        />
-      ) : (
-        <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-dark-600 flex-shrink-0 flex items-center justify-center aspect-[2/3]">
-          <Film size={16} className="text-white/20" />
-        </div>
-      )}
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm sm:text-base truncate">
-          {entry.title}
-        </p>
-        {entry.overview && (
-          <p className="text-xs text-white/30 mt-0.5 line-clamp-1">
-            {entry.overview}
-          </p>
+      <div className="relative aspect-[16/9]">
+        {displayImg && !imgBroken ? (
+          <img
+            src={displayImg}
+            alt={entry.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImgBroken(true)}
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-5xl">
+            {'\u{1F3AC}'}
+          </div>
         )}
-      </div>
 
-      {/* Rating */}
-      {rating != null && rating > 0 && (
-        <div className="flex flex-col items-end flex-shrink-0">
-          <div className="flex items-center gap-1.5 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}>
-            <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-sm font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+        {/* Year badge — top-left */}
+        <div className="absolute top-3 left-3">
+          <span className="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-2.5 py-1 text-sm font-bold text-gold">
+            <Award size={14} className="text-gold" />
+            {entry.year}
+          </span>
+        </div>
+
+        {/* Rating badge — top-right */}
+        {rating != null && rating > 0 && (
+          <div
+            className="absolute top-3 right-3 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1"
+            style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+          >
+            <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
-            <span className="text-[10px] text-white/20 hidden sm:inline">
-              / 10
-            </span>
           </div>
-          {ratingLabel && (
-            <span className="text-[9px] text-white/15 mt-0.5">
-              {ratingLabel}
-            </span>
+        )}
+
+        {/* Title + overview — bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <p className="font-bold text-base sm:text-lg text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+            {entry.title}
+          </p>
+          {entry.overview && (
+            <p className="text-xs text-white/40 mt-1 line-clamp-2 leading-relaxed">
+              {entry.overview}
+            </p>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -174,7 +177,6 @@ export default function AwardsPage() {
 
   const requestIdRef = useRef(0);
 
-  // Load static scores and awards data
   useEffect(() => {
     loadStaticScoreDB();
     fetch('/data/awards.json')
@@ -206,10 +208,8 @@ export default function AwardsPage() {
             : awardsData.emmy_comedy || [];
       }
 
-      // Sort newest first
       entries = [...entries].sort((a, b) => b.year - a.year);
 
-      // Fetch TMDB details — show items progressively as batches arrive
       const enriched = await fetchTmdbDetails(entries, mediaType, (partial) => {
         if (stale()) return;
         applyStoredScores(partial, mediaType);
@@ -218,12 +218,10 @@ export default function AwardsPage() {
       });
       if (stale()) return;
 
-      // Apply locally stored scores to final set
       applyStoredScores(enriched, mediaType);
       setItems(enriched);
       setLoading(false);
 
-      // Background enrichment for Syllabus scores
       const scored = await enrichChart(
         enriched,
         mediaType,
@@ -238,7 +236,6 @@ export default function AwardsPage() {
 
       if (stale()) return;
 
-      // Re-sort by year (not rating) since this is a chronological awards list
       scored.sort((a: any, b: any) => (b.year || 0) - (a.year || 0));
       setItems(scored as EnrichedEntry[]);
       setProgress(null);
@@ -302,7 +299,7 @@ export default function AwardsPage() {
       )}
 
       {/* Category label */}
-      <p className="text-xs text-white/20 mb-4">
+      <p className="text-xs text-white/20 mb-6">
         {tab === 'oscars'
           ? 'Academy Award for Best Picture'
           : emmyTab === 'drama'
@@ -312,7 +309,7 @@ export default function AwardsPage() {
 
       {/* Progress bar */}
       {progress !== null && progress < 100 && (
-        <div className="mb-4">
+        <div className="mb-6">
           <div className="flex items-center justify-between text-[11px] text-white/30 mb-1.5">
             <span>Scoring titles...</span>
             <span>{Math.round(progress)}%</span>
@@ -326,21 +323,11 @@ export default function AwardsPage() {
         </div>
       )}
 
-      {/* List */}
+      {/* Grid */}
       {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 10 }, (_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] animate-pulse"
-            >
-              <div className="w-14 sm:w-16 h-6 rounded bg-white/5" />
-              <div className="h-16 sm:h-20 w-11 sm:w-14 rounded-lg bg-white/5" />
-              <div className="flex-1">
-                <div className="h-4 w-3/4 rounded bg-white/5 mb-2" />
-                <div className="h-3 w-1/2 rounded bg-white/5" />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 9 }, (_, i) => (
+            <div key={i} className="aspect-[16/9] rounded-2xl bg-white/[0.02] animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -348,9 +335,9 @@ export default function AwardsPage() {
           <p className="text-lg">No data available</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((entry) => (
-            <AwardItem
+            <AwardCard
               key={`${entry.year}-${entry.tmdb_id}`}
               entry={entry}
               mediaType={mediaType as 'movie' | 'tv'}
