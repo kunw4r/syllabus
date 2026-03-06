@@ -796,9 +796,9 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                         </span>
                       </div>
                     ) : season.vote_average > 0 && !loadingSeasons ? (
-                      <div className="flex items-center gap-1.5 opacity-50">
-                        <Star size={12} className="fill-current" style={{ color: getRatingHex(season.vote_average) }} />
-                        <span className="text-sm font-bold tabular-nums" style={{ color: getRatingHex(season.vote_average) }}>
+                      <div className="flex items-center gap-1.5">
+                        <Star size={12} className="fill-current" style={{ color: getRatingHex(season.vote_average), opacity: 0.7 }} />
+                        <span className="text-sm font-bold tabular-nums" style={{ color: getRatingHex(season.vote_average), opacity: 0.7 }}>
                           {season.vote_average.toFixed(1)}
                         </span>
                         <span className="text-[8px] text-white/20">TMDB</span>
@@ -820,11 +820,11 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                   return (
                     <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-700 ease-out ${seasonAvg == null ? 'opacity-40' : ''}`}
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${seasonAvg == null ? 'opacity-70' : ''}`}
                         style={{
                           width: `${ratingBarPct(barRating)}%`,
                           background: getRatingHex(barRating),
-                          boxShadow: `0 0 8px ${getRatingHex(barRating)}66`,
+                          boxShadow: `0 0 12px ${getRatingHex(barRating)}88, 0 0 4px ${getRatingHex(barRating)}aa`,
                         }}
                       />
                     </div>
@@ -869,7 +869,7 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                               style={{
                                 width: `${ratingBarPct(ep.imdbRating)}%`,
                                 background: getRatingHex(ep.imdbRating),
-                                boxShadow: `0 0 6px ${getRatingHex(ep.imdbRating)}55`,
+                                boxShadow: `0 0 10px ${getRatingHex(ep.imdbRating)}77, 0 0 3px ${getRatingHex(ep.imdbRating)}99`,
                               }}
                             />
                           </div>
