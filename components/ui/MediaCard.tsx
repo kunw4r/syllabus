@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Plus, Check } from 'lucide-react';
+import { Star, Plus, Check, Play, Info } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
-import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
+import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 interface MediaItem {
@@ -125,14 +125,24 @@ export default function MediaCard({
     }
   };
 
-  // ── Landscape card (16:9 backdrop) ──
+  // Resolve genre names
+  const genreNames = (
+    item.genre_ids?.map((id) => GENRE_ID_TO_NAME[id]).filter(Boolean) ||
+    item.genres?.map((g) => g.name) ||
+    []
+  ).slice(0, 3);
+
+  // ── Landscape card (16:9 backdrop) — Netflix-style hover ──
   if (mode === 'landscape') {
     return (
       <div
-        className="group cursor-pointer shrink-0 w-[240px] sm:w-[280px] min-w-0"
-        onClick={handleClick}
+        className="group/card relative cursor-pointer shrink-0 w-[240px] sm:w-[280px] min-w-0 z-0 hover:z-30"
       >
-        <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30">
+        {/* Main card — scales up on hover */}
+        <div
+          className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 transition-all duration-300 ease-out group-hover/card:scale-[1.15] group-hover/card:ring-0 group-hover/card:shadow-2xl group-hover/card:shadow-black/60 group-hover/card:rounded-b-none"
+          onClick={handleClick}
+        >
           {displayImg ? (
             <img
               src={displayImg}
@@ -164,26 +174,62 @@ export default function MediaCard({
 
           {/* Title overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-3">
-            <p className="text-sm font-semibold text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+            <p className="text-sm font-semibold text-white truncate drop-shadow-lg">
               {title}
             </p>
             {year && <p className="text-[10px] text-white/40 mt-0.5">{year}</p>}
           </div>
+        </div>
 
-          {showAdd && user && !added && (
-            <button
-              onClick={handleAdd}
-              className="absolute top-2 left-2 bg-accent/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent active:scale-90 z-10"
-            >
-              <Plus size={14} className="text-white" />
-            </button>
-          )}
+        {/* Expanded bottom panel — appears on hover */}
+        <div
+          className="absolute left-0 right-0 top-full opacity-0 scale-x-[0.87] origin-top pointer-events-none transition-all duration-300 ease-out group-hover/card:opacity-100 group-hover/card:scale-x-100 group-hover/card:pointer-events-auto z-30"
+          style={{ marginTop: '-1px' }}
+        >
+          <div className="bg-[#181818] rounded-b-xl px-3 py-2.5 shadow-2xl shadow-black/70 border-x border-b border-white/[0.06]">
+            {/* Action buttons row */}
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                onClick={handleClick}
+                className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white/80 transition-colors active:scale-90"
+                title="Play"
+              >
+                <Play size={16} className="text-black fill-black ml-0.5" />
+              </button>
 
-          {added && (
-            <div className="absolute top-2 left-2 bg-green-500/80 backdrop-blur-sm rounded-full p-1.5 z-10">
-              <Check size={14} className="text-white" />
+              {showAdd && user && !added ? (
+                <button
+                  onClick={handleAdd}
+                  className="w-8 h-8 rounded-full border-2 border-white/40 flex items-center justify-center hover:border-white transition-colors active:scale-90"
+                  title="Add to Library"
+                >
+                  <Plus size={16} className="text-white" />
+                </button>
+              ) : added ? (
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-green-500/60 bg-green-500/20 flex items-center justify-center"
+                  title="In Library"
+                >
+                  <Check size={16} className="text-green-400" />
+                </div>
+              ) : null}
+
+              <button
+                onClick={(e) => { e.stopPropagation(); handleClick(); }}
+                className="w-8 h-8 rounded-full border-2 border-white/40 flex items-center justify-center hover:border-white transition-colors active:scale-90 ml-auto"
+                title="More Info"
+              >
+                <Info size={14} className="text-white" />
+              </button>
             </div>
-          )}
+
+            {/* Genre tags */}
+            {genreNames.length > 0 && (
+              <p className="text-[11px] text-white/50 truncate">
+                {genreNames.join(' · ')}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -192,7 +238,7 @@ export default function MediaCard({
   // ── Poster card (2:3 vertical) ──
   return (
     <div
-      className="group cursor-pointer shrink-0 w-[160px] sm:w-[185px]"
+      className="group cursor-pointer shrink-0 w-[170px] sm:w-[200px]"
       onClick={handleClick}
     >
       <div

@@ -1061,7 +1061,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   ];
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-10 -my-6 lg:-my-8 lg:-ml-[calc(theme(spacing.10)+15rem)]">
+    <div>
       {/* Full-page transparent backdrop */}
       <HeroBackdrop backdropPath={data.backdrop_path} />
 
