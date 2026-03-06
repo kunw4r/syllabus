@@ -222,7 +222,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
       </div>
 
       {/* Content overlay */}
-      <div className="absolute bottom-0 left-0 right-0 z-[3] pb-16 sm:pb-20 px-6 sm:px-10 lg:px-14">
+      <div className="absolute bottom-0 left-0 right-0 z-[3] pb-16 sm:pb-20 px-[clamp(20px,5vw,64px)]">
         <div className="flex items-end justify-between gap-6">
           <div className="max-w-2xl">
             <AnimatePresence mode="wait">
@@ -321,7 +321,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
 
       {/* Progress indicators */}
       {heroItems.length > 1 && (
-        <div className="absolute bottom-6 right-0 z-[3] flex gap-2 items-center pr-6 sm:pr-10 lg:pr-14">
+        <div className="absolute bottom-6 right-0 z-[3] flex gap-2 items-center pr-[clamp(20px,5vw,64px)]">
           {heroItems.map((_, i) => (
             <button
               key={i}
