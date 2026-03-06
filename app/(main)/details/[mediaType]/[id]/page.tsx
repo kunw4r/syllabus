@@ -1007,6 +1007,46 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   });
   const uniqueVibes = [...new Set(vibes)].slice(0, 5);
 
+  // Inline trailer player state
+  const [showTrailer, setShowTrailer] = useState(false);
+
+  // Quick-add to watchlist state
+  const { user } = useAuth();
+  const [quickAdded, setQuickAdded] = useState(false);
+  const [quickAdding, setQuickAdding] = useState(false);
+
+  // Check if already in library
+  useEffect(() => {
+    if (!user || !data?.id) return;
+    getLibraryItemByMediaId({ tmdb_id: data.id }).then((item) => {
+      if (item) setQuickAdded(true);
+    }).catch(() => {});
+  }, [user, data?.id]);
+
+  const handleQuickAdd = async () => {
+    if (!user) return toast('Please log in first', 'error');
+    if (quickAdded) return;
+    setQuickAdding(true);
+    try {
+      await addToLibrary({
+        tmdb_id: data.id,
+        media_type: mediaType,
+        title: data.title || data.name,
+        poster_url: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
+        external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
+        genres: data.genres?.map((g: any) => g.name).join(', '),
+        status: 'plan_to_watch',
+      });
+      setQuickAdded(true);
+      toast('Added to watchlist!', 'success');
+    } catch (err: any) {
+      const msg = err?.message || 'Could not add';
+      if (msg === 'Already in your library') setQuickAdded(true);
+      toast(msg, 'error');
+    }
+    setQuickAdding(false);
+  };
+
   // Cast & crew for More Details cards
   const castList = data.aggregate_credits?.cast || data.credits?.cast || [];
   const crew = data.credits?.crew || [];
@@ -1061,31 +1101,79 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         </FadeInView>
       </div>
 
-      {/* ── Play / Action Buttons ── */}
+      {/* ── Play / Add / Ratings Row ── */}
       <FadeInView delay={0.1}>
-        <div className="flex items-center justify-center gap-4 mt-6 px-4">
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-6 px-4 sm:px-6 lg:px-10 max-w-6xl mx-auto">
           {trailer && (
-            <a
-              href={`https://www.youtube.com/watch?v=${trailer.key}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setShowTrailer(!showTrailer)}
               className="inline-flex items-center gap-2.5 bg-white text-black font-bold text-base px-8 py-3.5 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
             >
-              <Play size={20} fill="black" /> Play
-            </a>
+              <Play size={20} fill="black" /> {showTrailer ? 'Close' : 'Play'}
+            </button>
           )}
           <button
-            onClick={() => {
-              const el = document.getElementById('library-panel');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center hover:border-white/60 transition-colors"
-            title="Add to Library"
+            onClick={handleQuickAdd}
+            disabled={quickAdded || quickAdding}
+            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+              quickAdded
+                ? 'border-accent/60 bg-accent/10'
+                : 'border-white/30 hover:border-white/60'
+            }`}
+            title={quickAdded ? 'In your watchlist' : 'Add to watchlist'}
           >
-            <Plus size={22} className="text-white/80" />
+            {quickAdding ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-accent rounded-full animate-spin" />
+            ) : quickAdded ? (
+              <Check size={22} className="text-accent" />
+            ) : (
+              <Plus size={22} className="text-white/80" />
+            )}
           </button>
+
+          {/* Ratings inline */}
+          <RatingCluster
+            avgScore={avgScore}
+            tmdbScore={data.vote_average}
+            mediaType={mediaType}
+            dataId={data.id}
+            extRatings={extRatings}
+            ratingsLoaded={ratingsLoaded}
+            imdbId={imdbId}
+            isAnime={isAnime}
+            malData={malData}
+            title={title}
+            getSyllabusScore={getSyllabusScore}
+          />
         </div>
       </FadeInView>
+
+      {/* ── Inline Trailer Player ── */}
+      {showTrailer && trailer && (
+        <m.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }}
+          className="px-4 sm:px-6 lg:px-10 mt-6 max-w-5xl mx-auto"
+        >
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40 bg-black">
+            <iframe
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0&modestbranding=1`}
+              title={trailer.name || 'Trailer'}
+              allow="autoplay; encrypted-media; fullscreen"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+            <button
+              onClick={() => setShowTrailer(false)}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+            >
+              <X size={18} className="text-white" />
+            </button>
+          </div>
+        </m.div>
+      )}
 
       {/* ── Info Card (glassmorphic) ── */}
       <div className="px-4 sm:px-6 lg:px-10 mt-8 max-w-6xl mx-auto">
@@ -1138,23 +1226,6 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             </div>
           </div>
         </FadeInView>
-      </div>
-
-      {/* ── Ratings ── */}
-      <div className="px-4 sm:px-6 lg:px-10 mt-6 max-w-6xl mx-auto">
-        <RatingCluster
-          avgScore={avgScore}
-          tmdbScore={data.vote_average}
-          mediaType={mediaType}
-          dataId={data.id}
-          extRatings={extRatings}
-          ratingsLoaded={ratingsLoaded}
-          imdbId={imdbId}
-          isAnime={isAnime}
-          malData={malData}
-          title={title}
-          getSyllabusScore={getSyllabusScore}
-        />
       </div>
 
       {/* ── Trailers & More ── */}

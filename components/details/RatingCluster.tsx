@@ -112,7 +112,7 @@ export default function RatingCluster({
   const label = syllabusScore ? 'Syllabus' : 'TMDB';
 
   return (
-    <div className="flex flex-wrap items-center gap-2.5 mb-6">
+    <div className="flex flex-wrap items-center gap-2.5">
       {/* Syllabus / TMDB Score */}
       {displayScore && (
         <m.div
