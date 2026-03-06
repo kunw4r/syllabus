@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Library, Eye, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -38,19 +38,36 @@ interface LibraryItem {
   updated_at?: string;
 }
 
+// Session cache for instant back-navigation
+const HOME_CACHE_KEY = 'home_cache';
+
+function getHomeCache() {
+  try {
+    const raw = sessionStorage.getItem(HOME_CACHE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
+}
+
+function setHomeCache(data: Record<string, any>) {
+  try { sessionStorage.setItem(HOME_CACHE_KEY, JSON.stringify(data)); } catch { /* quota */ }
+}
+
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
-  const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
-  const [trendingTV, setTrendingTV] = useState<any[]>([]);
-  const [trendingBooks, setTrendingBooks] = useState<any[]>([]);
-  const [nowPlaying, setNowPlaying] = useState<any[]>([]);
-  const [upcoming, setUpcoming] = useState<any[]>([]);
-  const [popularMovies, setPopularMovies] = useState<any[]>([]);
-  const [topRatedMovies, setTopRatedMovies] = useState<any[]>([]);
-  const [popularTV, setPopularTV] = useState<any[]>([]);
-  const [topRatedTV, setTopRatedTV] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const homeCache = useRef(getHomeCache());
+  const c = homeCache.current;
+  const [trendingMovies, setTrendingMovies] = useState<any[]>(c?.trendingMovies || []);
+  const [trendingTV, setTrendingTV] = useState<any[]>(c?.trendingTV || []);
+  const [trendingBooks, setTrendingBooks] = useState<any[]>(c?.trendingBooks || []);
+  const [nowPlaying, setNowPlaying] = useState<any[]>(c?.nowPlaying || []);
+  const [upcoming, setUpcoming] = useState<any[]>(c?.upcoming || []);
+  const [popularMovies, setPopularMovies] = useState<any[]>(c?.popularMovies || []);
+  const [topRatedMovies, setTopRatedMovies] = useState<any[]>(c?.topRatedMovies || []);
+  const [popularTV, setPopularTV] = useState<any[]>(c?.popularTV || []);
+  const [topRatedTV, setTopRatedTV] = useState<any[]>(c?.topRatedTV || []);
+  const [loading, setLoading] = useState(!c);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recommendations, setRecommendations] = useState<RecRowType[]>([]);
 
@@ -70,16 +87,33 @@ export default function Home() {
       getTopRatedTV().catch(() => []),
     ]);
 
-    setTrendingMovies(applyStoredScores(movies, 'movie'));
-    setTrendingTV(applyStoredScores(tv, 'tv'));
+    const scoredMovies = applyStoredScores(movies, 'movie');
+    const scoredTV = applyStoredScores(tv, 'tv');
+    const scoredNowPlaying = applyStoredScores(nowPlayingArr, 'movie');
+    const scoredUpcoming = applyStoredScores(upcomingArr, 'movie');
+    const scoredPopularMovies = applyStoredScores(popularMoviesArr, 'movie');
+    const scoredTopRatedMovies = applyStoredScores(topRatedMoviesArr, 'movie');
+    const scoredPopularTV = applyStoredScores(popularTVArr, 'tv');
+    const scoredTopRatedTV = applyStoredScores(topRatedTVArr, 'tv');
+
+    setTrendingMovies(scoredMovies);
+    setTrendingTV(scoredTV);
     setTrendingBooks(books);
-    setNowPlaying(applyStoredScores(nowPlayingArr, 'movie'));
-    setUpcoming(applyStoredScores(upcomingArr, 'movie'));
-    setPopularMovies(applyStoredScores(popularMoviesArr, 'movie'));
-    setTopRatedMovies(applyStoredScores(topRatedMoviesArr, 'movie'));
-    setPopularTV(applyStoredScores(popularTVArr, 'tv'));
-    setTopRatedTV(applyStoredScores(topRatedTVArr, 'tv'));
+    setNowPlaying(scoredNowPlaying);
+    setUpcoming(scoredUpcoming);
+    setPopularMovies(scoredPopularMovies);
+    setTopRatedMovies(scoredTopRatedMovies);
+    setPopularTV(scoredPopularTV);
+    setTopRatedTV(scoredTopRatedTV);
     setLoading(false);
+
+    // Cache for instant back-navigation
+    setHomeCache({
+      trendingMovies: scoredMovies, trendingTV: scoredTV, trendingBooks: books,
+      nowPlaying: scoredNowPlaying, upcoming: scoredUpcoming,
+      popularMovies: scoredPopularMovies, topRatedMovies: scoredTopRatedMovies,
+      popularTV: scoredPopularTV, topRatedTV: scoredTopRatedTV,
+    });
 
     enrichItemsWithRatings(movies, 'movie').then(setTrendingMovies);
     enrichItemsWithRatings(tv, 'tv').then(setTrendingTV);

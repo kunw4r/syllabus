@@ -22,47 +22,65 @@ export interface AISearchResults {
   semantic: any[];
 }
 
+// ─── In-memory cache ───
+
+const aiCache = new Map<string, { data: any; ts: number }>();
+const AI_CACHE_TTL = 15 * 60 * 1000; // 15min
+
+function aiCached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+  const entry = aiCache.get(key);
+  if (entry && Date.now() - entry.ts < AI_CACHE_TTL) return Promise.resolve(entry.data as T);
+  return fetcher().then((data) => {
+    aiCache.set(key, { data, ts: Date.now() });
+    return data;
+  });
+}
+
 // ─── Intent Parsing ───
 
-async function parseIntent(query: string): Promise<ParsedIntent> {
-  try {
-    const res = await fetch('/api/search/parse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      signal: AbortSignal.timeout(3000),
-    });
-    if (res.ok) return await res.json();
-  } catch {
-    // timeout or network error — fallback to title search
-  }
-  return { type: 'title_search', originalQuery: query, keywords: [query] };
+function parseIntent(query: string): Promise<ParsedIntent> {
+  return aiCached(`intent:${query}`, async () => {
+    try {
+      const res = await fetch('/api/search/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) return await res.json();
+    } catch {
+      // timeout or network error — fallback to title search
+    }
+    return { type: 'title_search', originalQuery: query, keywords: [query] };
+  });
 }
 
 // ─── Semantic Search ───
 
-async function semanticSearch(query: string, mediaType?: string): Promise<any[]> {
-  try {
-    const res = await fetch('/api/search/semantic', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, mediaType, limit: 15 }),
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return (data.results || []).map((r: any) => ({
-        ...r,
-        id: r.tmdb_id,
-        media_type: r.media_type,
-        _semantic: true,
-        _similarity: r.similarity,
-      }));
+function semanticSearch(query: string, mediaType?: string): Promise<any[]> {
+  return aiCached(`semantic:${query}:${mediaType || ''}`, async () => {
+    try {
+      const res = await fetch('/api/search/semantic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, mediaType, limit: 15 }),
+        signal: AbortSignal.timeout(4000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return (data.results || []).map((r: any) => ({
+          ...r,
+          id: r.tmdb_id,
+          media_type: r.media_type,
+          _semantic: true,
+          _similarity: r.similarity,
+        }));
+      }
+    } catch {
+      // silently fail
     }
-  } catch {
-    // silently fail
-  }
-  return [];
+    return [];
+  });
 }
 
 // ─── Search Logger ───

@@ -1,6 +1,6 @@
 // TMDB API — calls our proxy at /api/tmdb which hides the API key
 const cache = new Map<string, { data: any; ts: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5min
+const CACHE_TTL = 15 * 60 * 1000; // 15min
 
 function cached<T>(key: string, fetcher: () => Promise<T>, ttl = CACHE_TTL): Promise<T> {
   const entry = cache.get(key);
@@ -30,9 +30,11 @@ export function getUpcomingMovies() {
   return tmdbCached('/movie/upcoming').then((d: any) => d.results || []);
 }
 
-export async function searchMovies(query: string) {
-  const data = await tmdb('/search/movie', `query=${encodeURIComponent(query)}`);
-  return data.results || [];
+export function searchMovies(query: string) {
+  return cached(`search:movie:${query}`, async () => {
+    const data = await tmdb('/search/movie', `query=${encodeURIComponent(query)}`);
+    return data.results || [];
+  });
 }
 
 export function getMovieDetails(id: number | string) {
@@ -110,9 +112,11 @@ export function getAiringTV() {
   return tmdbCached('/tv/airing_today').then((d: any) => d.results || []);
 }
 
-export async function searchTV(query: string) {
-  const data = await tmdb('/search/tv', `query=${encodeURIComponent(query)}`);
-  return data.results || [];
+export function searchTV(query: string) {
+  return cached(`search:tv:${query}`, async () => {
+    const data = await tmdb('/search/tv', `query=${encodeURIComponent(query)}`);
+    return data.results || [];
+  });
 }
 
 export function getTVDetails(id: number | string) {

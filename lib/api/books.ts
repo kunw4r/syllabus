@@ -185,19 +185,21 @@ export function getBooksBySubject(subject: string) {
   });
 }
 
-export async function searchBooks(query: string) {
-  let results = await searchGoogleBooks(query, 24);
-  if (results.length > 0) return results;
-  try {
-    const res = await fetch(
-      `${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=24&fields=${OL_SEARCH_FIELDS}`
-    );
-    if (!res.ok) throw new Error(String(res.status));
-    const data = await res.json();
-    const books = (data.docs || []).map(mapOLBook);
-    await enrichBatch(books);
-    return books;
-  } catch { return []; }
+export function searchBooks(query: string) {
+  return cached(`search:books:${query}`, async () => {
+    let results = await searchGoogleBooks(query, 24);
+    if (results.length > 0) return results;
+    try {
+      const res = await fetch(
+        `${OL_BASE}/search.json?q=${encodeURIComponent(query)}&limit=24&fields=${OL_SEARCH_FIELDS}`
+      );
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      const books = (data.docs || []).map(mapOLBook);
+      await enrichBatch(books);
+      return books;
+    } catch { return []; }
+  }, 15 * 60 * 1000);
 }
 
 export function getBookDetails(workKey: string): Promise<any> {

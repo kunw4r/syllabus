@@ -42,11 +42,21 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams.get('q') || '';
-  const [results, setResults] = useState<AISearchResults | null>(null);
+
+  // Restore cached results instantly on back navigation
+  const cached = useRef<AISearchResults | null>(null);
+  if (!cached.current && initialQuery) {
+    try {
+      const raw = sessionStorage.getItem(`search:${initialQuery}`);
+      if (raw) cached.current = JSON.parse(raw);
+    } catch { /* ignore */ }
+  }
+
+  const [results, setResults] = useState<AISearchResults | null>(cached.current);
   const [loading, setLoading] = useState(false);
   const [currentQuery, setCurrentQuery] = useState(initialQuery);
   const cancelRef = useRef<(() => void) | null>(null);
-  const didMountSearch = useRef(false);
+  const didMountSearch = useRef(!!cached.current);
   const enrichedRef = useRef(new Set<string>());
   const hasContent = !!(results || loading);
   const scrolled = useScrolled(80);
@@ -66,6 +76,9 @@ function SearchContent() {
       setResults(res);
       setLoading(false);
 
+      // Cache results in sessionStorage for instant back navigation
+      try { sessionStorage.setItem(`search:${query}`, JSON.stringify(res)); } catch { /* quota */ }
+
       // Enrich movies/tv once per phase (skip if already enriched this set)
       const movieKey = res.movies.map((m: any) => m.id).join(',');
       const tvKey = res.tv.map((t: any) => t.id).join(',');
@@ -73,13 +86,21 @@ function SearchContent() {
       if (res.movies.length > 0 && !enrichedRef.current.has(movieKey)) {
         enrichedRef.current.add(movieKey);
         enrichItemsWithRatings(res.movies, 'movie').then((enriched) => {
-          setResults((prev) => prev ? { ...prev, movies: enriched } : prev);
+          setResults((prev) => {
+            const next = prev ? { ...prev, movies: enriched } : prev;
+            if (next) try { sessionStorage.setItem(`search:${query}`, JSON.stringify(next)); } catch { /* quota */ }
+            return next;
+          });
         });
       }
       if (res.tv.length > 0 && !enrichedRef.current.has(tvKey)) {
         enrichedRef.current.add(tvKey);
         enrichItemsWithRatings(res.tv, 'tv').then((enriched) => {
-          setResults((prev) => prev ? { ...prev, tv: enriched } : prev);
+          setResults((prev) => {
+            const next = prev ? { ...prev, tv: enriched } : prev;
+            if (next) try { sessionStorage.setItem(`search:${query}`, JSON.stringify(next)); } catch { /* quota */ }
+            return next;
+          });
         });
       }
     });
@@ -87,7 +108,7 @@ function SearchContent() {
     cancelRef.current = cancel;
   }, []);
 
-  // Only run on mount for initial URL query
+  // Only run on mount for initial URL query — skip if we have cached results
   useEffect(() => {
     if (didMountSearch.current) return;
     if (initialQuery) {
