@@ -214,6 +214,7 @@ export default function Home() {
                   }}
                   mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
                   showAdd={false}
+                  size="small"
                 />
               ))}
             </ScrollRow>
@@ -246,6 +247,7 @@ export default function Home() {
                   }}
                   mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
                   showAdd={false}
+                  size="small"
                 />
               ))}
             </ScrollRow>

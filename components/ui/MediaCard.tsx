@@ -37,6 +37,7 @@ interface MediaCardProps {
   mediaType?: 'movie' | 'tv' | 'book';
   showAdd?: boolean;
   variant?: 'landscape' | 'poster';
+  size?: 'default' | 'small';
 }
 
 export default function MediaCard({
@@ -44,6 +45,7 @@ export default function MediaCard({
   mediaType = 'movie',
   showAdd = true,
   variant,
+  size = 'default',
 }: MediaCardProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -136,7 +138,9 @@ export default function MediaCard({
   if (mode === 'landscape') {
     return (
       <div
-        className="group/card relative cursor-pointer shrink-0 w-[320px] sm:w-[380px] min-w-0 z-0 hover:z-50"
+        className={`group/card relative cursor-pointer shrink-0 min-w-0 z-0 hover:z-50 ${
+          size === 'small' ? 'w-[240px] sm:w-[280px]' : 'w-[320px] sm:w-[380px]'
+        }`}
         style={{ perspective: '800px' }}
         onClick={handleClick}
       >
