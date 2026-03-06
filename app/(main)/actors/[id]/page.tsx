@@ -45,6 +45,13 @@ export default function ActorDetailPage() {
   // Bio expansion
   const [bioExpanded, setBioExpanded] = useState(false);
 
+  // Wikidata personal details
+  const [wikiDetails, setWikiDetails] = useState<{
+    height?: string;
+    spouse?: string;
+    children?: number;
+  }>({});
+
   const enrichedRef = useRef<{ movies: boolean; tv: boolean }>({ movies: false, tv: false });
 
   useEffect(() => {
@@ -81,6 +88,13 @@ export default function ActorDetailPage() {
           enrichedRef.current.movies = true;
           buildAwardsSummary(enriched);
         });
+        // Fetch personal details from Wikidata via IMDB ID
+        const imdbId = data.imdb_id || data.external_ids?.imdb_id;
+        if (imdbId) {
+          fetchWikidata(imdbId).then((details) => {
+            if (details) setWikiDetails(details);
+          });
+        }
       } catch (err) {
         console.error('[Actor] Failed to load:', err);
       }
@@ -217,14 +231,16 @@ export default function ActorDetailPage() {
         )
       : null;
 
-  // Career span
+  // Career span — use birthday as lower bound so bad data doesn't show 1975 for someone born 1992
+  const birthYear = person?.birthday ? new Date(person.birthday).getFullYear() : null;
+  const minCareerYear = birthYear ? birthYear + 5 : 1900; // no one starts before age 5
   const allYears = [
     ...movieCredits.map((c) => c.release_date?.slice(0, 4)),
     ...tvCredits.map((c) => c.first_air_date?.slice(0, 4)),
   ]
     .filter(Boolean)
     .map(Number)
-    .filter((y) => y > 1900);
+    .filter((y) => y >= minCareerYear);
   const careerStart = allYears.length > 0 ? Math.min(...allYears) : null;
   const careerEnd = allYears.length > 0 ? Math.max(...allYears) : null;
 
@@ -320,22 +336,22 @@ export default function ActorDetailPage() {
                 {person.place_of_birth}
               </span>
             )}
-            {personalDetails.spouse && (
-              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
-                <Heart size={13} className="text-white/30" />
-                {personalDetails.spouse}
-              </span>
-            )}
-            {personalDetails.children && (
-              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
-                <Users size={13} className="text-white/30" />
-                {personalDetails.children} children
-              </span>
-            )}
-            {personalDetails.height && (
+            {(wikiDetails.height || personalDetails.height) && (
               <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
                 <Ruler size={13} className="text-white/30" />
-                {personalDetails.height}
+                {wikiDetails.height || personalDetails.height}
+              </span>
+            )}
+            {(wikiDetails.spouse || personalDetails.spouse) && (
+              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                <Heart size={13} className="text-white/30" />
+                {wikiDetails.spouse || personalDetails.spouse}
+              </span>
+            )}
+            {(wikiDetails.children || personalDetails.children) && (
+              <span className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                <Users size={13} className="text-white/30" />
+                {wikiDetails.children || personalDetails.children} children
               </span>
             )}
           </div>
@@ -527,6 +543,57 @@ function dedupeCredits(credits: any[]): any[] {
     seen.add(c.id);
     return true;
   });
+}
+
+async function fetchWikidata(imdbId: string): Promise<{ height?: string; spouse?: string; children?: number } | null> {
+  try {
+    // Step 1: Find Wikidata entity from IMDB ID
+    const sparqlQuery = `
+      SELECT ?person ?height ?spouseLabel ?children WHERE {
+        ?person wdt:P345 "${imdbId}" .
+        OPTIONAL { ?person wdt:P2048 ?height . }
+        OPTIONAL { ?person wdt:P26 ?spouse . }
+        OPTIONAL { ?person wdt:P1971 ?children . }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+      } LIMIT 10
+    `;
+    const url = `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparqlQuery)}&format=json`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/sparql-results+json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const results = data.results?.bindings;
+    if (!results || results.length === 0) return null;
+
+    const details: { height?: string; spouse?: string; children?: number } = {};
+
+    // Height — convert meters to ft/in
+    const heightM = results[0].height?.value;
+    if (heightM) {
+      const m = parseFloat(heightM);
+      const totalInches = m * 39.3701;
+      const ft = Math.floor(totalInches / 12);
+      const inches = Math.round(totalInches % 12);
+      details.height = `${ft}'${inches}" (${m.toFixed(2)}m)`;
+    }
+
+    // Spouse — collect unique names
+    const spouses = [...new Set(results.map((r: any) => r.spouseLabel?.value).filter(Boolean))];
+    if (spouses.length > 0) {
+      details.spouse = spouses.join(', ');
+    }
+
+    // Children
+    const childCount = results[0].children?.value;
+    if (childCount) {
+      details.children = parseInt(childCount, 10);
+    }
+
+    return Object.keys(details).length > 0 ? details : null;
+  } catch {
+    return null;
+  }
 }
 
 function sortCredits(credits: any[], mode: SortMode): any[] {
