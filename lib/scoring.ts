@@ -56,6 +56,7 @@ interface SlimMediaItem {
   title?: string;
   name?: string;
   poster_path?: string;
+  backdrop_path?: string;
   release_date?: string;
   first_air_date?: string;
   vote_average?: number;
@@ -242,7 +243,7 @@ export async function loadStaticScoreDB(): Promise<void> {
 
 const CHART_STORE_KEY = 'syllabus_charts';
 const CHART_TTL = 24 * 60 * 60 * 1000;
-const CHART_VERSION = 2;
+const CHART_VERSION = 3;
 
 let _chartCache: ChartStore | null = null;
 
@@ -415,6 +416,7 @@ export async function enrichChart(
         title,
         name,
         poster_path,
+        backdrop_path,
         release_date,
         first_air_date,
         vote_average,
@@ -428,6 +430,7 @@ export async function enrichChart(
         title,
         name,
         poster_path,
+        backdrop_path,
         release_date,
         first_air_date,
         vote_average,
