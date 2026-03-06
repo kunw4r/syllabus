@@ -277,20 +277,52 @@ export function getTop100Books(subject: string | null = null) {
   const key = subject ? `top100:books:${subject}` : 'top100:books';
   return cached(key, async () => {
     try {
-      const q = subject ? `subject:${subject}` : 'subject:fiction OR subject:literature';
-      const res = await fetch(
-        `${OL_BASE}/search.json?q=${encodeURIComponent(q)}&sort=rating+desc&limit=150` +
-        `&fields=${OL_SEARCH_FIELDS},want_to_read_count,already_read_count,currently_reading_count`
+      // Use subject browsing endpoint — returns books sorted by popularity (edition count)
+      const subjects = subject
+        ? [subject]
+        : ['fiction', 'classic_literature', 'mystery_and_detective_stories', 'science_fiction', 'fantasy', 'romance', 'history'];
+      const limit = subject ? 120 : Math.ceil(200 / subjects.length);
+
+      const allWorks = await Promise.all(
+        subjects.map(async (s) => {
+          const res = await fetch(
+            `${OL_BASE}/subjects/${encodeURIComponent(s)}.json?limit=${limit}&details=false`
+          );
+          if (!res.ok) return [];
+          const data = await res.json();
+          return (data.works || []).map(mapSubjectWork);
+        })
       );
-      if (!res.ok) throw new Error(String(res.status));
-      const data = await res.json();
-      let books = (data.docs || [])
-        .filter((d: any) => (d.ratings_count || 0) >= 20 && d.ratings_average)
-        .sort((a: any, b: any) => (b.ratings_average || 0) - (a.ratings_average || 0))
-        .slice(0, 120)
-        .map(mapOLBook);
-      await enrichBatch(books);
-      return books.filter((b: any) => b.cover_urls.length > 0).slice(0, 100);
+
+      // Deduplicate by key, keep highest edition_count version
+      const seen = new Map<string, any>();
+      for (const work of allWorks.flat()) {
+        const existing = seen.get(work.key);
+        if (!existing || (work.edition_count || 0) > (existing.edition_count || 0)) {
+          seen.set(work.key, work);
+        }
+      }
+      let books = [...seen.values()]
+        .sort((a, b) => (b.edition_count || 0) - (a.edition_count || 0))
+        .slice(0, 120);
+
+      // Fetch ratings + covers in parallel batches
+      await Promise.all([enrichBatch(books), enrichBatchRatings(books)]);
+
+      // Sort by rating (with min threshold), fall back to edition count
+      books = books
+        .filter((b: any) => b.cover_urls.length > 0)
+        .sort((a: any, b: any) => {
+          const ra = a.rating || 0;
+          const rb = b.rating || 0;
+          // If both have ratings, sort by rating; otherwise by edition count
+          if (ra > 0 && rb > 0) return rb - ra;
+          if (ra > 0) return -1;
+          if (rb > 0) return 1;
+          return (b.edition_count || 0) - (a.edition_count || 0);
+        });
+
+      return books.slice(0, 100);
     } catch { return []; }
   });
 }
