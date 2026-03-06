@@ -286,9 +286,7 @@ export default function StudioPage() {
             {filterBySearch(newReleases).length > 0 && (
               <ScrollRow title="New Releases">
                 {filterBySearch(newReleases).map((m: any) => (
-                  <div key={m.id} className="flex-shrink-0 w-[150px]">
-                    <MediaCard item={m} mediaType="movie" />
-                  </div>
+                  <MediaCard key={m.id} item={m} mediaType="movie" />
                 ))}
               </ScrollRow>
             )}
@@ -297,9 +295,7 @@ export default function StudioPage() {
             {filterBySearch(topRated).length > 0 && (
               <ScrollRow title="Top Rated">
                 {filterBySearch(topRated).map((m: any) => (
-                  <div key={m.id} className="flex-shrink-0 w-[150px]">
-                    <MediaCard item={m} mediaType="movie" />
-                  </div>
+                  <MediaCard key={m.id} item={m} mediaType="movie" />
                 ))}
               </ScrollRow>
             )}
@@ -308,9 +304,7 @@ export default function StudioPage() {
             {filterBySearch(popular).length > 0 && (
               <ScrollRow title="Popular">
                 {filterBySearch(popular).map((m: any) => (
-                  <div key={m.id} className="flex-shrink-0 w-[150px]">
-                    <MediaCard item={m} mediaType="movie" />
-                  </div>
+                  <MediaCard key={m.id} item={m} mediaType="movie" />
                 ))}
               </ScrollRow>
             )}

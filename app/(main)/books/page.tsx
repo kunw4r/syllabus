@@ -237,9 +237,7 @@ export default function BooksPage() {
           {trending.length > 0 && (
             <ScrollRow title="Trending This Week">
               {trending.map((b: any, i: number) => (
-                <div key={b.key || i} className="flex-shrink-0 w-[150px]">
-                  <MediaCard item={b} mediaType="book" />
-                </div>
+                <MediaCard key={b.key || i} item={b} mediaType="book" />
               ))}
             </ScrollRow>
           )}

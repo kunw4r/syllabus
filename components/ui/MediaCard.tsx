@@ -129,7 +129,7 @@ export default function MediaCard({
   if (mode === 'landscape') {
     return (
       <div
-        className="group cursor-pointer shrink-0 w-[240px] sm:w-[280px]"
+        className="group cursor-pointer shrink-0 w-[240px] sm:w-[280px] min-w-0"
         onClick={handleClick}
       >
         <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30">

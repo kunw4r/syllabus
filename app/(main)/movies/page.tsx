@@ -208,7 +208,7 @@ export default function MoviesPage() {
           <h2 className="text-xl font-semibold mb-5">
             Results for &ldquo;{query}&rdquo;
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {results.map((m: any) => (
               <MediaCard key={m.id} item={m} mediaType="movie" />
             ))}
@@ -312,9 +312,7 @@ export default function MoviesPage() {
           {/* Now Playing */}
           <ScrollRow title="Now Playing in Cinemas">
             {nowPlaying.map((m) => (
-              <div key={m.id} className="flex-shrink-0 w-[150px]">
-                <MediaCard item={m} mediaType="movie" />
-              </div>
+              <MediaCard key={m.id} item={m} mediaType="movie" />
             ))}
           </ScrollRow>
 
@@ -351,9 +349,7 @@ export default function MoviesPage() {
           {/* Top Rated */}
           <ScrollRow title="Top Rated of All Time">
             {topRated.map((m) => (
-              <div key={m.id} className="flex-shrink-0 w-[150px]">
-                <MediaCard item={m} mediaType="movie" />
-              </div>
+              <MediaCard key={m.id} item={m} mediaType="movie" />
             ))}
           </ScrollRow>
         </>

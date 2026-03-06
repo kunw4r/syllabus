@@ -212,7 +212,7 @@ export default function TVPage() {
           <h2 className="text-xl font-semibold mb-5">
             Results for &ldquo;{query}&rdquo;
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {results.map((t: any) => (
               <MediaCard key={t.id} item={t} mediaType="tv" />
             ))}
@@ -313,9 +313,7 @@ export default function TVPage() {
           {anime.length > 0 && (
             <ScrollRow title="Anime">
               {anime.map((t) => (
-                <div key={t.id} className="flex-shrink-0 w-[150px]">
-                  <MediaCard item={t} mediaType="tv" />
-                </div>
+                <MediaCard key={t.id} item={t} mediaType="tv" />
               ))}
             </ScrollRow>
           )}
@@ -324,9 +322,7 @@ export default function TVPage() {
           {animation.length > 0 && (
             <ScrollRow title="Animation &middot; Disney & More">
               {animation.map((t) => (
-                <div key={t.id} className="flex-shrink-0 w-[150px]">
-                  <MediaCard item={t} mediaType="tv" />
-                </div>
+                <MediaCard key={t.id} item={t} mediaType="tv" />
               ))}
             </ScrollRow>
           )}
