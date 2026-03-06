@@ -679,17 +679,25 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
 
   const totalSeasons = regularSeasons.length;
 
-  // Auto-load all season ratings on mount
+  // Auto-load all season ratings when imdbId becomes available
   useEffect(() => {
-    if (!imdbId || totalSeasons === 0) { setLoadingSeasons(false); return; }
+    if (!imdbId || totalSeasons === 0) {
+      // If no imdbId yet, keep loading state (it might arrive from extRatings)
+      // Only stop loading if we truly have no seasons
+      if (totalSeasons === 0) setLoadingSeasons(false);
+      return;
+    }
 
-    // Build season numbers from props to avoid stale closure
+    // Build season numbers from props
     const seasonNumbers = seasons
       .filter((s: any) => s.season_number > 0)
       .map((s: any) => s.season_number)
       .sort((a: number, b: number) => a - b);
 
     let cancelled = false;
+    setLoadingSeasons(true);
+    setLoadedCount(0);
+
     async function loadAll() {
       const results: Record<number, any[]> = {};
       let count = 0;
@@ -697,10 +705,14 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
         if (cancelled) return;
         try {
           const episodes = await getOMDbSeasonEpisodes(imdbId!, num);
-          if (episodes) results[num] = episodes;
+          if (episodes && episodes.length > 0) results[num] = episodes;
         } catch { /* skip */ }
         count++;
-        if (!cancelled) setLoadedCount(count);
+        if (!cancelled) {
+          setLoadedCount(count);
+          // Update progressively so seasons appear as they load
+          setEpisodesBySeason(prev => ({ ...prev, ...results }));
+        }
       }
       if (!cancelled) {
         setEpisodesBySeason(results);
@@ -709,7 +721,7 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
     }
     loadAll();
     return () => { cancelled = true; };
-  }, [imdbId, totalSeasons, seasons]);
+  }, [imdbId, totalSeasons]);
 
   if (totalSeasons === 0) return null;
 
@@ -773,6 +785,14 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                           {seasonAvg.toFixed(1)}
                         </span>
                       </div>
+                    ) : season.vote_average > 0 && !loadingSeasons ? (
+                      <div className="flex items-center gap-1.5 opacity-50">
+                        <Star size={12} className="fill-current" style={{ color: getRatingHex(season.vote_average) }} />
+                        <span className="text-sm font-bold tabular-nums" style={{ color: getRatingHex(season.vote_average) }}>
+                          {season.vote_average.toFixed(1)}
+                        </span>
+                        <span className="text-[8px] text-white/20">TMDB</span>
+                      </div>
                     ) : loadingSeasons ? (
                       <div className="w-3 h-3 border border-white/10 border-t-accent/50 rounded-full animate-spin" />
                     ) : null}
@@ -784,14 +804,18 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                 </div>
 
                 {/* Rating bar */}
-                {seasonAvg != null && (
-                  <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(seasonAvg)} transition-all duration-700 ease-out`}
-                      style={{ width: `${ratingBarPct(seasonAvg)}%` }}
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const barRating = seasonAvg ?? (season.vote_average > 0 ? season.vote_average : null);
+                  if (barRating == null) return null;
+                  return (
+                    <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(barRating)} transition-all duration-700 ease-out ${seasonAvg == null ? 'opacity-40' : ''}`}
+                        style={{ width: `${ratingBarPct(barRating)}%` }}
+                      />
+                    </div>
+                  );
+                })()}
 
                 {/* Best episode teaser */}
                 {bestEp && !isExpanded && (
@@ -807,7 +831,12 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                 )}
               </button>
 
-              {/* Expanded episode list — CSS transition, no framer-motion height hacks */}
+              {/* Expanded episode list */}
+              {isExpanded && episodes.length === 0 && !loadingSeasons && (
+                <div className="border-t border-white/[0.04] px-4 py-3">
+                  <span className="text-xs text-white/20">No episode ratings available yet</span>
+                </div>
+              )}
               {isExpanded && episodes.length > 0 && (
                 <div className="border-t border-white/[0.04] max-h-[350px] overflow-y-auto scrollbar-hide">
                   {episodes.map((ep: any) => (

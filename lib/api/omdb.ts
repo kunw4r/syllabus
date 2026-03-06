@@ -108,13 +108,14 @@ export function getOMDbSeasonEpisodes(imdbId: string, seasonNumber: number) {
   if (!imdbId) return Promise.resolve(null);
   const storedKey = `season:${imdbId}:${seasonNumber}`;
   const stored = getOmdbEntry(storedKey);
-  if (stored !== undefined) return Promise.resolve(stored);
+  // Only use cache if it's a valid array (don't cache nulls for seasons — allow retries)
+  if (Array.isArray(stored)) return Promise.resolve(stored);
 
   return cached(`omdb:season:${imdbId}:${seasonNumber}`, async () => {
     try {
       const data = await omdbProxy(`i=${imdbId}&Season=${seasonNumber}`);
       if (data.Error === 'Request limit reached!') throw new Error('OMDB_RATE_LIMIT');
-      if (data.Response === 'False') { saveOmdbEntry(storedKey, null); return null; }
+      if (data.Response === 'False') return null;
       const episodes = (data.Episodes || []).map((ep: any) => ({
         number: parseInt(ep.Episode),
         title: ep.Title,
