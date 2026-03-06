@@ -181,14 +181,14 @@ export default function Home() {
                   See all <ChevronRight size={14} />
                 </button>
               </div>
-              <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                 {continueWatching.map((item) => (
                   <div
                     key={item.id}
-                    className="shrink-0 w-[150px] cursor-pointer group"
+                    className="shrink-0 w-[240px] sm:w-[280px] cursor-pointer group"
                     onClick={() => navigateToItem(item)}
                   >
-                    <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
+                    <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
                       {item.poster_url ? (
                         <img
                           src={item.poster_url}
@@ -201,15 +201,18 @@ export default function Home() {
                           {(item.media_type || 'movie') === 'book' ? '\u{1F4D6}' : '\u{1F3AC}'}
                         </div>
                       )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-sm font-semibold text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+                          {item.title}
+                        </p>
+                        {item.updated_at && (
+                          <p className="text-[10px] text-white/40 mt-0.5">
+                            {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <p className="mt-2 text-sm text-white/70 truncate group-hover:text-accent transition-colors">
-                      {item.title}
-                    </p>
-                    {item.updated_at && (
-                      <p className="text-[10px] text-white/25">
-                        {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </p>
-                    )}
                   </div>
                 ))}
               </div>
@@ -233,10 +236,10 @@ export default function Home() {
               {watchlist.map((item) => (
                 <div
                   key={item.id}
-                  className="shrink-0 w-[140px] sm:w-[150px] cursor-pointer group"
+                  className="shrink-0 w-[240px] sm:w-[280px] cursor-pointer group"
                   onClick={() => navigateToItem(item)}
                 >
-                  <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
+                  <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
                     {item.poster_url ? (
                       <img
                         src={item.poster_url}
@@ -249,10 +252,13 @@ export default function Home() {
                         {(item.media_type || 'movie') === 'book' ? '\u{1F4D6}' : '\u{1F3AC}'}
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-semibold text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+                        {item.title}
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm text-white/70 truncate group-hover:text-accent transition-colors">
-                    {item.title}
-                  </p>
                 </div>
               ))}
             </ScrollRow>

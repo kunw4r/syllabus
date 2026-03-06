@@ -6,10 +6,8 @@ interface SkeletonRowProps {
 
 export function SkeletonCard() {
   return (
-    <div className="shrink-0 w-[140px] sm:w-[160px] animate-pulse">
-      <div className="aspect-[2/3] rounded-xl bg-white/5" />
-      <div className="mt-2 h-4 w-3/4 rounded bg-white/5" />
-      <div className="mt-1 h-3 w-1/2 rounded bg-white/5" />
+    <div className="shrink-0 w-[240px] sm:w-[280px] animate-pulse">
+      <div className="aspect-[16/9] rounded-xl bg-white/5" />
     </div>
   );
 }

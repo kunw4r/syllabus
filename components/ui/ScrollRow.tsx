@@ -18,7 +18,7 @@ export default function ScrollRow({
 
   const scroll = (dir: number) => {
     if (ref.current) {
-      ref.current.scrollBy({ left: dir * 400, behavior: 'smooth' });
+      ref.current.scrollBy({ left: dir * 600, behavior: 'smooth' });
     }
   };
 
