@@ -271,12 +271,12 @@ const TIER_3 = [
 
 type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof TIER_3)[number];
 
-// ── Tier heights ──
+// ── Tier aspect ratios ──
 
-const TIER_HEIGHTS = {
-  1: 'clamp(140px, 15vw, 200px)',
-  2: 'clamp(120px, 13vw, 160px)',
-  3: 'clamp(105px, 11vw, 140px)',
+const TIER_ASPECT = {
+  1: '2.4 / 1',
+  2: '2.4 / 1',
+  3: '2.4 / 1',
 } as const;
 
 // ── Animation variants ──
@@ -383,7 +383,7 @@ function StudioCard({
       href={`/studios/${studio.slug}`}
       className="group relative flex flex-col items-center justify-center rounded-2xl overflow-hidden"
       style={{
-        height: TIER_HEIGHTS[tier],
+        aspectRatio: TIER_ASPECT[tier],
         background: hasImage ? '#080c18' : studio.gradient,
         border: `1px solid ${hasImage ? 'rgba(255,255,255,0.06)' : studio.border}`,
         boxShadow: studio.glow,
