@@ -262,9 +262,7 @@ export default function BooksPage() {
                 ) : books?.length > 0 ? (
                   <ScrollRow title={s.name}>
                     {books.map((b: any, i: number) => (
-                      <div key={b.key || i} className="flex-shrink-0 w-[150px]">
-                        <MediaCard item={b} mediaType="book" />
-                      </div>
+                      <MediaCard key={b.key || i} item={b} mediaType="book" />
                     ))}
                   </ScrollRow>
                 ) : null}

@@ -245,14 +245,15 @@ export default function MediaCard({
     );
   }
 
-  // ── Poster card (2:3 vertical) ──
+  // ── Poster card (2:3 vertical) — premium book style ──
   return (
     <div
-      className="group cursor-pointer shrink-0 w-[170px] sm:w-[200px]"
+      className="group cursor-pointer shrink-0 w-[150px] sm:w-[170px]"
       onClick={handleClick}
     >
       <div
-        className="relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30"
+        className="relative aspect-[2/3] rounded-lg overflow-hidden transition-all duration-300 group-hover:scale-[1.04] group-hover:shadow-2xl group-hover:shadow-black/50"
+        style={{ boxShadow: '4px 4px 12px rgba(0,0,0,0.4), -1px -1px 4px rgba(255,255,255,0.03)' }}
       >
         {poster ? (
           <img
@@ -262,49 +263,52 @@ export default function MediaCard({
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
+          <div className="w-full h-full bg-gradient-to-br from-dark-600 to-dark-800 flex items-center justify-center text-white/15 text-4xl">
             {isBook ? '\u{1F4DA}' : '\u{1F3AC}'}
           </div>
         )}
 
+        {/* Spine edge effect for books */}
+        {isBook && (
+          <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-white/10 via-white/5 to-white/10" />
+        )}
+
         {rating != null && (
           <div
-            className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10"
+            className="absolute top-2 right-2 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10"
             style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
-            <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-xs font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
+            <Star size={9} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-[11px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
               {typeof rating === 'number' ? rating.toFixed(1) : rating}
             </span>
           </div>
         )}
 
-        {/* Hover info overlay */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 pt-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          {year && <p className="text-[10px] text-white/60">{year}</p>}
-        </div>
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {showAdd && user && !added && (
           <button
             onClick={handleAdd}
             className="absolute bottom-2 right-2 bg-accent/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent active:scale-90 z-10"
           >
-            <Plus size={16} className="text-white" />
+            <Plus size={14} className="text-white" />
           </button>
         )}
 
         {added && (
           <div className="absolute bottom-2 right-2 bg-green-500/80 backdrop-blur-sm rounded-full p-1.5 z-10">
-            <Check size={16} className="text-white" />
+            <Check size={14} className="text-white" />
           </div>
         )}
       </div>
 
-      <div className="mt-2">
-        <p className="text-sm text-white/70 truncate group-hover:text-accent transition-colors">
+      <div className="mt-2.5 px-0.5">
+        <p className="text-[13px] font-medium text-white/80 truncate group-hover:text-white transition-colors leading-tight">
           {title}
         </p>
-        {year && <p className="text-xs text-white/30">{year}</p>}
+        {year && <p className="text-[11px] text-white/30 mt-0.5">{year}</p>}
       </div>
     </div>
   );
