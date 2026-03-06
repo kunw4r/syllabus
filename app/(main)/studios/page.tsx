@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
 import { STUDIO_LOGOS } from '@/components/ui/StudioLogos';
@@ -10,6 +11,7 @@ const FEATURED_STUDIOS = [
   {
     slug: 'disney',
     name: 'Disney',
+    image: '/studios/disney-card.png',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(30,60,140,0.5) 0%, rgba(15,25,60,0.8) 50%, rgba(8,12,30,0.95) 100%)',
     border: 'rgba(80,130,220,0.25)',
     glow: '0 0 40px rgba(40,80,180,0.15), 0 0 80px rgba(30,60,140,0.08)',
@@ -130,47 +132,63 @@ function FeaturedStudioCard({
   const Logo = STUDIO_LOGOS[featured.slug];
   const prefersReducedMotion = useReducedMotion();
 
+  const hasImage = 'image' in featured && featured.image;
+
   const card = (
     <Link
       href={`/studios/${featured.slug}`}
       className="group relative flex flex-col items-center justify-center rounded-2xl overflow-hidden"
       style={{
         height: 'clamp(160px, 18vw, 220px)',
-        background: featured.gradient,
+        background: hasImage ? '#080c18' : featured.gradient,
         border: `1px solid ${featured.border}`,
         boxShadow: featured.glow,
       }}
     >
-      {/* Internal light streaks */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: `
-            linear-gradient(135deg, transparent 20%, ${featured.streakColor} 40%, transparent 60%),
-            linear-gradient(225deg, transparent 30%, ${featured.streakColor} 50%, transparent 70%)
-          `,
-        }}
-      />
+      {/* Image background (when provided) */}
+      {hasImage && (
+        <Image
+          src={featured.image!}
+          alt={featured.name}
+          fill
+          className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-500 ease-out"
+          sizes="(max-width: 640px) 100vw, 50vw"
+          priority
+        />
+      )}
 
-      {/* Top edge highlight */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent, ${featured.border}, transparent)` }}
-      />
-
-      {/* Atmospheric haze */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse at 50% 30%, ${featured.accent}, transparent 70%)`,
-        }}
-      />
+      {/* For non-image cards: internal light streaks */}
+      {!hasImage && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: `
+                linear-gradient(135deg, transparent 20%, ${featured.streakColor} 40%, transparent 60%),
+                linear-gradient(225deg, transparent 30%, ${featured.streakColor} 50%, transparent 70%)
+              `,
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-px"
+            style={{ background: `linear-gradient(90deg, transparent, ${featured.border}, transparent)` }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse at 50% 30%, ${featured.accent}, transparent 70%)`,
+            }}
+          />
+        </>
+      )}
 
       {/* Hover overlay */}
       <div
         className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
-          background: `radial-gradient(ellipse at 50% 40%, ${featured.accent}, transparent 70%)`,
+          background: hasImage
+            ? 'rgba(255,255,255,0.03)'
+            : `radial-gradient(ellipse at 50% 40%, ${featured.accent}, transparent 70%)`,
           boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.08)`,
         }}
       />
@@ -183,21 +201,23 @@ function FeaturedStudioCard({
         }}
       />
 
-      {/* Logo area */}
-      <div className="relative flex items-center justify-center flex-1 w-full">
-        {Logo ? (
-          <div className="opacity-80 group-hover:opacity-100 transition-all duration-[280ms] ease-out group-hover:scale-[1.03]">
-            <Logo size={featured.slug === 'marvel' ? 72 : 64} />
+      {/* Logo area (only for non-image cards) */}
+      {!hasImage && (
+        <>
+          <div className="relative flex items-center justify-center flex-1 w-full">
+            {Logo ? (
+              <div className="opacity-80 group-hover:opacity-100 transition-all duration-[280ms] ease-out group-hover:scale-[1.03]">
+                <Logo size={featured.slug === 'marvel' ? 72 : 64} />
+              </div>
+            ) : (
+              <span className="text-3xl font-bold opacity-50">{featured.name[0]}</span>
+            )}
           </div>
-        ) : (
-          <span className="text-3xl font-bold opacity-50">{featured.name[0]}</span>
-        )}
-      </div>
-
-      {/* Studio name */}
-      <p className="relative text-[0.85rem] font-medium text-white/50 group-hover:text-white/75 text-center tracking-wide transition-colors duration-[280ms] pb-4">
-        {featured.name}
-      </p>
+          <p className="relative text-[0.85rem] font-medium text-white/50 group-hover:text-white/75 text-center tracking-wide transition-colors duration-[280ms] pb-4">
+            {featured.name}
+          </p>
+        </>
+      )}
     </Link>
   );
 
