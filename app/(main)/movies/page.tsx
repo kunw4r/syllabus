@@ -232,7 +232,7 @@ export default function MoviesPage() {
                 </h1>
                 <div className="flex items-center gap-3 text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">
                   {(hero.unified_rating ?? hero.vote_average) > 0 && (
-                    <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(), boxShadow: getRatingGlow(Number(hero.unified_rating ?? hero.vote_average)) }}>
+                    <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(Number(hero.unified_rating ?? hero.vote_average)), boxShadow: getRatingGlow(Number(hero.unified_rating ?? hero.vote_average)) }}>
                       <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(hero.unified_rating ?? hero.vote_average)) }} />{' '}
                       <span className="font-semibold drop-shadow-sm" style={{ color: getRatingHex(Number(hero.unified_rating ?? hero.vote_average)) }}>{Number(
                         hero.unified_rating ?? hero.vote_average
@@ -296,7 +296,7 @@ export default function MoviesPage() {
                       />
                     )}
                     {(item.unified_rating ?? item.vote_average) > 0 && (
-                      <div className="absolute top-1.5 right-1.5 z-20 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold" style={{ background: getRatingBg(), boxShadow: getRatingGlow(Number(item.unified_rating ?? item.vote_average)) }}>
+                      <div className="absolute top-1.5 right-1.5 z-20 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold" style={{ background: getRatingBg(Number(item.unified_rating ?? item.vote_average)), boxShadow: getRatingGlow(Number(item.unified_rating ?? item.vote_average)) }}>
                         <Star size={11} className="fill-current" style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }} />
                         <span className="drop-shadow-sm" style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }}>{Number(
                           item.unified_rating ?? item.vote_average

@@ -30,7 +30,7 @@ import RatingCluster from '@/components/details/RatingCluster';
 import CastRow from '@/components/details/CastRow';
 import StreamingProviders from '@/components/details/StreamingProviders';
 import QuickFactsCard from '@/components/details/QuickFactsCard';
-import { getRatingHex, getRatingGradient, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
+import { getRatingHex, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
 
 // ─── Image base URLs ───
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
@@ -820,8 +820,12 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                   return (
                     <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(barRating)} transition-all duration-700 ease-out ${seasonAvg == null ? 'opacity-40' : ''}`}
-                        style={{ width: `${ratingBarPct(barRating)}%` }}
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${seasonAvg == null ? 'opacity-40' : ''}`}
+                        style={{
+                          width: `${ratingBarPct(barRating)}%`,
+                          background: getRatingHex(barRating),
+                          boxShadow: `0 0 8px ${getRatingHex(barRating)}66`,
+                        }}
                       />
                     </div>
                   );
@@ -861,8 +865,12 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                         {ep.imdbRating != null ? (
                           <div className="w-full h-1 bg-white/[0.04] rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(ep.imdbRating)}`}
-                              style={{ width: `${ratingBarPct(ep.imdbRating)}%` }}
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${ratingBarPct(ep.imdbRating)}%`,
+                                background: getRatingHex(ep.imdbRating),
+                                boxShadow: `0 0 6px ${getRatingHex(ep.imdbRating)}55`,
+                              }}
                             />
                           </div>
                         ) : (

@@ -135,7 +135,7 @@ export default function MediaCard({
         {rating != null && (
           <div
             className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10"
-            style={{ background: getRatingBg(), boxShadow: getRatingGlow(Number(rating)) }}
+            style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
             <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
             <span className="text-xs font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>

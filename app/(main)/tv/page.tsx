@@ -236,7 +236,7 @@ export default function TVPage() {
                 </h1>
                 <div className="flex items-center gap-3 text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">
                   {(hero.unified_rating ?? hero.vote_average) > 0 && (() => { const val = Number(hero.unified_rating ?? hero.vote_average); return (
-                    <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(), boxShadow: getRatingGlow(val) }}>
+                    <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(val), boxShadow: getRatingGlow(val) }}>
                       <Star size={14} className="fill-current" style={{ color: getRatingHex(val) }} />{' '}
                       <span className="drop-shadow-sm" style={{ color: getRatingHex(val) }}>{val.toFixed(1)}</span>
                     </span>
@@ -298,7 +298,7 @@ export default function TVPage() {
                       />
                     )}
                     {(item.unified_rating ?? item.vote_average) > 0 && (() => { const val = Number(item.unified_rating ?? item.vote_average); return (
-                      <div className="absolute top-1.5 right-1.5 z-20 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold" style={{ background: getRatingBg(), boxShadow: getRatingGlow(val) }}>
+                      <div className="absolute top-1.5 right-1.5 z-20 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold" style={{ background: getRatingBg(val), boxShadow: getRatingGlow(val) }}>
                         <Star size={11} className="fill-current" style={{ color: getRatingHex(val) }} />
                         <span className="drop-shadow-sm" style={{ color: getRatingHex(val) }}>{val.toFixed(1)}</span>
                       </div>

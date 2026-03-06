@@ -164,7 +164,7 @@ function RankedItem({
       {/* Rating */}
       {rating > 0 && (
         <div className="flex flex-col items-end flex-shrink-0">
-          <div className="flex items-center gap-1.5 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(), boxShadow: getRatingGlow(Number(rating)) }}>
+          <div className="flex items-center gap-1.5 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}>
             <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
             <span className="text-sm font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
