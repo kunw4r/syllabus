@@ -34,7 +34,7 @@ export default function ActorDetailPage() {
 
   // Filmography
   const [tab, setTab] = useState<CreditTab>('movies');
-  const [sort, setSort] = useState<SortMode>('rating');
+  const [sort, setSort] = useState<SortMode>('popularity');
   const [movieCredits, setMovieCredits] = useState<any[]>([]);
   const [tvCredits, setTvCredits] = useState<any[]>([]);
   const [enriching, setEnriching] = useState(false);
@@ -45,6 +45,7 @@ export default function ActorDetailPage() {
 
   // Bio expansion
   const [bioExpanded, setBioExpanded] = useState(false);
+  const [showMinor, setShowMinor] = useState(false);
 
   // Wikidata personal details
   const [wikiDetails, setWikiDetails] = useState<{
@@ -71,7 +72,7 @@ export default function ActorDetailPage() {
           }))
         );
         applyStoredScores(movies, 'movie');
-        setMovieCredits(sortCredits(movies, 'rating'));
+        setMovieCredits(sortCredits(movies, 'popularity'));
 
         // Process TV credits
         const tv = dedupeCredits(
@@ -81,11 +82,11 @@ export default function ActorDetailPage() {
           }))
         );
         applyStoredScores(tv, 'tv');
-        setTvCredits(sortCredits(tv, 'rating'));
+        setTvCredits(sortCredits(tv, 'popularity'));
 
         // Background enrich movies (top 30 by popularity)
         enrichCredits(movies, 'movie', (enriched) => {
-          setMovieCredits(sortCredits(enriched, 'rating'));
+          setMovieCredits(sortCredits(enriched, 'popularity'));
           enrichedRef.current.movies = true;
           buildAwardsSummary(enriched);
         });
@@ -169,20 +170,31 @@ export default function ActorDetailPage() {
 
   const credits = tab === 'movies' ? movieCredits : tvCredits;
 
-  // Average Syllabus scores
+  // Average Syllabus scores (excluding talk shows, self appearances, etc.)
   const avgMovieScore = useMemo(() => {
-    const rated = movieCredits.filter((c) => (c.unified_rating ?? c.vote_average) > 0);
+    const rated = movieCredits.filter((c) => isScoreWorthy(c) && (c.unified_rating ?? c.vote_average) > 0);
     if (rated.length < 3) return null;
     const sum = rated.reduce((acc, c) => acc + (c.unified_rating ?? c.vote_average ?? 0), 0);
     return sum / rated.length;
   }, [movieCredits]);
 
   const avgTvScore = useMemo(() => {
-    const rated = tvCredits.filter((c) => (c.unified_rating ?? c.vote_average) > 0);
+    const rated = tvCredits.filter((c) => isScoreWorthy(c) && (c.unified_rating ?? c.vote_average) > 0);
     if (rated.length < 3) return null;
     const sum = rated.reduce((acc, c) => acc + (c.unified_rating ?? c.vote_average ?? 0), 0);
     return sum / rated.length;
   }, [tvCredits]);
+
+  // Split credits into featured and minor
+  const { featured, minor } = useMemo(() => {
+    const f: any[] = [];
+    const m: any[] = [];
+    for (const c of credits) {
+      if (isMinorCredit(c)) m.push(c);
+      else f.push(c);
+    }
+    return { featured: f, minor: m };
+  }, [credits]);
 
   // Parse personal details from biography
   const personalDetails = useMemo(() => {
@@ -491,7 +503,7 @@ export default function ActorDetailPage() {
         {/* Tab toggle */}
         <div className="flex gap-2">
           <button
-            onClick={() => setTab('movies')}
+            onClick={() => { setTab('movies'); setShowMinor(false); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
               tab === 'movies'
                 ? 'bg-accent text-white'
@@ -501,7 +513,7 @@ export default function ActorDetailPage() {
             <Film size={14} /> Movies
           </button>
           <button
-            onClick={() => setTab('tv')}
+            onClick={() => { setTab('tv'); setShowMinor(false); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
               tab === 'tv'
                 ? 'bg-accent text-white'
@@ -553,22 +565,56 @@ export default function ActorDetailPage() {
           <p className="text-lg">No {tab === 'movies' ? 'movie' : 'TV'} credits found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {credits.map((c: any) => (
-            <div key={`${c.id}-${c.character}`}>
-              <MediaCard
-                item={c}
-                mediaType={tab === 'movies' ? 'movie' : 'tv'}
-                variant="landscape"
-              />
-              {c.character && (
-                <p className="text-[10px] text-white/25 mt-1.5 truncate px-0.5">
-                  as {c.character}
-                </p>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featured.map((c: any) => (
+              <div key={`${c.id}-${c.character}`}>
+                <MediaCard
+                  item={c}
+                  mediaType={tab === 'movies' ? 'movie' : 'tv'}
+                  variant="landscape"
+                />
+                {c.character && (
+                  <p className="text-[10px] text-white/25 mt-1.5 truncate px-0.5">
+                    as {c.character}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Minor / Other appearances */}
+          {minor.length > 0 && (
+            <div className="mt-8">
+              <button
+                onClick={() => setShowMinor(!showMinor)}
+                className="text-xs text-white/30 hover:text-white/50 transition-colors mb-4 flex items-center gap-1.5"
+              >
+                <span className="w-8 h-px bg-white/10" />
+                {showMinor ? 'Hide' : 'Show'} {minor.length} other appearance{minor.length !== 1 ? 's' : ''} (talk shows, cameos, etc.)
+                <span className="flex-1 h-px bg-white/10" />
+              </button>
+              {showMinor && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
+                  {minor.map((c: any) => (
+                    <div key={`${c.id}-${c.character}`}>
+                      <MediaCard
+                        item={c}
+                        mediaType={tab === 'movies' ? 'movie' : 'tv'}
+                        variant="landscape"
+                      />
+                      {c.character && (
+                        <p className="text-[10px] text-white/25 mt-1.5 truncate px-0.5">
+                          as {c.character}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -583,6 +629,31 @@ function dedupeCredits(credits: any[]): any[] {
     seen.add(c.id);
     return true;
   });
+}
+
+// Genre IDs that indicate non-acting appearances
+const MINOR_GENRE_IDS = new Set([10767 /* Talk Show */, 10763 /* News */]);
+
+const SELF_PATTERNS = /\b(self|himself|herself|themselves|narrator|voice|archive footage|uncredited)\b/i;
+
+/** Returns true if this credit is a minor/non-acting appearance */
+function isMinorCredit(c: any): boolean {
+  // "as Self" or similar
+  if (c.character && SELF_PATTERNS.test(c.character)) return true;
+  // Talk show / news genre
+  if (c.genre_ids?.some((id: number) => MINOR_GENRE_IDS.has(id))) return true;
+  // Very low vote count = obscure project
+  if ((c.vote_count ?? 0) < 10 && (c.popularity ?? 0) < 3) return true;
+  return false;
+}
+
+/** Returns true if a credit should count toward the actor's average score */
+function isScoreWorthy(c: any): boolean {
+  if (!c.character || SELF_PATTERNS.test(c.character)) return false;
+  if (c.genre_ids?.some((id: number) => MINOR_GENRE_IDS.has(id))) return false;
+  // Need a meaningful vote count
+  if ((c.vote_count ?? 0) < 20) return false;
+  return true;
 }
 
 async function fetchWikidata(imdbId: string): Promise<{ height?: string; spouse?: string; children?: number } | null> {
