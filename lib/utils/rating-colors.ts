@@ -33,9 +33,9 @@ export function getRatingBg(val: number): string {
   if (val <= 5.5) return 'linear-gradient(135deg, #ef4444ee, #fb923cee)';        // red → orange
   if (val <= 6.5) return 'linear-gradient(135deg, #f97316ee, #facc15ee)';        // orange → yellow
   if (val <= 7.5) return 'linear-gradient(135deg, #eab308ee, #a3e635ee)';        // yellow → lime
-  if (val <= 8.5) return 'linear-gradient(135deg, #84cc16f0, #4ade80f0)';        // lime → neon green
+  if (val <= 8.5) return 'linear-gradient(135deg, #a3e635f0, #4ade80f0)';        // neon lime → neon green (bright!)
   // 8.5+ gradients introduce new colors, becoming more their own as score rises
-  if (val <= 8.8) return 'linear-gradient(135deg, #4ade80f2, #34d399f2)';        // green → emerald (hint of shift)
+  if (val <= 8.8) return 'linear-gradient(135deg, #4ade80f2, #34d399f2)';        // neon green → emerald (hint of shift)
   if (val <= 9.0) return 'linear-gradient(135deg, #34d399f4, #22d3eef4)';        // emerald → cyan (gradient visible)
   if (val <= 9.3) return 'linear-gradient(135deg, #22d3eef5, #38bdf8f5)';        // cyan → sky (neon glow)
   if (val <= 9.6) return 'linear-gradient(135deg, #38bdf8f6, #60a5faf6)';        // sky → blue (intensifying)
