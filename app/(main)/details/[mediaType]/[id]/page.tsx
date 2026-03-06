@@ -1073,7 +1073,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             {/* Back button — overlaid top-left on hero */}
             <button
               onClick={() => router.back()}
-              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-black/60 transition-all text-sm font-medium"
+              className="absolute top-14 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-black/60 transition-all text-sm font-medium"
             >
               <ChevronLeft size={16} strokeWidth={2.5} /> Back
             </button>
