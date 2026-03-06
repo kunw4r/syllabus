@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Info, Play, Volume2, VolumeX } from 'lucide-react';
+import { Star, Info, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { AnimatePresence, m } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { extractDominantColor } from '@/lib/utils/color-extract';
@@ -36,8 +36,17 @@ const GENRE_MAP: Record<number, string> = {
   10759: 'Action & Adventure', 10765: 'Sci-Fi & Fantasy',
 };
 
-const TRAILER_DELAY = 3000; // ms before trailer starts
-const SLIDE_INTERVAL = 8000; // ms per slide when no trailer
+const TRAILER_DELAY = 3000;
+const SLIDE_INTERVAL = 8000;
+
+/** Send a command to a YouTube iframe via postMessage */
+function ytCommand(iframe: HTMLIFrameElement | null, func: string) {
+  if (!iframe?.contentWindow) return;
+  iframe.contentWindow.postMessage(
+    JSON.stringify({ event: 'command', func, args: '' }),
+    '*'
+  );
+}
 
 export default function HeroBanner({ items }: HeroBannerProps) {
   const router = useRouter();
@@ -50,16 +59,14 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   const [trailerReady, setTrailerReady] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [paused, setPaused] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const trailerTimerRef = useRef<NodeJS.Timeout>(undefined);
 
-  // Content rating state (e.g. "R", "PG-13", "TV-MA")
+  // Content rating state
   const [contentRating, setContentRating] = useState<string | null>(null);
 
   const heroItems = items.filter((i) => i.backdrop_path).slice(0, 5);
-
-  // Stable ID of the current hero item — used as effect dependency
-  // so trailer/rating always match the displayed title
   const currentItemId = heroItems[currentIndex]?.id;
 
   // Fetch trailer + content rating for current item
@@ -68,6 +75,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     setTrailerReady(false);
     setShowTrailer(false);
     setContentRating(null);
+    setPaused(false);
 
     if (!currentItemId) return;
     const current = heroItems[currentIndex];
@@ -89,20 +97,14 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     return () => { cancelled = true; };
   }, [currentItemId]);
 
-  // Show trailer after delay once key is available
+  // Show trailer after delay
   useEffect(() => {
     if (!trailerKey) return;
-
-    trailerTimerRef.current = setTimeout(() => {
-      setShowTrailer(true);
-    }, TRAILER_DELAY);
-
-    return () => {
-      if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
-    };
+    trailerTimerRef.current = setTimeout(() => setShowTrailer(true), TRAILER_DELAY);
+    return () => { if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current); };
   }, [trailerKey]);
 
-  // Auto-advance (only when trailer is NOT playing)
+  // Auto-advance (pause when trailer playing or user paused)
   const advance = useCallback(() => {
     if (heroItems.length <= 1) return;
     setCurrentIndex((i) => (i + 1) % heroItems.length);
@@ -111,7 +113,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
 
   useEffect(() => {
     if (heroItems.length <= 1) return;
-    if (showTrailer && trailerReady) return; // Don't auto-advance during trailer
+    if (showTrailer && trailerReady) return;
     const interval = setInterval(advance, SLIDE_INTERVAL);
     return () => clearInterval(interval);
   }, [advance, heroItems.length, showTrailer, trailerReady]);
@@ -120,11 +122,23 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   useEffect(() => {
     const current = heroItems[currentIndex];
     if (current?.backdrop_path) {
-      extractDominantColor(`${TMDB_IMG_ORIGINAL}${current.backdrop_path}`).then(
-        setAmbientColor
-      );
+      extractDominantColor(`${TMDB_IMG_ORIGINAL}${current.backdrop_path}`).then(setAmbientColor);
     }
   }, [currentItemId]);
+
+  // Mute/unmute via postMessage
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    ytCommand(iframeRef.current, next ? 'mute' : 'unMute');
+  };
+
+  // Pause/play via postMessage
+  const togglePause = () => {
+    const next = !paused;
+    setPaused(next);
+    ytCommand(iframeRef.current, next ? 'pauseVideo' : 'playVideo');
+  };
 
   const goToSlide = (i: number) => {
     setCurrentIndex(i);
@@ -139,7 +153,6 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   const year = (current.release_date || current.first_air_date || '').slice(0, 4);
   const genres = (current.genre_ids || []).slice(0, 3).map((id) => GENRE_MAP[id]).filter(Boolean);
   const displayScore = current.unified_rating ?? current.vote_average;
-
   const trailerPlaying = showTrailer && trailerReady;
 
   return (
@@ -161,7 +174,6 @@ export default function HeroBanner({ items }: HeroBannerProps) {
             transition={{ duration: 1.2, ease: 'easeInOut' }}
             className="absolute inset-0"
           >
-            {/* Backdrop image — always rendered underneath */}
             <img
               src={`${TMDB_IMG_ORIGINAL}${current.backdrop_path}`}
               alt={title}
@@ -185,13 +197,12 @@ export default function HeroBanner({ items }: HeroBannerProps) {
             <div className="absolute inset-0" style={{ transform: 'scale(1.2)' }}>
               <iframe
                 ref={iframeRef}
-                src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&showinfo=0&rel=0&modestbranding=1&loop=1&playlist=${trailerKey}&playsinline=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&loop=1&playlist=${trailerKey}&playsinline=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                 allow="autoplay; encrypted-media"
                 allowFullScreen
                 className="w-full h-full pointer-events-none"
                 style={{ border: 'none' }}
                 onLoad={() => {
-                  // Small delay so video has time to buffer
                   setTimeout(() => setTrailerReady(true), 800);
                 }}
               />
@@ -199,112 +210,112 @@ export default function HeroBanner({ items }: HeroBannerProps) {
           </div>
         )}
 
-        {/* Premium gradient overlays */}
+        {/* Gradient overlays */}
         <div className="absolute inset-0 z-[2] bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-[50%] z-[2] bg-gradient-to-t from-dark-900 via-dark-900/80 to-transparent" />
         <div className="absolute inset-0 z-[2] bg-gradient-to-r from-dark-900/70 via-transparent to-transparent" />
-        {/* Vignette */}
         <div className="absolute inset-0 z-[2]" style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(14,17,23,0.3) 100%)' }} />
-        {/* Ambient color tint */}
         <div
           className="absolute inset-0 z-[2] opacity-15 transition-colors duration-[1200ms]"
-          style={{
-            background: `radial-gradient(ellipse at 30% 80%, rgb(${ambientColor}) 0%, transparent 70%)`,
-          }}
+          style={{ background: `radial-gradient(ellipse at 30% 80%, rgb(${ambientColor}) 0%, transparent 70%)` }}
         />
       </div>
 
       {/* Content overlay */}
       <div className="absolute bottom-0 left-0 right-0 z-[3] pb-16 sm:pb-20" style={{ paddingLeft: 'clamp(20px, 5vw, 64px)', paddingRight: 'clamp(20px, 5vw, 64px)' }}>
-        <div className="max-w-2xl">
-          <AnimatePresence mode="wait">
-            <m.div
-              key={current.id}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              {/* Meta info */}
-              <div className="flex items-center gap-2 mb-3 text-sm text-white/50">
-                {contentRating && (
-                  <span className="inline-block border border-white/30 rounded px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-white/70 leading-none">
-                    {contentRating}
-                  </span>
-                )}
-                {year && <span>{year}</span>}
-                {genres.length > 0 && (
-                  <>
-                    <span className="text-white/20">|</span>
-                    <span>{genres.join(' \u00B7 ')}</span>
-                  </>
-                )}
-                {displayScore != null && displayScore > 0 && (
-                  <>
-                    <span className="text-white/20">|</span>
-                    <span
-                      className="inline-flex items-center gap-1 font-bold"
-                      style={{ color: getRatingHex(displayScore) }}
-                    >
-                      <Star size={12} className="fill-current" />
-                      {displayScore.toFixed(1)}
+        <div className="flex items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <AnimatePresence mode="wait">
+              <m.div
+                key={current.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                {/* Meta info */}
+                <div className="flex items-center gap-2 mb-3 text-sm text-white/50">
+                  {contentRating && (
+                    <span className="inline-block border border-white/30 rounded px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-white/70 leading-none">
+                      {contentRating}
                     </span>
-                  </>
+                  )}
+                  {year && <span>{year}</span>}
+                  {genres.length > 0 && (
+                    <>
+                      <span className="text-white/20">|</span>
+                      <span>{genres.join(' \u00B7 ')}</span>
+                    </>
+                  )}
+                  {displayScore != null && displayScore > 0 && (
+                    <>
+                      <span className="text-white/20">|</span>
+                      <span
+                        className="inline-flex items-center gap-1 font-bold"
+                        style={{ color: getRatingHex(displayScore) }}
+                      >
+                        <Star size={12} className="fill-current" />
+                        {displayScore.toFixed(1)}
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-white leading-[1.1] mb-3 drop-shadow-lg">
+                  {title}
+                </h2>
+
+                {!trailerPlaying && current.overview && (
+                  <p className="text-[15px] text-white/55 line-clamp-3 mb-6 max-w-xl leading-relaxed">
+                    {current.overview}
+                  </p>
                 )}
-              </div>
 
-              <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-white leading-[1.1] mb-3 drop-shadow-lg">
-                {title}
-              </h2>
-
-              {/* Hide overview when trailer is playing for cleaner look */}
-              {!trailerPlaying && current.overview && (
-                <p className="text-[15px] text-white/55 line-clamp-3 mb-6 max-w-xl leading-relaxed">
-                  {current.overview}
-                </p>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-3 mt-6">
-                <button
-                  onClick={() => router.push(`/details/${mt}/${current.id}`)}
-                  className="inline-flex items-center gap-2.5 bg-white hover:bg-white/90 text-black rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95 shadow-lg shadow-black/20"
-                >
-                  <Play size={18} fill="black" />
-                  Play
-                </button>
-                <button
-                  onClick={() => router.push(`/details/${mt}/${current.id}`)}
-                  className="inline-flex items-center gap-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95"
-                >
-                  <Info size={18} />
-                  More Info
-                </button>
-
-                {/* Mute/unmute button — only when trailer is playing */}
-                {trailerPlaying && (
-                  <m.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => {
-                      setMuted((prev) => !prev);
-                      // Reload iframe with new mute state
-                      if (iframeRef.current) {
-                        const src = iframeRef.current.src;
-                        iframeRef.current.src = src.replace(
-                          /mute=\d/,
-                          `mute=${muted ? 0 : 1}`
-                        );
-                      }
-                    }}
-                    className="ml-auto w-10 h-10 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/10 transition-colors"
+                {/* Action buttons */}
+                <div className="flex items-center gap-3 mt-6">
+                  <button
+                    onClick={() => router.push(`/details/${mt}/${current.id}`)}
+                    className="inline-flex items-center gap-2.5 bg-white hover:bg-white/90 text-black rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95 shadow-lg shadow-black/20"
                   >
-                    {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                  </m.button>
-                )}
-              </div>
+                    <Play size={18} fill="black" />
+                    Play
+                  </button>
+                  <button
+                    onClick={() => router.push(`/details/${mt}/${current.id}`)}
+                    className="inline-flex items-center gap-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95"
+                  >
+                    <Info size={18} />
+                    More Info
+                  </button>
+                </div>
+              </m.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Trailer controls — right side */}
+          {trailerPlaying && (
+            <m.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center gap-2 shrink-0 mb-2"
+            >
+              <button
+                onClick={togglePause}
+                className="w-11 h-11 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/15 transition-colors"
+                title={paused ? 'Play trailer' : 'Pause trailer'}
+              >
+                {paused ? <Play size={18} fill="white" className="ml-0.5" /> : <Pause size={18} />}
+              </button>
+              <button
+                onClick={toggleMute}
+                className="w-11 h-11 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/15 transition-colors"
+                title={muted ? 'Unmute' : 'Mute'}
+              >
+                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </button>
             </m.div>
-          </AnimatePresence>
+          )}
         </div>
       </div>
 
