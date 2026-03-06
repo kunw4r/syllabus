@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Library, Eye, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { getLibrary } from '@/lib/api/library';
+import { getLibrary, removeFromLibrary } from '@/lib/api/library';
 import {
   getTrendingMovies, getTrendingTV,
   getUpcomingMovies, getNowPlayingMovies, getPopularMovies, getTopRatedMovies,
@@ -248,6 +248,10 @@ export default function Home() {
                   mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
                   showAdd={false}
                   size="small"
+                  onRemove={async () => {
+                    await removeFromLibrary(item.id);
+                    setLibrary((prev) => prev.filter((l) => l.id !== item.id));
+                  }}
                 />
               ))}
             </ScrollRow>

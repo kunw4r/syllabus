@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Plus, Check, Play, Info } from 'lucide-react';
+import { Star, Plus, Check, Play, Info, Trash2 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
@@ -38,6 +38,7 @@ interface MediaCardProps {
   showAdd?: boolean;
   variant?: 'landscape' | 'poster';
   size?: 'default' | 'small';
+  onRemove?: () => void;
 }
 
 export default function MediaCard({
@@ -46,6 +47,7 @@ export default function MediaCard({
   showAdd = true,
   variant,
   size = 'default',
+  onRemove,
 }: MediaCardProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -219,6 +221,15 @@ export default function MediaCard({
                       <Check size={16} className="text-green-400" />
                     </div>
                   ) : null}
+                  {onRemove && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                      className="w-8 h-8 rounded-full border-2 border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-red-400 hover:bg-red-500/20 transition-all active:scale-90"
+                      title="Remove"
+                    >
+                      <Trash2 size={14} className="text-white hover:text-red-400" />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => { e.stopPropagation(); handleClick(); }}
                     className="w-8 h-8 rounded-full border-2 border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/60 transition-all"
