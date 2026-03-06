@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Award, Film, Tv } from 'lucide-react';
-import { TMDB_IMG } from '@/lib/constants';
+import { Star, Award, Film, Tv, Grid3X3, Rows3 } from 'lucide-react';
+import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 import {
   enrichChart,
@@ -88,30 +88,39 @@ async function fetchTmdbDetails(
   return results;
 }
 
+// ─── View layout type ───
+
+type ViewLayout = 'poster' | 'landscape';
+
 // ─── AwardCard sub-component ───
 
 function AwardCard({
   entry,
   mediaType,
+  layout,
 }: {
   entry: EnrichedEntry;
   mediaType: 'movie' | 'tv';
+  layout: ViewLayout;
 }) {
   const router = useRouter();
   const [imgBroken, setImgBroken] = useState(false);
 
   const rating = entry.unified_rating ?? entry.vote_average;
   const poster = entry.poster_path ? `${TMDB_IMG}${entry.poster_path}` : null;
+  const backdrop = entry.backdrop_path ? `${TMDB_IMG_ORIGINAL}${entry.backdrop_path}` : null;
+  const isLandscape = layout === 'landscape';
+  const displayImg = isLandscape && backdrop ? backdrop : poster;
 
   return (
     <div
       className="group relative cursor-pointer"
       onClick={() => router.push(`/details/${mediaType}/${entry.tmdb_id}`)}
     >
-      <div className="relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/[0.06] group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300">
-        {poster && !imgBroken ? (
+      <div className={`relative ${isLandscape ? 'aspect-[16/9]' : 'aspect-[2/3]'} rounded-xl overflow-hidden ring-1 ring-white/[0.06] group-hover:ring-accent/50 group-hover:scale-[1.02] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300`}>
+        {displayImg && !imgBroken ? (
           <img
-            src={poster}
+            src={displayImg}
             alt={entry.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={() => setImgBroken(true)}
@@ -124,12 +133,12 @@ function AwardCard({
         )}
 
         {/* Bottom gradient */}
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className={`absolute inset-x-0 bottom-0 ${isLandscape ? 'h-3/4' : 'h-2/3'} bg-gradient-to-t from-black/90 via-black/40 to-transparent`} />
 
         {/* Year badge — top-left */}
-        <div className="absolute top-2.5 left-2.5">
-          <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 text-xs font-bold text-gold">
-            <Award size={12} className="text-gold" />
+        <div className={`absolute ${isLandscape ? 'top-3 left-3' : 'top-2.5 left-2.5'}`}>
+          <span className={`inline-flex items-center gap-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg ${isLandscape ? 'px-2.5 py-1 text-sm' : 'px-2 py-0.5 text-xs'} font-bold text-gold`}>
+            <Award size={isLandscape ? 14 : 12} className="text-gold" />
             {entry.year}
           </span>
         </div>
@@ -137,21 +146,26 @@ function AwardCard({
         {/* Rating badge — top-right */}
         {rating != null && rating > 0 && (
           <div
-            className="absolute top-2.5 right-2.5 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5"
+            className={`absolute ${isLandscape ? 'top-3 right-3 px-2 py-1' : 'top-2.5 right-2.5 px-1.5 py-0.5'} flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg`}
             style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
-            <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-xs font-bold" style={{ color: getRatingHex(Number(rating)) }}>
+            <Star size={isLandscape ? 12 : 10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className={`${isLandscape ? 'text-sm' : 'text-xs'} font-bold`} style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
           </div>
         )}
 
-        {/* Title — bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <p className="font-bold text-sm text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+        {/* Title + overview — bottom */}
+        <div className={`absolute bottom-0 left-0 right-0 ${isLandscape ? 'p-4' : 'p-3'}`}>
+          <p className={`font-bold ${isLandscape ? 'text-base sm:text-lg' : 'text-sm'} text-white truncate drop-shadow-lg group-hover:text-accent transition-colors`}>
             {entry.title}
           </p>
+          {isLandscape && entry.overview && (
+            <p className="text-xs text-white/40 mt-1 line-clamp-2 leading-relaxed">
+              {entry.overview}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -163,6 +177,7 @@ function AwardCard({
 export default function AwardsPage() {
   const [tab, setTab] = useState<string>('oscars');
   const [emmyTab, setEmmyTab] = useState<string>('drama');
+  const [viewLayout, setViewLayout] = useState<ViewLayout>('poster');
   const [awardsData, setAwardsData] = useState<any>(null);
   const [items, setItems] = useState<EnrichedEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -291,14 +306,32 @@ export default function AwardsPage() {
         </div>
       )}
 
-      {/* Category label */}
-      <p className="text-xs text-white/20 mb-6">
-        {tab === 'oscars'
-          ? 'Academy Award for Best Picture'
-          : emmyTab === 'drama'
-            ? 'Primetime Emmy for Outstanding Drama Series'
-            : 'Primetime Emmy for Outstanding Comedy Series'}
-      </p>
+      {/* Category label + View Toggle */}
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs text-white/20">
+          {tab === 'oscars'
+            ? 'Academy Award for Best Picture'
+            : emmyTab === 'drama'
+              ? 'Primetime Emmy for Outstanding Drama Series'
+              : 'Primetime Emmy for Outstanding Comedy Series'}
+        </p>
+        <div className="flex gap-1 shrink-0 bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06]">
+          <button
+            onClick={() => setViewLayout('poster')}
+            className={`p-1.5 rounded-md transition-all ${viewLayout === 'poster' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
+            title="Poster view"
+          >
+            <Grid3X3 size={16} />
+          </button>
+          <button
+            onClick={() => setViewLayout('landscape')}
+            className={`p-1.5 rounded-md transition-all ${viewLayout === 'landscape' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
+            title="Landscape view"
+          >
+            <Rows3 size={16} />
+          </button>
+        </div>
+      </div>
 
       {/* Progress bar */}
       {progress !== null && progress < 100 && (
@@ -318,9 +351,12 @@ export default function AwardsPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 10 }, (_, i) => (
-            <div key={i} className="aspect-[2/3] rounded-xl bg-white/[0.02] animate-pulse" />
+        <div className={viewLayout === 'poster'
+          ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
+          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        }>
+          {Array.from({ length: viewLayout === 'poster' ? 10 : 9 }, (_, i) => (
+            <div key={i} className={`${viewLayout === 'poster' ? 'aspect-[2/3]' : 'aspect-[16/9]'} rounded-xl bg-white/[0.02] animate-pulse`} />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -328,12 +364,16 @@ export default function AwardsPage() {
           <p className="text-lg">No data available</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className={viewLayout === 'poster'
+          ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
+          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        }>
           {items.map((entry) => (
             <AwardCard
               key={`${entry.year}-${entry.tmdb_id}`}
               entry={entry}
               mediaType={mediaType as 'movie' | 'tv'}
+              layout={viewLayout}
             />
           ))}
         </div>

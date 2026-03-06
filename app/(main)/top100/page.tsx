@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Star, Trophy, Film, Tv, BookOpen, Users } from 'lucide-react';
+import { Star, Trophy, Film, Tv, BookOpen, Grid3X3, Rows3 } from 'lucide-react';
 import { SkeletonRow } from '@/components/ui/SkeletonCard';
 import BookCover from '@/components/ui/BookCover';
 import { getTop100Movies, getTop100TV } from '@/lib/api/tmdb';
@@ -13,7 +13,7 @@ import {
   getChartAge,
   applyStoredScores,
 } from '@/lib/scoring';
-import { MOVIE_GENRES, TV_GENRES, TMDB_IMG } from '@/lib/constants';
+import { MOVIE_GENRES, TV_GENRES, TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 // ─── Genre lists ───
@@ -53,6 +53,10 @@ const TABS = [
   { key: 'books', label: 'Books', icon: BookOpen },
 ] as const;
 
+// ─── View layout type ───
+
+type ViewLayout = 'poster' | 'landscape';
+
 // ─── RankedCard sub-component ───
 
 function RankedCard({
@@ -61,14 +65,18 @@ function RankedCard({
   title,
   year,
   poster,
+  backdrop,
   mediaType,
+  layout,
 }: {
   rank: number;
   item: any;
   title: string;
   year: string;
   poster: string | null;
+  backdrop: string | null;
   mediaType: string;
+  layout: ViewLayout;
 }) {
   const router = useRouter();
   const [imgBroken, setImgBroken] = useState(false);
@@ -87,7 +95,6 @@ function RankedCard({
     }
   };
 
-  // Top 3 get gold/silver/bronze ring
   const ringClass =
     rank === 1 ? 'ring-yellow-500/40'
     : rank === 2 ? 'ring-gray-300/30'
@@ -100,13 +107,15 @@ function RankedCard({
     : rank === 3 ? 'text-amber-500'
     : 'text-white/60';
 
+  const isLandscape = layout === 'landscape';
+  const displayImg = isLandscape && !isBook && backdrop ? backdrop : poster;
+
   return (
     <div
       className="group relative cursor-pointer"
       onClick={handleClick}
     >
-      {/* Poster */}
-      <div className={`relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ${ringClass} group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300`}>
+      <div className={`relative ${isLandscape ? 'aspect-[16/9]' : 'aspect-[2/3]'} rounded-xl overflow-hidden ring-1 ${ringClass} group-hover:ring-accent/50 group-hover:scale-[1.02] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300`}>
         {isBook ? (
           <div className="absolute inset-0 bg-dark-700 flex items-center justify-center">
             <BookCover
@@ -115,9 +124,9 @@ function RankedCard({
               className="h-full w-auto max-w-[90%] object-contain"
             />
           </div>
-        ) : poster && !imgBroken ? (
+        ) : displayImg && !imgBroken ? (
           <img
-            src={poster}
+            src={displayImg}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={() => setImgBroken(true)}
@@ -130,27 +139,27 @@ function RankedCard({
         )}
 
         {/* Bottom gradient */}
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className={`absolute inset-x-0 bottom-0 ${isLandscape ? 'h-3/4' : 'h-2/3'} bg-gradient-to-t from-black/90 via-black/40 to-transparent`} />
 
         {/* Rating badge — top-right */}
         {rating > 0 && (
           <div
-            className="absolute top-2.5 right-2.5 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5"
+            className={`absolute ${isLandscape ? 'top-3 right-3 px-2 py-1' : 'top-2.5 right-2.5 px-1.5 py-0.5'} flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg`}
             style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
-            <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-xs font-bold" style={{ color: getRatingHex(Number(rating)) }}>
+            <Star size={isLandscape ? 12 : 10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className={`${isLandscape ? 'text-sm' : 'text-xs'} font-bold`} style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
           </div>
         )}
 
-        {/* Rank number — bottom-left, bold with strong shadow for readability */}
-        <div className="absolute bottom-2 left-2.5">
+        {/* Rank number */}
+        <div className={`absolute ${isLandscape ? 'bottom-3 left-4' : 'bottom-2 left-2.5'}`}>
           <span
-            className={`text-4xl sm:text-5xl font-black ${rankColor} leading-none`}
+            className={`${isLandscape ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'} font-black ${rankColor} leading-none`}
             style={{
-              textShadow: '0 0 12px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.8), 0 0 0 2px rgba(0,0,0,0.6)',
+              textShadow: '0 0 16px rgba(0,0,0,1), 0 2px 10px rgba(0,0,0,0.9), 0 0 0 3px rgba(0,0,0,0.7)',
               paintOrder: 'stroke fill',
               WebkitTextStroke: rank <= 3 ? 'none' : '1px rgba(255,255,255,0.15)',
             }}
@@ -159,9 +168,9 @@ function RankedCard({
           </span>
         </div>
 
-        {/* Title + year — bottom */}
-        <div className="absolute bottom-2 left-14 sm:left-16 right-2.5">
-          <p className="font-bold text-sm text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+        {/* Title + year */}
+        <div className={`absolute ${isLandscape ? 'bottom-3 left-20 sm:left-24' : 'bottom-2 left-14 sm:left-16'} right-3`}>
+          <p className={`font-bold ${isLandscape ? 'text-base sm:text-lg' : 'text-sm'} text-white truncate drop-shadow-lg group-hover:text-accent transition-colors`}>
             {title}
           </p>
           <p className="text-[11px] text-white/40 mt-0.5 truncate">
@@ -212,6 +221,7 @@ function Top100Content() {
     const parsed = Number(g);
     return isNaN(parsed) ? g : parsed;
   });
+  const [viewLayout, setViewLayout] = useState<ViewLayout>('poster');
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<number | null>(null);
@@ -356,21 +366,39 @@ function Top100Content() {
         ))}
       </div>
 
-      {/* Genre Filter Pills */}
-      <div className="flex flex-wrap gap-1.5 mb-6">
-        {genres.map((g) => (
+      {/* Genre Filter Pills + View Toggle */}
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <div className="flex flex-wrap gap-1.5">
+          {genres.map((g) => (
+            <button
+              key={g.id ?? 'all'}
+              onClick={() => setGenre(g.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                genre === g.id
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'bg-white/[0.02] text-white/35 hover:text-white/60 hover:bg-white/[0.05] border border-transparent'
+              }`}
+            >
+              {g.name}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 shrink-0 bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06]">
           <button
-            key={g.id ?? 'all'}
-            onClick={() => setGenre(g.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
-              genre === g.id
-                ? 'bg-white/10 text-white border border-white/20'
-                : 'bg-white/[0.02] text-white/35 hover:text-white/60 hover:bg-white/[0.05] border border-transparent'
-            }`}
+            onClick={() => setViewLayout('poster')}
+            className={`p-1.5 rounded-md transition-all ${viewLayout === 'poster' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
+            title="Poster view"
           >
-            {g.name}
+            <Grid3X3 size={16} />
           </button>
-        ))}
+          <button
+            onClick={() => setViewLayout('landscape')}
+            className={`p-1.5 rounded-md transition-all ${viewLayout === 'landscape' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
+            title="Landscape view"
+          >
+            <Rows3 size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -390,9 +418,12 @@ function Top100Content() {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 10 }, (_, i) => (
-            <div key={i} className="aspect-[2/3] rounded-xl bg-white/[0.02] animate-pulse" />
+        <div className={viewLayout === 'poster'
+          ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
+          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        }>
+          {Array.from({ length: viewLayout === 'poster' ? 10 : 9 }, (_, i) => (
+            <div key={i} className={`${viewLayout === 'poster' ? 'aspect-[2/3]' : 'aspect-[16/9]'} rounded-xl bg-white/[0.02] animate-pulse`} />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -401,7 +432,10 @@ function Top100Content() {
           <p className="text-sm mt-1">Try a different category</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className={viewLayout === 'poster'
+          ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
+          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        }>
           {items.map((item, i) => {
             const title = item.title || item.name;
             const isBook = mediaType === 'book';
@@ -413,6 +447,9 @@ function Top100Content() {
               : item.poster_path
                 ? `${TMDB_IMG}${item.poster_path}`
                 : null;
+            const backdrop = !isBook && item.backdrop_path
+              ? `${TMDB_IMG_ORIGINAL}${item.backdrop_path}`
+              : null;
 
             return (
               <RankedCard
@@ -422,7 +459,9 @@ function Top100Content() {
                 title={title}
                 year={year}
                 poster={poster}
+                backdrop={backdrop}
                 mediaType={mediaType}
+                layout={viewLayout}
               />
             );
           })}
