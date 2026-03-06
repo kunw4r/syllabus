@@ -35,9 +35,9 @@ export function getRatingBg(): string {
 // Neon glow around the badge — colored halo on the dark glass
 export function getRatingGlow(val: number): string {
   const hex = getRatingHex(val);
-  if (val >= 10) return `0 0 16px ${hex}aa, 0 0 5px ${hex}cc`;
-  if (val >= 9) return `0 0 12px ${hex}66, 0 0 4px ${hex}88`;
-  return `0 0 8px ${hex}33`;
+  if (val >= 10) return `0 0 24px ${hex}cc, 0 0 8px ${hex}dd, 0 0 2px ${hex}`;
+  if (val >= 9) return `0 0 18px ${hex}99, 0 0 6px ${hex}bb`;
+  return `0 0 14px ${hex}66, 0 0 4px ${hex}88`;
 }
 
 // Text glow for the animated rating number — makes high scores look electric
