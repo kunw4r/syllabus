@@ -839,7 +839,10 @@ function LibraryGridCard({
 
   const isLandscape = layout === 'landscape';
   const aspectClass = isLandscape ? 'aspect-[16/9]' : 'aspect-[2/3]';
-  const displayImg = isLandscape && backdropUrl ? backdropUrl : item.poster_url;
+  const hasBackdrop = isLandscape && backdropUrl;
+  const displayImg = hasBackdrop ? backdropUrl : item.poster_url;
+  // Landscape without backdrop: center poster over blurred bg
+  const posterFallbackLandscape = isLandscape && !backdropUrl && item.poster_url;
 
   return (
     <div
@@ -847,7 +850,26 @@ function LibraryGridCard({
       onClick={() => onCardClick(item)}
     >
       <div className="relative">
-        {displayImg ? (
+        {posterFallbackLandscape ? (
+          <div className={`relative w-full ${aspectClass} bg-dark-800`}>
+            <img
+              src={item.poster_url}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-40"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <img
+                src={item.poster_url}
+                alt={item.title}
+                crossOrigin="anonymous"
+                onLoad={handleImgLoad}
+                className="h-full w-auto max-w-[45%] object-contain drop-shadow-2xl"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        ) : displayImg ? (
           <img
             src={displayImg}
             alt={item.title}
