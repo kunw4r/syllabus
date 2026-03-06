@@ -1039,7 +1039,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         poster_url: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
         external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
         genres: data.genres?.map((g: any) => g.name).join(', '),
-        status: 'plan_to_watch',
+        status: 'want',
       });
       setQuickAdded(true);
       toast('Added to watchlist!', 'success');
