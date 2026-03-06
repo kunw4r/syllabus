@@ -39,6 +39,29 @@ export function getMovieDetails(id: number | string) {
   return tmdbCached(`/movie/${id}`, 'append_to_response=recommendations,credits,watch/providers,external_ids,videos');
 }
 
+/** Fetch YouTube trailer key for a movie (returns null if none found) */
+export async function getMovieTrailer(id: number | string): Promise<string | null> {
+  const data = await tmdbCached(`/movie/${id}/videos`);
+  const videos = data.results || [];
+  // Prefer official YouTube trailers, then teasers
+  const trailer =
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer' && v.official) ||
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer') ||
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Teaser');
+  return trailer?.key || null;
+}
+
+/** Fetch YouTube trailer key for a TV show (returns null if none found) */
+export async function getTVTrailer(id: number | string): Promise<string | null> {
+  const data = await tmdbCached(`/tv/${id}/videos`);
+  const videos = data.results || [];
+  const trailer =
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer' && v.official) ||
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer') ||
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Teaser');
+  return trailer?.key || null;
+}
+
 // ─── TV Shows ───
 
 export function getTrendingTV() {

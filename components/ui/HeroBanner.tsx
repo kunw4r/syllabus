@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Info, Play, Plus } from 'lucide-react';
+import { Star, Info, Play, Volume2, VolumeX } from 'lucide-react';
 import { AnimatePresence, m } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { extractDominantColor } from '@/lib/utils/color-extract';
-import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
+import { getRatingHex } from '@/lib/utils/rating-colors';
+import { getMovieTrailer, getTVTrailer } from '@/lib/api/tmdb';
 
 interface HeroItem {
   id: number;
@@ -35,14 +36,62 @@ const GENRE_MAP: Record<number, string> = {
   10759: 'Action & Adventure', 10765: 'Sci-Fi & Fantasy',
 };
 
+const TRAILER_DELAY = 3000; // ms before trailer starts
+const SLIDE_INTERVAL = 8000; // ms per slide when no trailer
+
 export default function HeroBanner({ items }: HeroBannerProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [ambientColor, setAmbientColor] = useState('233, 69, 96');
   const [progressKey, setProgressKey] = useState(0);
 
+  // Trailer state
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [trailerReady, setTrailerReady] = useState(false);
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const trailerTimerRef = useRef<NodeJS.Timeout>(undefined);
+
   const heroItems = items.filter((i) => i.backdrop_path).slice(0, 5);
 
+  // Fetch trailer for current item
+  useEffect(() => {
+    setTrailerKey(null);
+    setTrailerReady(false);
+    setShowTrailer(false);
+
+    if (heroItems.length === 0) return;
+    const current = heroItems[currentIndex];
+    if (!current) return;
+
+    let cancelled = false;
+    const mt = current.media_type || 'movie';
+    const fetchTrailer = mt === 'tv' ? getTVTrailer : getMovieTrailer;
+
+    fetchTrailer(current.id).then((key) => {
+      if (!cancelled && key) {
+        setTrailerKey(key);
+      }
+    }).catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [currentIndex, heroItems.length]);
+
+  // Show trailer after delay once key is available
+  useEffect(() => {
+    if (!trailerKey) return;
+
+    trailerTimerRef.current = setTimeout(() => {
+      setShowTrailer(true);
+    }, TRAILER_DELAY);
+
+    return () => {
+      if (trailerTimerRef.current) clearTimeout(trailerTimerRef.current);
+    };
+  }, [trailerKey]);
+
+  // Auto-advance (only when trailer is NOT playing)
   const advance = useCallback(() => {
     if (heroItems.length <= 1) return;
     setCurrentIndex((i) => (i + 1) % heroItems.length);
@@ -51,10 +100,12 @@ export default function HeroBanner({ items }: HeroBannerProps) {
 
   useEffect(() => {
     if (heroItems.length <= 1) return;
-    const interval = setInterval(advance, 8000);
+    if (showTrailer && trailerReady) return; // Don't auto-advance during trailer
+    const interval = setInterval(advance, SLIDE_INTERVAL);
     return () => clearInterval(interval);
-  }, [advance, heroItems.length]);
+  }, [advance, heroItems.length, showTrailer, trailerReady]);
 
+  // Ambient color extraction
   useEffect(() => {
     const current = heroItems[currentIndex];
     if (current?.backdrop_path) {
@@ -63,6 +114,11 @@ export default function HeroBanner({ items }: HeroBannerProps) {
       );
     }
   }, [currentIndex, heroItems]);
+
+  const goToSlide = (i: number) => {
+    setCurrentIndex(i);
+    setProgressKey((k) => k + 1);
+  };
 
   if (heroItems.length === 0) return null;
 
@@ -73,6 +129,8 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   const genres = (current.genre_ids || []).slice(0, 3).map((id) => GENRE_MAP[id]).filter(Boolean);
   const displayScore = current.unified_rating ?? current.vote_average;
 
+  const trailerPlaying = showTrailer && trailerReady;
+
   return (
     <div className="relative w-full overflow-hidden -mx-[clamp(20px,5vw,64px)] px-0" style={{ width: 'calc(100% + 2 * clamp(20px, 5vw, 64px))' }}>
       {/* Ambient glow */}
@@ -81,7 +139,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
         style={{ backgroundColor: `rgb(${ambientColor})` }}
       />
 
-      {/* Backdrop images */}
+      {/* Backdrop images + trailer */}
       <div className="relative h-[75vh] min-h-[450px] max-h-[800px]">
         <AnimatePresence mode="sync">
           <m.div
@@ -92,6 +150,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
             transition={{ duration: 1.2, ease: 'easeInOut' }}
             className="absolute inset-0"
           >
+            {/* Backdrop image — always rendered underneath */}
             <img
               src={`${TMDB_IMG_ORIGINAL}${current.backdrop_path}`}
               alt={title}
@@ -105,15 +164,39 @@ export default function HeroBanner({ items }: HeroBannerProps) {
           </m.div>
         </AnimatePresence>
 
+        {/* YouTube trailer iframe */}
+        {showTrailer && trailerKey && (
+          <div
+            className={`absolute inset-0 z-[1] transition-opacity duration-1000 ${
+              trailerReady ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <div className="absolute inset-0" style={{ transform: 'scale(1.2)' }}>
+              <iframe
+                ref={iframeRef}
+                src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&showinfo=0&rel=0&modestbranding=1&loop=1&playlist=${trailerKey}&playsinline=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                className="w-full h-full pointer-events-none"
+                style={{ border: 'none' }}
+                onLoad={() => {
+                  // Small delay so video has time to buffer
+                  setTimeout(() => setTrailerReady(true), 800);
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Premium gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-[50%] bg-gradient-to-t from-dark-900 via-dark-900/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-dark-900/70 via-transparent to-transparent" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-[50%] z-[2] bg-gradient-to-t from-dark-900 via-dark-900/80 to-transparent" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-dark-900/70 via-transparent to-transparent" />
         {/* Vignette */}
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(14,17,23,0.3) 100%)' }} />
+        <div className="absolute inset-0 z-[2]" style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(14,17,23,0.3) 100%)' }} />
         {/* Ambient color tint */}
         <div
-          className="absolute inset-0 opacity-15 transition-colors duration-[1200ms]"
+          className="absolute inset-0 z-[2] opacity-15 transition-colors duration-[1200ms]"
           style={{
             background: `radial-gradient(ellipse at 30% 80%, rgb(${ambientColor}) 0%, transparent 70%)`,
           }}
@@ -121,7 +204,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
       </div>
 
       {/* Content overlay */}
-      <div className="absolute bottom-0 left-0 right-0 pb-16 sm:pb-20" style={{ paddingLeft: 'clamp(20px, 5vw, 64px)', paddingRight: 'clamp(20px, 5vw, 64px)' }}>
+      <div className="absolute bottom-0 left-0 right-0 z-[3] pb-16 sm:pb-20" style={{ paddingLeft: 'clamp(20px, 5vw, 64px)', paddingRight: 'clamp(20px, 5vw, 64px)' }}>
         <div className="max-w-2xl">
           <AnimatePresence mode="wait">
             <m.div
@@ -158,14 +241,15 @@ export default function HeroBanner({ items }: HeroBannerProps) {
                 {title}
               </h2>
 
-              {current.overview && (
+              {/* Hide overview when trailer is playing for cleaner look */}
+              {!trailerPlaying && current.overview && (
                 <p className="text-[15px] text-white/55 line-clamp-3 mb-6 max-w-xl leading-relaxed">
                   {current.overview}
                 </p>
               )}
 
               {/* Action buttons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mt-6">
                 <button
                   onClick={() => router.push(`/details/${mt}/${current.id}`)}
                   className="inline-flex items-center gap-2.5 bg-white hover:bg-white/90 text-black rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95 shadow-lg shadow-black/20"
@@ -180,6 +264,28 @@ export default function HeroBanner({ items }: HeroBannerProps) {
                   <Info size={18} />
                   More Info
                 </button>
+
+                {/* Mute/unmute button — only when trailer is playing */}
+                {trailerPlaying && (
+                  <m.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    onClick={() => {
+                      setMuted((prev) => !prev);
+                      // Reload iframe with new mute state
+                      if (iframeRef.current) {
+                        const src = iframeRef.current.src;
+                        iframeRef.current.src = src.replace(
+                          /mute=\d/,
+                          `mute=${muted ? 0 : 1}`
+                        );
+                      }
+                    }}
+                    className="ml-auto w-10 h-10 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/10 transition-colors"
+                  >
+                    {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  </m.button>
+                )}
               </div>
             </m.div>
           </AnimatePresence>
@@ -188,14 +294,11 @@ export default function HeroBanner({ items }: HeroBannerProps) {
 
       {/* Progress indicators */}
       {heroItems.length > 1 && (
-        <div className="absolute bottom-6 right-0 flex gap-2 items-center" style={{ paddingRight: 'clamp(20px, 5vw, 64px)' }}>
+        <div className="absolute bottom-6 right-0 z-[3] flex gap-2 items-center" style={{ paddingRight: 'clamp(20px, 5vw, 64px)' }}>
           {heroItems.map((_, i) => (
             <button
               key={i}
-              onClick={() => {
-                setCurrentIndex(i);
-                setProgressKey((k) => k + 1);
-              }}
+              onClick={() => goToSlide(i)}
               className="relative h-1 rounded-full overflow-hidden transition-all duration-300"
               style={{ width: i === currentIndex ? '36px' : '12px' }}
             >
