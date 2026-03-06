@@ -395,9 +395,11 @@ function BookDetailView({ workKey }: { workKey: string }) {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-900" />
       </div>
 
-      <button onClick={() => router.back()}
-        className="inline-flex items-center gap-1 text-white/50 hover:text-white mb-8 transition-colors">
-        <ChevronLeft size={22} strokeWidth={2.5} /> Back
+      <button
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-medium mb-8"
+      >
+        <ChevronLeft size={16} strokeWidth={2.5} /> Back
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
@@ -1062,19 +1064,19 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       {/* Full-page transparent backdrop */}
       <HeroBackdrop backdropPath={data.backdrop_path} />
 
-      {/* Back button + spacer */}
       <div className="h-4" />
-      <div className="px-4 sm:px-6 lg:px-8 mb-4">
-        <button onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-white/50 hover:text-white transition-colors text-sm">
-          <ChevronLeft size={18} strokeWidth={2.5} /> Back
-        </button>
-      </div>
 
       {/* ── Hero Image Container (full-bleed) ── */}
       <div className="px-2 sm:px-4 lg:px-6">
         <FadeInView yOffset={30}>
           <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] lg:aspect-[16/7] rounded-3xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
+            {/* Back button — overlaid top-left on hero */}
+            <button
+              onClick={() => router.back()}
+              className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-black/60 transition-all text-sm font-medium"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} /> Back
+            </button>
             {data.backdrop_path ? (
               <img
                 src={`${TMDB_IMG_ORIGINAL}${data.backdrop_path}`}
