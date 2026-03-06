@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, Plus, Check, Play, Info, Trash2 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
-import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
+import { getRatingBg, getRatingGlow, getRatingHex, sampleImageBrightness } from '@/lib/utils/rating-colors';
 
 interface MediaItem {
   id?: number | string;
@@ -52,6 +52,11 @@ export default function MediaCard({
   const { user } = useAuth();
   const router = useRouter();
   const [added, setAdded] = useState(false);
+  const [isBright, setIsBright] = useState(false);
+
+  const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    setIsBright(sampleImageBrightness(e.currentTarget, 'top-right'));
+  }, []);
 
   const isBook = mediaType === 'book';
   // Default: landscape for movie/tv, poster for books
@@ -158,6 +163,8 @@ export default function MediaCard({
                 src={displayImg}
                 alt={title}
                 className="w-full h-full object-cover"
+                crossOrigin="anonymous"
+                onLoad={handleImgLoad}
                 loading="lazy"
               />
             ) : (
@@ -170,7 +177,7 @@ export default function MediaCard({
             {rating != null && (
               <div
                 className="absolute top-2 right-2 rounded-md px-1.5 py-0.5 flex items-center gap-1 backdrop-blur-md border border-white/10 z-10 group-hover/card:opacity-0 transition-opacity duration-200"
-                style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+                style={{ background: getRatingBg(Number(rating), isBright), boxShadow: getRatingGlow(Number(rating)) }}
               >
                 <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
                 <span className="text-[11px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
@@ -287,6 +294,8 @@ export default function MediaCard({
             src={poster}
             alt={title}
             className="w-full h-full object-cover"
+            crossOrigin="anonymous"
+            onLoad={handleImgLoad}
             loading="lazy"
           />
         ) : (
@@ -303,7 +312,7 @@ export default function MediaCard({
         {rating != null && (
           <div
             className="absolute top-2 right-2 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10"
-            style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+            style={{ background: getRatingBg(Number(rating), isBright), boxShadow: getRatingGlow(Number(rating)) }}
           >
             <Star size={9} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
             <span className="text-[11px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>

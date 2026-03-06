@@ -14,7 +14,7 @@ import {
   applyStoredScores,
 } from '@/lib/scoring';
 import { MOVIE_GENRES, TV_GENRES, TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
-import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
+import { getRatingBg, getRatingGlow, getRatingHex, sampleImageBrightness } from '@/lib/utils/rating-colors';
 
 // ─── Genre lists ───
 
@@ -81,9 +81,10 @@ function RankedCard({
   const router = useRouter();
   const [imgBroken, setImgBroken] = useState(false);
   const [isBright, setIsBright] = useState(false);
+  const [isBrightTR, setIsBrightTR] = useState(false);
 
-  // Sample bottom-left brightness of the image to adapt rank number color
   const checkBrightness = useCallback((img: HTMLImageElement) => {
+    // Bottom-left for rank number
     try {
       const canvas = document.createElement('canvas');
       const size = 40;
@@ -91,7 +92,6 @@ function RankedCard({
       canvas.height = size;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      // Sample the bottom-left corner
       const sx = 0;
       const sy = img.naturalHeight - Math.min(img.naturalHeight * 0.35, img.naturalHeight);
       const sw = Math.min(img.naturalWidth * 0.3, img.naturalWidth);
@@ -101,14 +101,12 @@ function RankedCard({
       let totalLum = 0;
       const pixels = size * size;
       for (let i = 0; i < data.length; i += 4) {
-        // Perceived luminance
         totalLum += (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
       }
-      const avgLum = totalLum / pixels;
-      setIsBright(avgLum > 160);
-    } catch {
-      // CORS or other error — keep default
-    }
+      setIsBright(totalLum / pixels > 160);
+    } catch { /* CORS */ }
+    // Top-right for rating badge
+    setIsBrightTR(sampleImageBrightness(img, 'top-right'));
   }, []);
 
   const isBook = mediaType === 'book';
@@ -199,7 +197,7 @@ function RankedCard({
         {rating > 0 && (
           <div
             className={`absolute ${isLandscape ? 'top-3 right-3 px-2 py-1' : 'top-2.5 right-2.5 px-1.5 py-0.5'} flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg`}
-            style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+            style={{ background: getRatingBg(Number(rating), isBrightTR), boxShadow: getRatingGlow(Number(rating)) }}
           >
             <Star size={isLandscape ? 12 : 10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
             <span className={`${isLandscape ? 'text-sm' : 'text-xs'} font-bold`} style={{ color: getRatingHex(Number(rating)) }}>

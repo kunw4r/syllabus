@@ -27,6 +27,8 @@ import {
   CheckCircle2,
   Search,
   Flame,
+  Rows3,
+  Grid3X3,
 } from 'lucide-react';
 import { m, useSpring, useTransform } from 'framer-motion';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -46,40 +48,12 @@ import {
   getTVDetails,
 } from '@/lib/api/tmdb';
 import { TMDB_IMG } from '@/lib/constants';
-import { getRatingHex, getRatingBg, getRatingGlow, getUserRatingRed, getUserRatingGlow, getUserRatingBg } from '@/lib/utils/rating-colors';
+import { getRatingHex, getRatingBg, getRatingGlow, getUserRatingRed, getUserRatingGlow, getUserRatingBg, sampleImageBrightness } from '@/lib/utils/rating-colors';
 import { loadStaticScoreDB, getSyllabusScore, applyStoredScores } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 import DragDropShelf from '@/components/library/DragDropShelf';
 import VirtualShelf from '@/components/library/VirtualShelf';
-
-/* ================================================================
-   BRIGHTNESS SAMPLING — for adaptive badge tinting
-   ================================================================ */
-
-function sampleTopLeftBrightness(img: HTMLImageElement): boolean {
-  try {
-    const canvas = document.createElement('canvas');
-    const size = 30;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return false;
-    // Sample top-left quadrant where the badge sits
-    const sw = Math.min(img.naturalWidth * 0.3, img.naturalWidth);
-    const sh = Math.min(img.naturalHeight * 0.25, img.naturalHeight);
-    ctx.drawImage(img, 0, 0, sw, sh, 0, 0, size, size);
-    const data = ctx.getImageData(0, 0, size, size).data;
-    let totalLum = 0;
-    const pixels = size * size;
-    for (let i = 0; i < data.length; i += 4) {
-      totalLum += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-    }
-    return totalLum / pixels > 150;
-  } catch {
-    return false;
-  }
-}
 
 /* ================================================================
    STATS PANEL
@@ -847,10 +821,13 @@ function LibraryGridCard({
   onRemove: (id: string) => void;
   onRate: (item: any) => void;
 }) {
-  const [isBright, setIsBright] = useState(false);
+  const [brightTL, setBrightTL] = useState(false);
+  const [brightTR, setBrightTR] = useState(false);
 
   const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    setIsBright(sampleTopLeftBrightness(e.currentTarget));
+    const img = e.currentTarget;
+    setBrightTL(sampleImageBrightness(img, 'top-left'));
+    setBrightTR(sampleImageBrightness(img, 'top-right'));
   }, []);
 
   const ratingVal = Number(item.user_rating);
@@ -879,7 +856,7 @@ function LibraryGridCard({
 
         {/* External rating — top right */}
         {item.external_rating > 0 && (
-          <div className="absolute top-2.5 right-2.5 backdrop-blur-xl border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.external_rating)), boxShadow: getRatingGlow(Number(item.external_rating)) }}>
+          <div className="absolute top-2.5 right-2.5 backdrop-blur-xl border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold transition-colors duration-300" style={{ background: getRatingBg(Number(item.external_rating), brightTR), boxShadow: getRatingGlow(Number(item.external_rating)) }}>
             <Star size={11} className="fill-current" style={{ color: getRatingHex(Number(item.external_rating)) }} />
             <span className="drop-shadow-sm" style={{ color: getRatingHex(Number(item.external_rating)) }}>{Number(item.external_rating).toFixed(1)}</span>
           </div>
@@ -890,7 +867,7 @@ function LibraryGridCard({
           <div
             className="absolute top-2.5 left-2.5 backdrop-blur-xl rounded-lg px-1.5 py-0.5 text-xs font-bold flex items-center gap-1 transition-colors duration-300"
             style={{
-              background: getUserRatingBg(ratingVal, isBright),
+              background: getUserRatingBg(ratingVal, brightTL),
               boxShadow: getUserRatingGlow(ratingVal),
               borderWidth: 1,
               borderColor: `${redHex}40`,
@@ -986,6 +963,7 @@ export default function LibraryPage() {
   const [reviewStatus, setReviewStatus] = useState('watching');
   const [activeTab, setActiveTab] = useState('shelf');
   const [viewMode, setViewMode] = useState<'grid' | 'shelf' | 'kanban'>('grid');
+  const [cardLayout, setCardLayout] = useState<'landscape' | 'poster'>('landscape');
   const toast = useToast();
   const router = useRouter();
 
