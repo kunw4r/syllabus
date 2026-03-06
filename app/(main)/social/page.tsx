@@ -142,7 +142,7 @@ function ActivityFeed({
         return (
           <div
             key={a.id}
-            className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-200"
+            className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-200 border-l-2 border-l-accent/30"
           >
             <div className="flex items-start gap-3.5">
               {/* Avatar */}
@@ -383,20 +383,40 @@ export default function SocialPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="mb-2">
-        <div className="flex items-center gap-3 mb-2">
-          <Users size={28} className="text-accent" />
-          <h1 className="text-3xl font-black">Social</h1>
+    <div className="min-w-0">
+      {/* Hero Banner */}
+      <div className="relative bg-gradient-to-br from-accent/[0.12] via-purple-500/[0.06] to-transparent border border-white/[0.06] rounded-3xl p-6 sm:p-8 mb-8 overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-2">
+            <Users size={28} className="text-accent" />
+            <h1 className="text-3xl font-black">Social</h1>
+          </div>
+          <p className="text-white/40 text-sm mb-5">
+            Find friends, see what they&apos;re watching
+          </p>
+
+          {/* Stats row */}
+          <div className="flex gap-4">
+            <div className="bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
+              <p className="text-xl font-black text-white">{following.length}</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider">Following</p>
+            </div>
+            <div className="bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
+              <p className="text-xl font-black text-white">{followers.length}</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider">Followers</p>
+            </div>
+            <div className="bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
+              <p className="text-xl font-black text-white">{activity.length}</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider">Updates</p>
+            </div>
+          </div>
         </div>
-        <p className="text-white/40 text-sm">
-          Find friends, see what they&apos;re watching
-        </p>
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex items-center gap-3">
+      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6">
         <div className="relative flex-1">
           <Search
             size={16}
@@ -426,7 +446,7 @@ export default function SocialPage() {
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 space-y-2">
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 space-y-2 mb-6">
           <h3 className="text-sm font-semibold text-white/30 mb-3 uppercase tracking-wider">
             Search Results
           </h3>
@@ -444,17 +464,17 @@ export default function SocialPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-6">
         {[
           { key: 'feed', label: 'Activity Feed', icon: Activity },
           {
             key: 'following',
-            label: `Following (${following.length})`,
+            label: 'Following',
             icon: Users,
           },
           {
             key: 'followers',
-            label: `Followers (${followers.length})`,
+            label: 'Followers',
             icon: Heart,
           },
         ].map((t) => (
