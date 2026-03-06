@@ -1063,9 +1063,9 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       <div className="h-4" />
 
       {/* ── Hero Image Container (full-bleed) ── */}
-      <div className="px-4 sm:px-6 lg:px-10">
+      <div className="px-2 sm:px-4 lg:px-6">
         <FadeInView yOffset={30}>
-          <div className="relative w-full aspect-[16/7] sm:aspect-[16/6] lg:aspect-[16/6] rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
+          <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] lg:aspect-[16/7] rounded-3xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
             {data.backdrop_path ? (
               <img
                 src={`${TMDB_IMG_ORIGINAL}${data.backdrop_path}`}
