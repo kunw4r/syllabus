@@ -23,9 +23,9 @@ export default function ScrollRow({
   };
 
   return (
-    <section className={className}>
+    <section className={`relative ${className}`}>
       {title && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 relative z-0">
           <h2 className="text-lg sm:text-xl font-bold text-white">{title}</h2>
           <div className="flex gap-1">
             <button
@@ -45,7 +45,7 @@ export default function ScrollRow({
       )}
       <div
         ref={ref}
-        className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide py-8 -my-8 px-8 -mx-8"
+        className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide py-12 -my-12 px-10 -mx-10"
       >
         {children}
       </div>

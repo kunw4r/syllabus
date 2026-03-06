@@ -160,10 +160,10 @@ export default function MediaCard({
               </div>
             )}
 
-            {/* Rating badge — always visible, top-right */}
+            {/* Rating badge — always visible, top-right; hidden on hover so overlay is clean */}
             {rating != null && (
               <div
-                className="absolute top-2 right-2 rounded-md px-1.5 py-0.5 flex items-center gap-1 backdrop-blur-md border border-white/10 z-10"
+                className="absolute top-2 right-2 rounded-md px-1.5 py-0.5 flex items-center gap-1 backdrop-blur-md border border-white/10 z-10 group-hover/card:opacity-0 transition-opacity duration-200"
                 style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
               >
                 <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
@@ -184,13 +184,23 @@ export default function MediaCard({
             </div>
 
             {/* Hover overlay — gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 z-20" />
 
             {/* Hover controls overlay */}
-            <div className="absolute inset-0 flex flex-col justify-between p-3 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-              {/* Top row — add + info buttons */}
+            <div className="absolute inset-0 flex flex-col justify-between p-3 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 z-20">
+              {/* Top row — rating left, add + info right */}
               <div className="flex justify-between items-start">
-                <div />
+                {rating != null ? (
+                  <div
+                    className="rounded-md px-1.5 py-0.5 flex items-center gap-1 backdrop-blur-md border border-white/10"
+                    style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+                  >
+                    <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+                    <span className="text-[11px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
+                      {typeof rating === 'number' ? rating.toFixed(1) : rating}
+                    </span>
+                  </div>
+                ) : <div />}
                 <div className="flex gap-1.5">
                   {showAdd && user && !added ? (
                     <button
