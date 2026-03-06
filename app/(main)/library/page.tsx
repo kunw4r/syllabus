@@ -810,12 +810,14 @@ function AnimatedRatingNumber({ value }: { value: number }) {
 
 function LibraryGridCard({
   item,
+  layout = 'landscape',
   onCardClick,
   onStatusChange,
   onRemove,
   onRate,
 }: {
   item: any;
+  layout?: 'landscape' | 'poster';
   onCardClick: (item: any) => void;
   onStatusChange: (id: string, status: string) => void;
   onRemove: (id: string) => void;
@@ -833,6 +835,9 @@ function LibraryGridCard({
   const ratingVal = Number(item.user_rating);
   const redHex = getUserRatingRed(ratingVal);
 
+  const isLandscape = layout === 'landscape';
+  const aspectClass = isLandscape ? 'aspect-[16/9]' : 'aspect-[2/3]';
+
   return (
     <div
       className="group relative rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.06] transition-all duration-300 hover:border-white/[0.12] cursor-pointer hover:scale-[1.03] hover:shadow-2xl hover:shadow-black/40"
@@ -846,10 +851,10 @@ function LibraryGridCard({
             loading="lazy"
             crossOrigin="anonymous"
             onLoad={handleImgLoad}
-            className="w-full aspect-[2/3] object-cover"
+            className={`w-full ${aspectClass} object-cover`}
           />
         ) : (
-          <div className="w-full aspect-[2/3] bg-dark-600 flex items-center justify-center text-white/30 text-xs p-4 text-center">
+          <div className={`w-full ${aspectClass} bg-dark-600 flex items-center justify-center text-white/30 text-xs p-4 text-center`}>
             {item.title}
           </div>
         )}
@@ -1301,6 +1306,27 @@ export default function LibraryPage() {
                   {v === 'kanban' ? 'Board' : v === 'shelf' ? 'Shelf' : 'Grid'}
                 </button>
               ))}
+              {viewMode === 'grid' && (
+                <>
+                  <div className="w-px h-4 bg-white/10 mx-1" />
+                  <div className="flex gap-0.5 bg-white/[0.04] rounded-md p-0.5">
+                    <button
+                      onClick={() => setCardLayout('landscape')}
+                      className={`p-1 rounded transition-all ${cardLayout === 'landscape' ? 'bg-white/10 text-white' : 'text-white/25 hover:text-white/50'}`}
+                      title="Landscape"
+                    >
+                      <Rows3 size={13} />
+                    </button>
+                    <button
+                      onClick={() => setCardLayout('poster')}
+                      className={`p-1 rounded transition-all ${cardLayout === 'poster' ? 'bg-white/10 text-white' : 'text-white/25 hover:text-white/50'}`}
+                      title="Poster"
+                    >
+                      <Grid3X3 size={13} />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -1335,11 +1361,15 @@ export default function LibraryPage() {
           ) : viewMode === 'shelf' ? (
             <VirtualShelf items={filteredItems} onCardClick={handleCardClick} />
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className={cardLayout === 'landscape'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+              : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
+            }>
               {filteredItems.map((item) => (
                 <LibraryGridCard
                   key={item.id}
                   item={item}
+                  layout={cardLayout}
                   onCardClick={handleCardClick}
                   onStatusChange={handleStatusChange}
                   onRemove={handleRemove}
