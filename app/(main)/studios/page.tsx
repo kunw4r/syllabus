@@ -249,7 +249,7 @@ const TIER_3 = [
   },
   {
     slug: 'apple-studios',
-    name: 'Apple Studios',
+    name: 'Apple TV+',
     image: '/studios/apple-studios-card.png',
     imagePosition: 'center center',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(50,50,50,0.5) 0%, rgba(25,25,25,0.8) 50%, rgba(10,10,10,0.95) 100%)',
