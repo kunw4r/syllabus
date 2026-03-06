@@ -593,9 +593,9 @@ function LibraryTab({ library, isOwnProfile, onUpdate }: {
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                   {item.user_rating && (
-                    <div className="absolute top-1.5 right-1.5 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg" style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
-                      <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
-                      <span className="text-[10px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(item.user_rating)) }}>{item.user_rating}</span>
+                    <div className="absolute top-1.5 right-1.5 backdrop-blur-md border border-red-500/30 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5" style={{ background: 'rgba(20, 0, 0, 0.75)', boxShadow: '0 0 12px rgba(239,68,68,0.2)' }}>
+                      <Star size={10} className="fill-current text-red-400 drop-shadow-[0_0_6px_rgba(239,68,68,0.5)]" />
+                      <span className="text-[10px] font-bold text-red-400 drop-shadow-[0_0_6px_rgba(239,68,68,0.5)]">{item.user_rating}</span>
                     </div>
                   )}
                   <div className="absolute bottom-0 left-0 right-0 p-2.5">

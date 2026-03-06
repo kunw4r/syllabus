@@ -1218,13 +1218,13 @@ export default function LibraryPage() {
 
                     {/* User rating — top left */}
                     {item.user_rating > 0 && (
-                      <div className="absolute top-2.5 left-2.5 backdrop-blur-xl border border-white/10 rounded-lg px-1.5 py-0.5 text-xs font-bold flex items-center gap-1" style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
-                        <span style={{ color: getRatingHex(Number(item.user_rating)) }}>
+                      <div className="absolute top-2.5 left-2.5 backdrop-blur-xl border border-red-500/30 rounded-lg px-1.5 py-0.5 text-xs font-bold flex items-center gap-1" style={{ background: 'rgba(20, 0, 0, 0.75)', boxShadow: '0 0 12px rgba(239,68,68,0.2)' }}>
+                        <span className="text-red-400 drop-shadow-[0_0_6px_rgba(239,68,68,0.5)]">
                           {Number(item.user_rating) % 1 === 0
                             ? item.user_rating
                             : Number(item.user_rating).toFixed(1)}
                         </span>
-                        <span style={{ color: getRatingHex(Number(item.user_rating)), opacity: 0.4 }}>/10</span>
+                        <span className="text-red-400/50">/10</span>
                       </div>
                     )}
 
