@@ -535,7 +535,7 @@ export default function StudiosPage() {
 
       {/* Tier 1: Iconic Studios */}
       <SectionLabel>Iconic Studios</SectionLabel>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
         {TIER_1.map((s) => (
           <StudioCard key={s.slug} studio={s} tier={1} />
         ))}
@@ -545,7 +545,7 @@ export default function StudiosPage() {
 
       {/* Tier 2: Major Studios */}
       <SectionLabel>Major Studios</SectionLabel>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
         {TIER_2.map((s) => (
           <StudioCard key={s.slug} studio={s} tier={2} />
         ))}
@@ -555,7 +555,7 @@ export default function StudiosPage() {
 
       {/* Tier 3: Studios & Independents */}
       <SectionLabel>Studios &amp; Independents</SectionLabel>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
         {TIER_3.map((s) => (
           <StudioCard key={s.slug} studio={s} tier={3} />
         ))}
