@@ -296,7 +296,10 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
                 </div>
               </div>
               <div className="text-right min-w-[60px]">
-                <span className={`text-2xl font-black bg-gradient-to-r ${rating > 0 ? getRatingGradient(rating) : 'from-white/20 to-white/20'} bg-clip-text text-transparent`}>
+                <span
+                  className="text-2xl font-black transition-colors duration-200"
+                  style={{ color: rating > 0 ? getRatingHex(rating) : 'rgba(255,255,255,0.2)' }}
+                >
                   <AnimatedRatingNumber value={rating} />
                 </span>
                 {rating > 0 && <p className="text-[9px] text-white/30">{getRatingLabel(rating)}</p>}
