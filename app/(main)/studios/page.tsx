@@ -30,6 +30,7 @@ const FEATURED_STUDIOS = [
   {
     slug: 'marvel',
     name: 'MARVEL STUDIOS',
+    image: '/studios/marvel-card.png',
     gradient: 'radial-gradient(ellipse at 30% 50%, rgba(120,15,25,0.55) 0%, rgba(60,10,18,0.8) 50%, rgba(20,6,10,0.95) 100%)',
     border: 'rgba(200,50,60,0.22)',
     glow: '0 0 40px rgba(180,30,40,0.15), 0 0 80px rgba(140,20,30,0.08)',
@@ -39,6 +40,7 @@ const FEATURED_STUDIOS = [
   {
     slug: 'dc',
     name: 'DC Studios',
+    image: '/studios/dc-card.png',
     gradient: 'radial-gradient(ellipse at 60% 40%, rgba(20,40,90,0.5) 0%, rgba(12,22,55,0.8) 50%, rgba(8,12,30,0.95) 100%)',
     border: 'rgba(60,100,200,0.20)',
     glow: '0 0 40px rgba(40,80,180,0.12), 0 0 80px rgba(30,60,140,0.06)',
