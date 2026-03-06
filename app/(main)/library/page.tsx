@@ -294,7 +294,7 @@ function StatsPanel({ items }: { items: any[] }) {
                   <p className="text-sm font-semibold truncate max-w-[120px]">
                     {item.title}
                   </p>
-                  <p className="text-xs font-bold text-red-400">
+                  <p className="text-xs font-bold" style={{ color: getUserRatingRed(Number(item.user_rating)), textShadow: `0 0 6px ${getUserRatingRed(Number(item.user_rating))}66` }}>
                     {item.user_rating}/10
                   </p>
                 </div>
@@ -1224,12 +1224,18 @@ export default function LibraryPage() {
                             {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 backdrop-blur-md border border-red-400/25 bg-red-500/15 rounded-lg px-2 py-0.5 flex items-center gap-1 shadow-[0_0_12px_rgba(239,68,68,0.15)]">
-                          <Star size={12} className="fill-current text-red-400" />
-                          <span className="text-xs font-black drop-shadow-sm text-red-400">
-                            {Number(item.user_rating) % 1 === 0 ? item.user_rating : Number(item.user_rating).toFixed(1)}
-                          </span>
-                        </div>
+                        {(() => {
+                          const rv = Number(item.user_rating);
+                          const rh = getUserRatingRed(rv);
+                          return (
+                            <div className="absolute top-2 right-2 backdrop-blur-md rounded-lg px-2 py-0.5 flex items-center gap-1" style={{ background: getUserRatingBg(rv, false), boxShadow: getUserRatingGlow(rv), borderWidth: 1, borderColor: `${rh}40` }}>
+                              <Star size={12} className="fill-current" style={{ color: rh, filter: `drop-shadow(0 0 4px ${rh}88)` }} />
+                              <span className="text-xs font-black drop-shadow-sm" style={{ color: rh, textShadow: `0 0 6px ${rh}88` }}>
+                                {rv % 1 === 0 ? item.user_rating : rv.toFixed(1)}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <p className="mt-2 text-sm font-medium text-white/70 truncate group-hover:text-gold transition-colors">
                         {item.title}
