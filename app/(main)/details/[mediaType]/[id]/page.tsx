@@ -200,15 +200,15 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
         <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Add to Library</p>
         <div className="flex flex-wrap gap-2">
           {([
-            { key: 'watching', icon: Eye, label: 'In Progress', cls: 'bg-blue-500 hover:bg-blue-600' },
-            { key: 'want', icon: Clock, label: 'Up Next', cls: 'bg-purple-500 hover:bg-purple-600' },
-            { key: 'finished', icon: CheckCircle2, label: 'Completed', cls: 'bg-green-500 hover:bg-green-600' },
+            { key: 'watching', icon: Eye, label: 'In Progress', cls: 'bg-blue-500/15 border-blue-500/30 text-blue-400 hover:bg-blue-500/25 hover:border-blue-400/50' },
+            { key: 'want', icon: Clock, label: 'Up Next', cls: 'bg-purple-500/15 border-purple-500/30 text-purple-400 hover:bg-purple-500/25 hover:border-purple-400/50' },
+            { key: 'finished', icon: CheckCircle2, label: 'Completed', cls: 'bg-green-500/15 border-green-500/30 text-green-400 hover:bg-green-500/25 hover:border-green-400/50' },
           ] as const).map((s) => (
             <m.button
               key={s.key}
               onClick={() => handleAdd(s.key)}
               whileTap={{ scale: 0.95 }}
-              className={`${s.cls} text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:scale-[1.02]`}
+              className={`${s.cls} border px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all duration-200 hover:scale-[1.02]`}
             >
               <s.icon size={16} />
               {s.label}
@@ -254,9 +254,9 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
       {/* Status buttons (always visible) */}
       <div className="px-4 py-3 flex gap-2">
         {([
-          { key: 'want', icon: Clock, label: 'Up Next', active: 'bg-purple-500 text-white border-purple-400' },
-          { key: 'watching', icon: Eye, label: 'In Progress', active: 'bg-blue-500 text-white border-blue-400' },
-          { key: 'finished', icon: CheckCircle2, label: 'Completed', active: 'bg-green-500 text-white border-green-400' },
+          { key: 'want', icon: Clock, label: 'Up Next', active: 'bg-purple-500/15 text-purple-400 border-purple-500/40' },
+          { key: 'watching', icon: Eye, label: 'In Progress', active: 'bg-blue-500/15 text-blue-400 border-blue-500/40' },
+          { key: 'finished', icon: CheckCircle2, label: 'Completed', active: 'bg-green-500/15 text-green-400 border-green-500/40' },
         ] as const).map((s) => (
           <button key={s.key} onClick={() => handleStatusChange(s.key)}
             className={`flex-1 py-2 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all duration-200 ${
