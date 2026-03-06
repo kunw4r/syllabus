@@ -32,20 +32,20 @@ export function getRatingHex(val: number): string {
 export function getRatingBg(val: number): string {
   const glass = (c1: string, c2: string) =>
     `linear-gradient(135deg, ${c1}, ${c2}), linear-gradient(160deg, rgba(255,255,255,0.22) 0%, transparent 45%)`;
-  if (val <= 2) return glass('#7c3aed99', '#a855f799');               // purple glass
-  if (val <= 4) return glass('#a855f799', '#f43f5e99');               // purple → rose glass
-  if (val <= 5.5) return glass('#ef444499', '#fb923c99');             // red → orange glass
-  if (val <= 6.5) return glass('#f9731699', '#facc1599');             // orange → yellow glass
-  if (val <= 7.5) return glass('#eab30899', '#a3e63599');             // yellow → lime glass
-  if (val <= 8.5) return glass('#a3e635aa', '#4ade80aa');             // neon lime → green glass
+  if (val <= 2) return glass('#7c3aed66', '#a855f766');               // purple glass
+  if (val <= 4) return glass('#a855f766', '#f43f5e66');               // purple → rose glass
+  if (val <= 5.5) return glass('#ef444466', '#fb923c66');             // red → orange glass
+  if (val <= 6.5) return glass('#f9731666', '#facc1566');             // orange → yellow glass
+  if (val <= 7.5) return glass('#eab30866', '#a3e63566');             // yellow → lime glass
+  if (val <= 8.5) return glass('#a3e63577', '#4ade8077');             // neon lime → green glass
   // 8.5+ gradients flow toward tron blue
-  if (val <= 8.8) return glass('#4ade80aa', '#34d399aa');             // green → emerald glass
-  if (val <= 9.0) return glass('#34d399aa', '#22d3eeaa');             // emerald → cyan glass
-  if (val <= 9.3) return glass('#22d3eeaa', '#38bdf8aa');             // cyan → sky glass
-  if (val <= 9.5) return glass('#38bdf8aa', '#22b8ffaa');             // sky → bright blue glass
-  if (val <= 9.7) return glass('#22b8ffaa', '#00ccffbb');             // bright blue → near-tron glass
-  if (val < 10) return glass('#00ccffbb', '#00e5ffbb');               // near-tron → tron glass
-  return glass('#00e5ffcc', '#00aaffcc');                              // tron cyan — electric glass
+  if (val <= 8.8) return glass('#4ade8077', '#34d39977');             // green → emerald glass
+  if (val <= 9.0) return glass('#34d39977', '#22d3ee77');             // emerald → cyan glass
+  if (val <= 9.3) return glass('#22d3ee77', '#38bdf877');             // cyan → sky glass
+  if (val <= 9.5) return glass('#38bdf877', '#22b8ff88');             // sky → bright blue glass
+  if (val <= 9.7) return glass('#22b8ff88', '#00ccff88');             // bright blue → near-tron glass
+  if (val < 10) return glass('#00ccff99', '#00e5ff99');               // near-tron → tron glass
+  return glass('#00e5ffaa', '#00aaffaa');                              // tron cyan — electric glass
 }
 
 // Glow shadow for badges — all tiers glow, intensifies with score
