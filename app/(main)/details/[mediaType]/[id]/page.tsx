@@ -30,7 +30,7 @@ import RatingCluster from '@/components/details/RatingCluster';
 import CastRow from '@/components/details/CastRow';
 import StreamingProviders from '@/components/details/StreamingProviders';
 import QuickFactsCard from '@/components/details/QuickFactsCard';
-import { getRatingHex, getRatingGradient } from '@/lib/utils/rating-colors';
+import { getRatingHex, getRatingGradient, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
 
 // ─── Image base URLs ───
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
@@ -281,12 +281,16 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
                     style={{
                       width: `${(rating / 10) * 100}%`,
                       background: rating > 0 ? getRatingHex(rating) : 'transparent',
+                      boxShadow: rating > 0 ? getRatingTrackGlow(rating) : undefined,
                     }}
                   />
                   <input type="range" min="0" max="10" step="0.1" value={rating}
                     onChange={(e) => setRating(parseFloat(e.target.value))}
                     className="rating-slider absolute inset-0 w-full h-full appearance-none cursor-pointer bg-transparent"
-                    style={{ '--thumb-color': rating > 0 ? getRatingHex(rating) : '#666' } as React.CSSProperties}
+                    style={{
+                      '--thumb-color': rating > 0 ? getRatingHex(rating) : '#666',
+                      '--thumb-glow': rating >= 9.3 ? '20px' : rating >= 8.5 ? '14px' : '12px',
+                    } as React.CSSProperties}
                   />
                 </div>
                 <div className="flex justify-between mt-1">
@@ -297,8 +301,11 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
               </div>
               <div className="text-right min-w-[60px]">
                 <span
-                  className="text-2xl font-black transition-colors duration-200"
-                  style={{ color: rating > 0 ? getRatingHex(rating) : 'rgba(255,255,255,0.2)' }}
+                  className="text-2xl font-black transition-all duration-200"
+                  style={{
+                    color: rating > 0 ? getRatingHex(rating) : 'rgba(255,255,255,0.2)',
+                    textShadow: rating > 0 ? getRatingTextGlow(rating) : undefined,
+                  }}
                 >
                   <AnimatedRatingNumber value={rating} />
                 </span>

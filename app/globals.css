@@ -68,26 +68,34 @@
   opacity: 0.7;
 }
 
-/* Rating slider — dynamic thumb color via CSS variable */
+/* Rating slider — dynamic thumb with liquid glass glow */
 .rating-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 9999px;
-  background: var(--thumb-color, #666);
-  box-shadow: 0 0 12px var(--thumb-color, transparent);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.3), var(--thumb-color, #666) 60%);
+  box-shadow:
+    0 0 var(--thumb-glow, 12px) var(--thumb-color, transparent),
+    0 0 4px rgba(255,255,255,0.15),
+    inset 0 1px 2px rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
+  transition: box-shadow 0.3s ease;
 }
 .rating-slider::-moz-range-thumb {
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 9999px;
-  background: var(--thumb-color, #666);
-  box-shadow: 0 0 12px var(--thumb-color, transparent);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.3), var(--thumb-color, #666) 60%);
+  box-shadow:
+    0 0 var(--thumb-glow, 12px) var(--thumb-color, transparent),
+    0 0 4px rgba(255,255,255,0.15),
+    inset 0 1px 2px rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
+  transition: box-shadow 0.3s ease;
 }
 
 .safe-area-bottom {

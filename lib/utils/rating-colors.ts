@@ -22,7 +22,7 @@ export function getRatingHex(val: number): string {
   if (val <= 9.2) return '#22d3ee'; // cyan (own color emerges)
   if (val <= 9.6) return '#38bdf8'; // sky blue (neon)
   if (val < 10) return '#2563eb';   // electric blue
-  return '#00d4ff';                  // tron blue — electric glow
+  return '#00e5ff';                  // tron cyan — electric neon
 }
 
 // Gradient badge backgrounds — neon vibrant, brighter at higher scores
@@ -40,13 +40,30 @@ export function getRatingBg(val: number): string {
   if (val <= 9.3) return 'linear-gradient(135deg, #22d3eef5, #38bdf8f5)';        // cyan → sky (neon glow)
   if (val <= 9.6) return 'linear-gradient(135deg, #38bdf8f6, #2563ebf6)';        // sky → electric blue
   if (val < 10) return 'linear-gradient(135deg, #2563ebf8, #1d4ed8f8)';          // electric blue → deep blue
-  return 'linear-gradient(135deg, #00d4ff, #0088ff, #0055ff)';                    // tron blue — electric glow
+  return 'linear-gradient(135deg, #00e5ff, #00aaff, #0066ff)';                    // tron blue — electric neon glow
 }
 
 // Optional glow shadow for high scores — use with style={{ boxShadow }}
 export function getRatingGlow(val: number): string | undefined {
-  if (val >= 10) return '0 0 12px #00d4ff88, 0 0 4px #00d4ffaa';   // tron glow
-  if (val >= 9.3) return '0 0 8px #38bdf844';                       // subtle sky glow
+  if (val >= 10) return '0 0 16px #00e5ffaa, 0 0 6px #00e5ffcc, inset 0 0 8px #00e5ff33';
+  if (val >= 9.3) return '0 0 10px #38bdf866, 0 0 4px #38bdf888';
+  if (val >= 8.5) return '0 0 6px #4ade8033';
+  return undefined;
+}
+
+// Text glow for the animated rating number — makes high scores look electric
+export function getRatingTextGlow(val: number): string | undefined {
+  if (val >= 10) return '0 0 20px #00e5ffbb, 0 0 40px #00e5ff55';
+  if (val >= 9.3) return '0 0 14px #38bdf888, 0 0 30px #38bdf844';
+  if (val >= 8.5) return `0 0 10px ${getRatingHex(val)}66`;
+  return undefined;
+}
+
+// Track glow for slider fill bar
+export function getRatingTrackGlow(val: number): string | undefined {
+  if (val >= 10) return '0 0 12px #00e5ff88, 0 0 3px #00e5ffaa';
+  if (val >= 9.3) return `0 0 8px ${getRatingHex(val)}55`;
+  if (val >= 8.5) return `0 0 5px ${getRatingHex(val)}33`;
   return undefined;
 }
 
