@@ -2,75 +2,201 @@
 
 import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
-import { STUDIOS } from '@/lib/constants';
 import { STUDIO_LOGOS } from '@/components/ui/StudioLogos';
+
+// ── Featured studios config ──
+
+const FEATURED_STUDIOS = [
+  {
+    slug: 'disney',
+    name: 'Disney',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(30,60,140,0.5) 0%, rgba(15,25,60,0.8) 50%, rgba(8,12,30,0.95) 100%)',
+    border: 'rgba(80,130,220,0.25)',
+    glow: '0 0 40px rgba(40,80,180,0.15), 0 0 80px rgba(30,60,140,0.08)',
+    accent: 'rgba(60,120,220,0.12)',
+    streakColor: 'rgba(100,160,255,0.06)',
+  },
+  {
+    slug: 'pixar',
+    name: 'Pixar',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,60,80,0.5) 0%, rgba(12,35,50,0.8) 50%, rgba(8,15,25,0.95) 100%)',
+    border: 'rgba(60,160,180,0.22)',
+    glow: '0 0 40px rgba(30,120,150,0.12), 0 0 80px rgba(20,80,120,0.06)',
+    accent: 'rgba(40,150,170,0.10)',
+    streakColor: 'rgba(80,200,220,0.05)',
+  },
+  {
+    slug: 'marvel',
+    name: 'MARVEL STUDIOS',
+    gradient: 'radial-gradient(ellipse at 30% 50%, rgba(120,15,25,0.55) 0%, rgba(60,10,18,0.8) 50%, rgba(20,6,10,0.95) 100%)',
+    border: 'rgba(200,50,60,0.22)',
+    glow: '0 0 40px rgba(180,30,40,0.15), 0 0 80px rgba(140,20,30,0.08)',
+    accent: 'rgba(200,40,50,0.10)',
+    streakColor: 'rgba(255,80,80,0.04)',
+  },
+  {
+    slug: 'dc',
+    name: 'DC Studios',
+    gradient: 'radial-gradient(ellipse at 60% 40%, rgba(20,40,90,0.5) 0%, rgba(12,22,55,0.8) 50%, rgba(8,12,30,0.95) 100%)',
+    border: 'rgba(60,100,200,0.20)',
+    glow: '0 0 40px rgba(40,80,180,0.12), 0 0 80px rgba(30,60,140,0.06)',
+    accent: 'rgba(50,100,200,0.10)',
+    streakColor: 'rgba(80,140,255,0.05)',
+  },
+];
 
 // ── Animation variants ──
 
-const gridVariants = {
+const containerVariants = {
   hidden: {},
   visible: {
-    transition: { staggerChildren: 0.035, delayChildren: 0.08 },
+    transition: { staggerChildren: 0.12, delayChildren: 0.15 },
   },
 };
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
+const featuredCardVariants = {
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const },
   },
 };
 
-// ── Studio Card ──
+const placeholderVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.6, ease: 'easeOut' as const },
+  },
+};
 
-function StudioCard({ studio }: { studio: (typeof STUDIOS)[number] }) {
-  const Logo = STUDIO_LOGOS[studio.slug];
+const headerVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as const },
+  },
+};
+
+// ── Background particles ──
+
+function CinematicBackground() {
+  return (
+    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* Deep dark base with blue ambience */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `
+            radial-gradient(ellipse at 8% 8%, rgba(50,70,160,0.07) 0%, transparent 40%),
+            radial-gradient(ellipse at 92% 6%, rgba(180,140,60,0.04) 0%, transparent 35%),
+            radial-gradient(ellipse at 85% 85%, rgba(40,60,140,0.05) 0%, transparent 35%),
+            radial-gradient(ellipse at 50% 100%, rgba(30,50,100,0.04) 0%, transparent 40%)
+          `,
+        }}
+      />
+      {/* Faint star-like particles */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.35]" xmlns="http://www.w3.org/2000/svg">
+        {Array.from({ length: 40 }).map((_, i) => {
+          const x = ((i * 73 + 17) % 100);
+          const y = ((i * 47 + 31) % 100);
+          const r = 0.3 + (i % 5) * 0.15;
+          const opacity = 0.15 + (i % 4) * 0.1;
+          return (
+            <circle
+              key={i}
+              cx={`${x}%`}
+              cy={`${y}%`}
+              r={r}
+              fill="white"
+              opacity={opacity}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ── Featured Studio Card ──
+
+function FeaturedStudioCard({
+  featured,
+}: {
+  featured: (typeof FEATURED_STUDIOS)[number];
+}) {
+  const Logo = STUDIO_LOGOS[featured.slug];
   const prefersReducedMotion = useReducedMotion();
-
-  // Brand-tinted card surface
-  const cardStyle: React.CSSProperties = {
-    background: `linear-gradient(145deg, ${studio.tint}, #0b0f15)`,
-    border: '1px solid rgba(255,255,255,0.06)',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
-  };
 
   const card = (
     <Link
-      href={`/studios/${studio.slug}`}
-      className="group relative flex flex-col items-center justify-between rounded-[22px] overflow-hidden h-[150px] p-[18px]"
-      style={cardStyle}
+      href={`/studios/${featured.slug}`}
+      className="group relative flex flex-col items-center justify-center rounded-2xl overflow-hidden"
+      style={{
+        height: 'clamp(160px, 18vw, 220px)',
+        background: featured.gradient,
+        border: `1px solid ${featured.border}`,
+        boxShadow: featured.glow,
+      }}
     >
-      {/* Top highlight film */}
+      {/* Internal light streaks */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-[22px]"
-        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04), transparent)' }}
-      />
-
-      {/* Hover brightening — subtle tint shift + border glow */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="pointer-events-none absolute inset-0"
         style={{
-          background: `linear-gradient(145deg, ${studio.tint}80, transparent)`,
-          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
+          background: `
+            linear-gradient(135deg, transparent 20%, ${featured.streakColor} 40%, transparent 60%),
+            linear-gradient(225deg, transparent 30%, ${featured.streakColor} 50%, transparent 70%)
+          `,
         }}
       />
 
-      {/* Logo — centred in top 2/3 */}
-      <div className="relative flex-1 flex items-center justify-center w-full">
+      {/* Top edge highlight */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: `linear-gradient(90deg, transparent, ${featured.border}, transparent)` }}
+      />
+
+      {/* Atmospheric haze */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at 50% 30%, ${featured.accent}, transparent 70%)`,
+        }}
+      />
+
+      {/* Hover overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{
+          background: `radial-gradient(ellipse at 50% 40%, ${featured.accent}, transparent 70%)`,
+          boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.08)`,
+        }}
+      />
+
+      {/* Hover light sweep */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{
+          background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%)',
+        }}
+      />
+
+      {/* Logo area */}
+      <div className="relative flex items-center justify-center flex-1 w-full">
         {Logo ? (
-          <div className="opacity-75 group-hover:opacity-95 transition-all duration-[240ms] ease-out group-hover:scale-[1.04]">
-            <Logo size={56} />
+          <div className="opacity-80 group-hover:opacity-100 transition-all duration-[280ms] ease-out group-hover:scale-[1.03]">
+            <Logo size={featured.slug === 'marvel' ? 72 : 64} />
           </div>
         ) : (
-          <span className="text-2xl opacity-50">{studio.icon || studio.name[0]}</span>
+          <span className="text-3xl font-bold opacity-50">{featured.name[0]}</span>
         )}
       </div>
 
-      {/* Label — bottom */}
-      <p className="relative text-[0.95rem] font-semibold text-white/55 group-hover:text-white/85 text-center leading-tight tracking-[-0.02em] transition-colors duration-[240ms] mt-auto pt-1">
-        {studio.name}
+      {/* Studio name */}
+      <p className="relative text-[0.85rem] font-medium text-white/50 group-hover:text-white/75 text-center tracking-wide transition-colors duration-[280ms] pb-4">
+        {featured.name}
       </p>
     </Link>
   );
@@ -81,18 +207,34 @@ function StudioCard({ studio }: { studio: (typeof STUDIOS)[number] }) {
 
   return (
     <m.div
-      variants={cardVariants}
+      variants={featuredCardVariants}
       whileHover={{
-        y: -3,
-        scale: 1.01,
-        boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
-        transition: { duration: 0.24, ease: 'easeOut' },
+        y: -4,
+        scale: 1.012,
+        transition: { duration: 0.28, ease: 'easeOut' },
       }}
-      whileTap={{ scale: 0.98 }}
-      className="rounded-[22px]"
+      whileTap={{ scale: 0.99 }}
+      className="rounded-2xl"
+      style={{ willChange: 'transform' }}
     >
       {card}
     </m.div>
+  );
+}
+
+// ── Placeholder card ──
+
+function PlaceholderCard() {
+  return (
+    <div
+      className="rounded-xl"
+      style={{
+        height: 'clamp(70px, 8vw, 95px)',
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.025), rgba(255,255,255,0.008))',
+        border: '1px solid rgba(255,255,255,0.04)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+      }}
+    />
   );
 }
 
@@ -101,55 +243,86 @@ function StudioCard({ studio }: { studio: (typeof STUDIOS)[number] }) {
 export default function StudiosPage() {
   const prefersReducedMotion = useReducedMotion();
 
-  return (
-    <div
-      className="min-w-0 max-w-[1440px] mx-auto"
-      style={{
-        paddingLeft: 'clamp(16px, 4vw, 48px)',
-        paddingRight: 'clamp(16px, 4vw, 48px)',
-        paddingTop: 40,
-        paddingBottom: 60,
-      }}
-    >
-      {/* Cinematic ambient lighting */}
+  const content = (
+    <>
+      {/* Header */}
+      {prefersReducedMotion ? (
+        <div className="mb-8">
+          <h1 className="text-[2.4rem] sm:text-[2.8rem] font-extrabold tracking-[-0.03em] text-white leading-none mb-3">
+            Studios
+          </h1>
+          <p className="text-[0.92rem] text-white/30 font-normal max-w-xl leading-relaxed">
+            Browse movies and shows by studio, production company, or film industry.
+          </p>
+        </div>
+      ) : (
+        <m.div variants={headerVariants} className="mb-8">
+          <h1 className="text-[2.4rem] sm:text-[2.8rem] font-extrabold tracking-[-0.03em] text-white leading-none mb-3">
+            Studios
+          </h1>
+          <p className="text-[0.92rem] text-white/30 font-normal max-w-xl leading-relaxed">
+            Browse movies and shows by studio, production company, or film industry.
+          </p>
+        </m.div>
+      )}
+
+      {/* Divider */}
       <div
-        className="pointer-events-none fixed inset-0 -z-10"
+        className="mb-10"
         style={{
-          background: `
-            radial-gradient(circle at 10% 10%, rgba(60,80,160,0.06), transparent 35%),
-            radial-gradient(circle at 90% 5%, rgba(180,130,60,0.04), transparent 30%),
-            radial-gradient(circle at 50% 100%, rgba(40,60,120,0.04), transparent 40%)
-          `,
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent)',
         }}
       />
 
-      {/* Header */}
-      <div className="mb-9">
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-[-0.025em] text-white mb-2">
-          Studios
-        </h1>
-        <p className="text-[0.9rem] text-white/35 font-normal max-w-lg leading-relaxed">
-          Browse movies and shows by studio, production company, or film industry.
-        </p>
+      {/* Featured 2x2 grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 mb-8">
+        {FEATURED_STUDIOS.map((featured, i) => (
+          <FeaturedStudioCard key={featured.slug} featured={featured} />
+        ))}
       </div>
 
-      {/* Grid */}
+      {/* Placeholder cards — faint grid suggesting more content */}
       {prefersReducedMotion ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          {STUDIOS.map((studio) => (
-            <StudioCard key={studio.slug} studio={studio} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 opacity-40">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <PlaceholderCard key={i} />
           ))}
         </div>
       ) : (
         <m.div
-          variants={gridVariants}
+          variants={placeholderVariants}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 opacity-40"
+        >
+          {Array.from({ length: 8 }).map((_, i) => (
+            <PlaceholderCard key={i} />
+          ))}
+        </m.div>
+      )}
+    </>
+  );
+
+  return (
+    <div
+      className="min-w-0 max-w-[1280px] mx-auto"
+      style={{
+        paddingLeft: 'clamp(20px, 5vw, 64px)',
+        paddingRight: 'clamp(20px, 5vw, 64px)',
+        paddingTop: 48,
+        paddingBottom: 80,
+      }}
+    >
+      <CinematicBackground />
+
+      {prefersReducedMotion ? (
+        content
+      ) : (
+        <m.div
+          variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5"
         >
-          {STUDIOS.map((studio) => (
-            <StudioCard key={studio.slug} studio={studio} />
-          ))}
+          {content}
         </m.div>
       )}
     </div>
