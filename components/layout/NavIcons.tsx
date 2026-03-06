@@ -199,6 +199,25 @@ export function AwardsIcon({ size = 24, active }: IconProps) {
   );
 }
 
+export function StudiosIcon({ size = 24, active }: IconProps) {
+  return active ? (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={s}>
+      <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" rx="2"/>
+      <circle cx="6.5" cy="6.5" r="1.5" fill="var(--dark-900, #0d0d0f)"/>
+      <circle cx="17.5" cy="6.5" r="1.5" fill="var(--dark-900, #0d0d0f)"/>
+      <circle cx="6.5" cy="17.5" r="1.5" fill="var(--dark-900, #0d0d0f)"/>
+      <circle cx="17.5" cy="17.5" r="1.5" fill="var(--dark-900, #0d0d0f)"/>
+    </svg>
+  ) : (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={s}>
+      <rect x="3" y="3" width="7" height="7" rx="2"/>
+      <rect x="14" y="3" width="7" height="7" rx="2"/>
+      <rect x="3" y="14" width="7" height="7" rx="2"/>
+      <rect x="14" y="14" width="7" height="7" rx="2"/>
+    </svg>
+  );
+}
+
 export function XIcon({ size = 24, active }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={s}>

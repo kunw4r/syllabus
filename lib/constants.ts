@@ -141,6 +141,40 @@ export const SCENARIO_SUGGESTIONS: { phrase: string; icon: string }[] = [
   { phrase: 'thriller suspense', icon: '🔪' },
 ];
 
+// ─── Studios / Production Companies ───
+
+export interface Studio {
+  slug: string;
+  name: string;
+  tmdb_id: number | null;
+  language?: string;  // use original_language filter instead of company
+  color: string;      // gradient accent
+  icon: string;       // emoji fallback
+}
+
+export const STUDIOS: Studio[] = [
+  { slug: 'disney', name: 'Disney', tmdb_id: 2, color: 'from-blue-500 to-blue-700', icon: '\u{1F3F0}' },
+  { slug: 'pixar', name: 'Pixar', tmdb_id: 3, color: 'from-green-400 to-emerald-600', icon: '\u{1F3AF}' },
+  { slug: 'marvel', name: 'Marvel Studios', tmdb_id: 420, color: 'from-red-500 to-red-700', icon: '\u{1F9B8}' },
+  { slug: 'dc', name: 'DC Studios', tmdb_id: 9993, color: 'from-blue-600 to-indigo-800', icon: '\u{1F9B9}' },
+  { slug: 'warner-bros', name: 'Warner Bros.', tmdb_id: 174, color: 'from-yellow-500 to-amber-700', icon: '\u{1F3AC}' },
+  { slug: 'universal', name: 'Universal', tmdb_id: 33, color: 'from-sky-400 to-sky-600', icon: '\u{1F30D}' },
+  { slug: 'paramount', name: 'Paramount', tmdb_id: 4, color: 'from-blue-400 to-blue-600', icon: '\u{26F0}\u{FE0F}' },
+  { slug: 'sony', name: 'Sony Pictures', tmdb_id: 34, color: 'from-slate-400 to-slate-600', icon: '\u{1F3A5}' },
+  { slug: 'lionsgate', name: 'Lionsgate', tmdb_id: 1632, color: 'from-orange-500 to-orange-700', icon: '\u{1F981}' },
+  { slug: 'a24', name: 'A24', tmdb_id: 41077, color: 'from-neutral-400 to-neutral-600', icon: '\u{1F3AD}' },
+  { slug: 'dreamworks', name: 'DreamWorks', tmdb_id: 521, color: 'from-cyan-400 to-teal-600', icon: '\u{1F319}' },
+  { slug: 'illumination', name: 'Illumination', tmdb_id: 6704, color: 'from-yellow-300 to-yellow-500', icon: '\u{1F4A1}' },
+  { slug: 'ghibli', name: 'Studio Ghibli', tmdb_id: 10342, color: 'from-sky-300 to-blue-500', icon: '\u{1F343}' },
+  { slug: 'lucasfilm', name: 'Lucasfilm', tmdb_id: 1, color: 'from-amber-400 to-amber-600', icon: '\u{2B50}' },
+  { slug: '20th-century', name: '20th Century Studios', tmdb_id: 25, color: 'from-blue-300 to-blue-500', icon: '\u{1F4F0}' },
+  { slug: 'new-line', name: 'New Line Cinema', tmdb_id: 12, color: 'from-purple-400 to-purple-600', icon: '\u{1F48D}' },
+  { slug: 'blumhouse', name: 'Blumhouse', tmdb_id: 3172, color: 'from-red-600 to-red-900', icon: '\u{1F47B}' },
+  { slug: 'bollywood', name: 'Bollywood', tmdb_id: null, language: 'hi', color: 'from-orange-400 to-pink-500', icon: '\u{1F1EE}\u{1F1F3}' },
+  { slug: 'korean', name: 'Korean Cinema', tmdb_id: null, language: 'ko', color: 'from-rose-400 to-pink-600', icon: '\u{1F1F0}\u{1F1F7}' },
+  { slug: 'anime', name: 'Anime Films', tmdb_id: null, language: 'ja', color: 'from-pink-400 to-fuchsia-600', icon: '\u{1F3CC}' },
+];
+
 // ─── Streaming provider ID → name + URL (Where to Watch) ───
 
 export const STREAMING_PROVIDERS: Record<number, { name: string; url: string }> = {

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Sparkles, Search as SearchIcon } from 'lucide-react';
-import { aiSearch, type AISearchResults } from '@/lib/api/ai-search';
+import { aiSearchProgressive, type AISearchResults } from '@/lib/api/ai-search';
 import { enrichItemsWithRatings } from '@/lib/scoring';
 import { SCENARIO_SUGGESTIONS } from '@/lib/constants';
 import SearchBar from '@/components/ui/SearchBar';
@@ -35,35 +35,53 @@ function SearchContent() {
   const [results, setResults] = useState<AISearchResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentQuery, setCurrentQuery] = useState(initialQuery);
+  const cancelRef = useRef<(() => void) | null>(null);
+  const didMountSearch = useRef(false);
+  const enrichedRef = useRef(new Set<string>());
 
-  const doSearch = useCallback(async (query: string) => {
+  const doSearch = useCallback((query: string) => {
     if (!query.trim()) return;
+
+    // Cancel any in-flight search
+    cancelRef.current?.();
+    enrichedRef.current = new Set();
+
     setLoading(true);
     setCurrentQuery(query);
+    setResults(null);
 
-    try {
-      const res = await aiSearch(query);
+    const { cancel } = aiSearchProgressive(query, (res) => {
       setResults(res);
+      setLoading(false);
 
-      if (res.movies.length > 0) {
+      // Enrich movies/tv once per phase (skip if already enriched this set)
+      const movieKey = res.movies.map((m: any) => m.id).join(',');
+      const tvKey = res.tv.map((t: any) => t.id).join(',');
+
+      if (res.movies.length > 0 && !enrichedRef.current.has(movieKey)) {
+        enrichedRef.current.add(movieKey);
         enrichItemsWithRatings(res.movies, 'movie').then((enriched) => {
           setResults((prev) => prev ? { ...prev, movies: enriched } : prev);
         });
       }
-      if (res.tv.length > 0) {
+      if (res.tv.length > 0 && !enrichedRef.current.has(tvKey)) {
+        enrichedRef.current.add(tvKey);
         enrichItemsWithRatings(res.tv, 'tv').then((enriched) => {
           setResults((prev) => prev ? { ...prev, tv: enriched } : prev);
         });
       }
-    } catch {
-      // show empty results
-    } finally {
-      setLoading(false);
-    }
+    });
+
+    cancelRef.current = cancel;
   }, []);
 
+  // Only run on mount for initial URL query
   useEffect(() => {
-    if (initialQuery) doSearch(initialQuery);
+    if (didMountSearch.current) return;
+    if (initialQuery) {
+      didMountSearch.current = true;
+      doSearch(initialQuery);
+    }
   }, [initialQuery, doSearch]);
 
   const handleSearch = (query: string) => {
@@ -156,16 +174,16 @@ function SearchContent() {
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
+      {/* Loading state — only show skeletons if no results yet */}
+      {loading && !results && (
         <>
           <SkeletonRow />
           <SkeletonRow />
         </>
       )}
 
-      {/* Results with staggered fade */}
-      {!loading && results && hasResults && (
+      {/* Results — show as soon as available, even if AI phase is still running */}
+      {results && hasResults && (
         <div className="space-y-6">
           {results.movies.length > 0 && (
             <FadeInView>
@@ -213,7 +231,7 @@ function SearchContent() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — only after fully done */}
       {!loading && results && !hasResults && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <SearchIcon size={48} className="text-white/10 mb-4" />

@@ -144,6 +144,32 @@ export function getTop100TV(genreId: number | null = null) {
   });
 }
 
+// ─── Studios ───
+
+export function getMoviesByCompany(companyId: number, page = 1) {
+  return tmdbCached('/discover/movie', `with_companies=${companyId}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`).then((d: any) => d.results || []);
+}
+
+export function getMoviesByLanguage(lang: string, page = 1) {
+  return tmdbCached('/discover/movie', `with_original_language=${lang}&sort_by=popularity.desc&vote_count.gte=100&page=${page}`).then((d: any) => d.results || []);
+}
+
+export function getTVByCompany(companyId: number, page = 1) {
+  return tmdbCached('/discover/tv', `with_companies=${companyId}&sort_by=popularity.desc&vote_count.gte=20&page=${page}`).then((d: any) => d.results || []);
+}
+
+export function getTVByLanguage(lang: string, page = 1) {
+  return tmdbCached('/discover/tv', `with_original_language=${lang}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`).then((d: any) => d.results || []);
+}
+
+export function getTopRatedByCompany(companyId: number) {
+  return tmdbCached('/discover/movie', `with_companies=${companyId}&sort_by=vote_average.desc&vote_count.gte=200`).then((d: any) => d.results || []);
+}
+
+export function getTopRatedByLanguage(lang: string) {
+  return tmdbCached('/discover/movie', `with_original_language=${lang}&sort_by=vote_average.desc&vote_count.gte=500`).then((d: any) => d.results || []);
+}
+
 // ─── Multi-search ───
 
 export async function multiSearchTMDB(query: string) {
