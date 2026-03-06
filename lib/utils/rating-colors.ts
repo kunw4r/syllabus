@@ -31,29 +31,29 @@ export function getRatingHex(val: number): string {
 // Use with: backdrop-blur-md border border-white/20
 export function getRatingBg(val: number): string {
   const glass = (c1: string, c2: string) =>
-    `linear-gradient(135deg, ${c1}, ${c2}), linear-gradient(160deg, rgba(255,255,255,0.18) 0%, transparent 50%)`;
-  if (val <= 2) return glass('#7c3aedbb', '#a855f7bb');               // purple glass
-  if (val <= 4) return glass('#a855f7bb', '#f43f5ebb');               // purple → rose glass
-  if (val <= 5.5) return glass('#ef4444bb', '#fb923cbb');             // red → orange glass
-  if (val <= 6.5) return glass('#f97316bb', '#facc15bb');             // orange → yellow glass
-  if (val <= 7.5) return glass('#eab308bb', '#a3e635bb');             // yellow → lime glass
-  if (val <= 8.5) return glass('#a3e635cc', '#4ade80cc');             // neon lime → green glass
+    `linear-gradient(135deg, ${c1}, ${c2}), linear-gradient(160deg, rgba(255,255,255,0.22) 0%, transparent 45%)`;
+  if (val <= 2) return glass('#7c3aed99', '#a855f799');               // purple glass
+  if (val <= 4) return glass('#a855f799', '#f43f5e99');               // purple → rose glass
+  if (val <= 5.5) return glass('#ef444499', '#fb923c99');             // red → orange glass
+  if (val <= 6.5) return glass('#f9731699', '#facc1599');             // orange → yellow glass
+  if (val <= 7.5) return glass('#eab30899', '#a3e63599');             // yellow → lime glass
+  if (val <= 8.5) return glass('#a3e635aa', '#4ade80aa');             // neon lime → green glass
   // 8.5+ gradients flow toward tron blue
-  if (val <= 8.8) return glass('#4ade80cc', '#34d399cc');             // green → emerald glass
-  if (val <= 9.0) return glass('#34d399cc', '#22d3eecc');             // emerald → cyan glass
-  if (val <= 9.3) return glass('#22d3eecc', '#38bdf8cc');             // cyan → sky glass
-  if (val <= 9.5) return glass('#38bdf8cc', '#22b8ffcc');             // sky → bright blue glass
-  if (val <= 9.7) return glass('#22b8ffcc', '#00ccffcc');             // bright blue → near-tron glass
-  if (val < 10) return glass('#00ccffcc', '#00e5ffcc');               // near-tron → tron glass
-  return glass('#00e5ffdd', '#00aaffdd');                              // tron cyan — electric glass
+  if (val <= 8.8) return glass('#4ade80aa', '#34d399aa');             // green → emerald glass
+  if (val <= 9.0) return glass('#34d399aa', '#22d3eeaa');             // emerald → cyan glass
+  if (val <= 9.3) return glass('#22d3eeaa', '#38bdf8aa');             // cyan → sky glass
+  if (val <= 9.5) return glass('#38bdf8aa', '#22b8ffaa');             // sky → bright blue glass
+  if (val <= 9.7) return glass('#22b8ffaa', '#00ccffbb');             // bright blue → near-tron glass
+  if (val < 10) return glass('#00ccffbb', '#00e5ffbb');               // near-tron → tron glass
+  return glass('#00e5ffcc', '#00aaffcc');                              // tron cyan — electric glass
 }
 
-// Optional glow shadow for high scores — use with style={{ boxShadow }}
-export function getRatingGlow(val: number): string | undefined {
-  if (val >= 10) return '0 0 16px #00e5ffaa, 0 0 6px #00e5ffcc, inset 0 0 8px #00e5ff33';
-  if (val >= 9.3) return '0 0 10px #38bdf866, 0 0 4px #38bdf888';
-  if (val >= 8.5) return '0 0 6px #4ade8033';
-  return undefined;
+// Glow shadow for badges — all tiers glow, intensifies with score
+export function getRatingGlow(val: number): string {
+  if (val >= 10) return '0 0 18px #00e5ffbb, 0 0 6px #00e5ffcc, inset 0 0 10px #00e5ff44';
+  if (val >= 9.3) return `0 0 14px ${getRatingHex(val)}77, 0 0 4px ${getRatingHex(val)}99`;
+  if (val >= 8.5) return `0 0 10px ${getRatingHex(val)}55, 0 0 3px ${getRatingHex(val)}66`;
+  return `0 0 8px ${getRatingHex(val)}33, 0 0 2px ${getRatingHex(val)}44`;
 }
 
 // Text glow for the animated rating number — makes high scores look electric
