@@ -30,56 +30,55 @@ export async function GET(request: NextRequest) {
     suggestions.push({ text: s.phrase, type: 'scenario', icon: s.icon });
   }
 
-  // 2. Search content — try Supabase first, fall back to TMDB
-  let contentResults: { text: string; type: 'content'; poster?: string }[] = [];
+  // 2. Search content — always use TMDB multi-search (handles typos/fuzzy), supplement with Supabase
+  let contentResults: { text: string; type: 'content'; poster?: string; year?: string; mediaType?: string; tmdbId?: number }[] = [];
 
+  // TMDB multi-search — always run (handles misspellings well)
   try {
-    const { createServiceSupabase } = await import('@/lib/supabase/service');
-    const supabase = createServiceSupabase();
+    const tmdbKey = process.env.TMDB_API_KEY;
+    if (tmdbKey) {
+      const res = await fetch(
+        `https://api.themoviedb.org/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(q)}&page=1&include_adult=false`,
+        { signal: AbortSignal.timeout(3000) },
+      );
+      if (res.ok) {
+        const json = await res.json();
+        const items = (json.results || [])
+          .filter((r: any) => r.media_type === 'movie' || r.media_type === 'tv' || r.media_type === 'person')
+          .slice(0, 6);
 
-    // Try exact ilike first
-    const { data } = await supabase
-      .from('content_metadata')
-      .select('title, media_type, poster_path')
-      .ilike('title', `%${q}%`)
-      .order('popularity', { ascending: false })
-      .limit(4);
-
-    if (data && data.length > 0) {
-      contentResults = data.map((item) => ({
-        text: item.title,
-        type: 'content' as const,
-        poster: item.poster_path || undefined,
-      }));
+        contentResults = items.map((item: any) => ({
+          text: item.title || item.name,
+          type: 'content' as const,
+          poster: item.poster_path || item.profile_path || undefined,
+          year: (item.release_date || item.first_air_date || '').slice(0, 4) || undefined,
+          mediaType: item.media_type,
+          tmdbId: item.id,
+        }));
+      }
     }
   } catch {
-    // Service role not available
-  }
-
-  // If Supabase returned nothing (likely a typo), ask TMDB which handles fuzzy queries
-  if (contentResults.length === 0) {
+    // TMDB failed — try Supabase as fallback
     try {
-      const tmdbKey = process.env.TMDB_API_KEY;
-      if (tmdbKey) {
-        const res = await fetch(
-          `https://api.themoviedb.org/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(q)}&page=1&include_adult=false`,
-          { signal: AbortSignal.timeout(3000) },
-        );
-        if (res.ok) {
-          const json = await res.json();
-          const items = (json.results || [])
-            .filter((r: any) => r.media_type === 'movie' || r.media_type === 'tv')
-            .slice(0, 4);
+      const { createServiceSupabase } = await import('@/lib/supabase/service');
+      const supabase = createServiceSupabase();
+      const { data } = await supabase
+        .from('content_metadata')
+        .select('title, media_type, poster_path')
+        .ilike('title', `%${q}%`)
+        .order('popularity', { ascending: false })
+        .limit(6);
 
-          contentResults = items.map((item: any) => ({
-            text: item.title || item.name,
-            type: 'content' as const,
-            poster: item.poster_path || undefined,
-          }));
-        }
+      if (data && data.length > 0) {
+        contentResults = data.map((item) => ({
+          text: item.title,
+          type: 'content' as const,
+          poster: item.poster_path || undefined,
+          mediaType: item.media_type,
+        }));
       }
     } catch {
-      // TMDB fallback failed — continue without content suggestions
+      // both failed
     }
   }
 

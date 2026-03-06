@@ -220,6 +220,9 @@ export interface Suggestion {
   type: 'scenario' | 'content';
   icon?: string;
   poster?: string;
+  year?: string;
+  mediaType?: string;
+  tmdbId?: number;
 }
 
 export async function fetchSuggestions(query: string): Promise<Suggestion[]> {

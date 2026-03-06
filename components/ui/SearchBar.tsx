@@ -85,8 +85,17 @@ export default function SearchBar({
   };
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
-    setQuery(suggestion.text);
     setShowSuggestions(false);
+    // Direct navigation for content with a TMDB ID
+    if (suggestion.type === 'content' && suggestion.tmdbId && suggestion.mediaType && suggestion.mediaType !== 'person') {
+      router.push(`/details/${suggestion.mediaType}/${suggestion.tmdbId}`);
+      return;
+    }
+    if (suggestion.type === 'content' && suggestion.tmdbId && suggestion.mediaType === 'person') {
+      router.push(`/actors/${suggestion.tmdbId}`);
+      return;
+    }
+    setQuery(suggestion.text);
     if (onSearch) {
       onSearch(suggestion.text);
     } else {
@@ -160,34 +169,69 @@ export default function SearchBar({
 
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50 animate-fade-in">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl shadow-black/50 z-50 animate-fade-in">
           {suggestions.map((s, i) => (
             <button
               key={`${s.type}-${s.text}-${i}`}
               onClick={() => handleSuggestionClick(s)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                i === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'
+                i === selectedIndex ? 'bg-white/10' : 'hover:bg-white/[0.06]'
               }`}
             >
               {s.type === 'scenario' ? (
-                <Sparkles size={16} className="text-accent shrink-0" />
+                <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+                  <Sparkles size={16} className="text-accent" />
+                </div>
               ) : s.poster ? (
                 <img
                   src={`${TMDB_IMG}${s.poster}`}
                   alt=""
-                  className="w-8 h-12 rounded object-cover shrink-0"
+                  className="w-9 h-[52px] rounded-md object-cover shrink-0 ring-1 ring-white/10"
                 />
               ) : (
-                <Search size={16} className="text-white/30 shrink-0" />
+                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                  <Search size={14} className="text-white/30" />
+                </div>
               )}
-              <div className="min-w-0">
-                <p className="text-sm text-white/80 truncate">{s.text}</p>
-                {s.type === 'scenario' && (
-                  <p className="text-[10px] text-accent/60 uppercase tracking-wider">AI Search</p>
-                )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-white/90 truncate font-medium">{s.text}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {s.type === 'scenario' ? (
+                    <span className="text-[10px] text-accent/60 uppercase tracking-wider font-medium">AI Search</span>
+                  ) : (
+                    <>
+                      {s.mediaType && (
+                        <span className="text-[10px] text-white/30 uppercase tracking-wider font-medium">
+                          {s.mediaType === 'movie' ? 'Movie' : s.mediaType === 'tv' ? 'TV Show' : s.mediaType === 'person' ? 'Actor' : ''}
+                        </span>
+                      )}
+                      {s.year && (
+                        <span className="text-[10px] text-white/25">{s.year}</span>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
+              {s.type === 'content' && s.tmdbId && (
+                <span className="text-[10px] text-white/15 shrink-0">↵</span>
+              )}
             </button>
           ))}
+          {/* Search all footer */}
+          <button
+            onClick={() => {
+              setShowSuggestions(false);
+              if (onSearch) {
+                onSearch(query);
+              } else {
+                router.push(`/search?q=${encodeURIComponent(query)}`);
+              }
+            }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-t border-white/[0.06] hover:bg-white/[0.06] transition-colors"
+          >
+            <Search size={14} className="text-accent shrink-0" />
+            <span className="text-sm text-accent/80 font-medium">Search all for &ldquo;{query}&rdquo;</span>
+          </button>
         </div>
       )}
     </div>
