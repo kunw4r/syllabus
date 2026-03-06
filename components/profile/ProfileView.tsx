@@ -365,7 +365,7 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly, onNavigate
             </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
-              {discoverWeekly.slice(0, 12).map((item: any, idx: number) => (
+              {discoverWeekly.map((item: any, idx: number) => (
                 <button
                   key={item.id}
                   onClick={() => router.push(`/details/${item.media_type}/${item.id}`)}
