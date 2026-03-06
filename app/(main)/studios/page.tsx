@@ -67,6 +67,7 @@ const FEATURED_STUDIOS = [
     slug: 'sony',
     name: 'Sony Pictures',
     image: '/studios/sony-card.png',
+    imagePosition: 'center 55%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,45,90,0.5) 0%, rgba(12,25,55,0.8) 50%, rgba(8,12,28,0.95) 100%)',
     border: 'rgba(60,110,200,0.20)',
     glow: '0 0 40px rgba(35,75,170,0.12), 0 0 80px rgba(25,55,130,0.06)',
@@ -211,7 +212,7 @@ function FeaturedStudioCard({
       href={`/studios/${featured.slug}`}
       className="group relative flex flex-col items-center justify-center rounded-2xl overflow-hidden"
       style={{
-        height: 'clamp(160px, 18vw, 220px)',
+        height: 'clamp(120px, 13vw, 160px)',
         background: hasImage ? '#080c18' : featured.gradient,
         border: `1px solid ${featured.border}`,
         boxShadow: featured.glow,
@@ -223,8 +224,8 @@ function FeaturedStudioCard({
           src={featured.image!}
           alt={featured.name}
           fill
-          className="object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
-          style={{ objectPosition: featured.imagePosition || 'center 55%' }}
+          className="object-cover group-hover:scale-[1.08] transition-transform duration-500 ease-out"
+          style={{ objectPosition: featured.imagePosition || 'center 55%', transform: 'scale(1.06)' }}
           sizes="(max-width: 640px) 100vw, 50vw"
           priority
         />
@@ -369,7 +370,7 @@ export default function StudiosPage() {
       />
 
       {/* Featured 2x2 grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mb-8">
         {FEATURED_STUDIOS.map((featured, i) => (
           <FeaturedStudioCard key={featured.slug} featured={featured} />
         ))}
