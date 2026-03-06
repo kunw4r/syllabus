@@ -26,34 +26,18 @@ export function getRatingHex(val: number): string {
   return '#00e5ff';                  // tron cyan — electric neon
 }
 
-// Gradient badge backgrounds — liquid glass style
-// Each gradient has a white shimmer highlight for frosted glass depth
-// Use with: backdrop-blur-md border border-white/20
-export function getRatingBg(val: number): string {
-  const glass = (c1: string, c2: string) =>
-    `linear-gradient(135deg, ${c1}, ${c2}), linear-gradient(160deg, rgba(255,255,255,0.22) 0%, transparent 45%)`;
-  if (val <= 2) return glass('#7c3aed66', '#a855f766');               // purple glass
-  if (val <= 4) return glass('#a855f766', '#f43f5e66');               // purple → rose glass
-  if (val <= 5.5) return glass('#ef444466', '#fb923c66');             // red → orange glass
-  if (val <= 6.5) return glass('#f9731666', '#facc1566');             // orange → yellow glass
-  if (val <= 7.5) return glass('#eab30866', '#a3e63566');             // yellow → lime glass
-  if (val <= 8.5) return glass('#a3e63577', '#4ade8077');             // neon lime → green glass
-  // 8.5+ gradients flow toward tron blue
-  if (val <= 8.8) return glass('#4ade8077', '#34d39977');             // green → emerald glass
-  if (val <= 9.0) return glass('#34d39977', '#22d3ee77');             // emerald → cyan glass
-  if (val <= 9.3) return glass('#22d3ee77', '#38bdf877');             // cyan → sky glass
-  if (val <= 9.5) return glass('#38bdf877', '#22b8ff88');             // sky → bright blue glass
-  if (val <= 9.7) return glass('#22b8ff88', '#00ccff88');             // bright blue → near-tron glass
-  if (val < 10) return glass('#00ccff99', '#00e5ff99');               // near-tron → tron glass
-  return glass('#00e5ffaa', '#00aaffaa');                              // tron cyan — electric glass
+// Badge background — dark frosted glass for all scores
+// The star icon and number text carry the neon color instead
+export function getRatingBg(): string {
+  return 'rgba(0, 0, 0, 0.45)';
 }
 
-// Glow shadow for badges — all tiers glow, intensifies with score
+// Neon glow around the badge — colored halo on the dark glass
 export function getRatingGlow(val: number): string {
-  if (val >= 10) return '0 0 18px #00e5ffbb, 0 0 6px #00e5ffcc, inset 0 0 10px #00e5ff44';
-  if (val >= 9.3) return `0 0 14px ${getRatingHex(val)}77, 0 0 4px ${getRatingHex(val)}99`;
-  if (val >= 8.5) return `0 0 10px ${getRatingHex(val)}55, 0 0 3px ${getRatingHex(val)}66`;
-  return `0 0 8px ${getRatingHex(val)}33, 0 0 2px ${getRatingHex(val)}44`;
+  const hex = getRatingHex(val);
+  if (val >= 10) return `0 0 16px ${hex}aa, 0 0 5px ${hex}cc`;
+  if (val >= 9) return `0 0 12px ${hex}66, 0 0 4px ${hex}88`;
+  return `0 0 8px ${hex}33`;
 }
 
 // Text glow for the animated rating number — makes high scores look electric

@@ -328,9 +328,9 @@ function LibraryTab({ library }: { library: LibraryItem[] }) {
                   </div>
                 )}
                 {item.user_rating && (
-                  <div className="absolute top-1 right-1 backdrop-blur-md border border-white/20 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg" style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
-                    <Star size={12} className="text-white fill-white/80" />
-                    <span className="text-[10px] font-bold text-white drop-shadow-sm">{item.user_rating}</span>
+                  <div className="absolute top-1 right-1 backdrop-blur-md border border-white/10 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg" style={{ background: getRatingBg(), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
+                    <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
+                    <span className="text-[10px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(item.user_rating)) }}>{item.user_rating}</span>
                   </div>
                 )}
                 <div className="absolute bottom-1 left-1">

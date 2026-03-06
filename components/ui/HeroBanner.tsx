@@ -6,7 +6,7 @@ import { Star, Info } from 'lucide-react';
 import { AnimatePresence, m } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { extractDominantColor } from '@/lib/utils/color-extract';
-import { getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
+import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 interface HeroItem {
   id: number;
@@ -120,9 +120,9 @@ export default function HeroBanner({ items }: HeroBannerProps) {
               {(() => {
                 const displayScore = current.unified_rating ?? current.vote_average;
                 return displayScore != null && displayScore > 0 ? (
-                  <div className="inline-flex items-center gap-1 backdrop-blur-md border border-white/20 rounded-lg px-2 py-1 mb-3 shadow-lg" style={{ background: getRatingBg(displayScore), boxShadow: getRatingGlow(displayScore) }}>
-                    <Star size={14} className="text-white fill-white/80" />
-                    <span className="text-sm font-bold text-white drop-shadow-sm">
+                  <div className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 mb-3 shadow-lg" style={{ background: getRatingBg(), boxShadow: getRatingGlow(displayScore) }}>
+                    <Star size={14} className="fill-current" style={{ color: getRatingHex(displayScore) }} />
+                    <span className="text-sm font-bold drop-shadow-sm" style={{ color: getRatingHex(displayScore) }}>
                       {displayScore.toFixed(1)}
                     </span>
                   </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { TMDB_IMG_ORIGINAL, TMDB_IMG } from '@/lib/constants';
 import MediaCard from './MediaCard';
-import { getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
+import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 interface EditorialRowProps {
   title: string;
@@ -85,9 +85,9 @@ export default function EditorialRow({ title, items, mediaType = 'movie' }: Edit
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-4">
             {(featured.unified_rating ?? featured.vote_average) > 0 && (
-              <div className="inline-flex items-center gap-1 backdrop-blur-md border border-white/20 rounded-lg px-2 py-0.5 mb-2 shadow-lg" style={{ background: getRatingBg(featured.unified_rating ?? featured.vote_average), boxShadow: getRatingGlow(featured.unified_rating ?? featured.vote_average) }}>
-                <Star size={12} className="text-white fill-white/80" />
-                <span className="text-xs font-bold text-white drop-shadow-sm">{(featured.unified_rating ?? featured.vote_average).toFixed(1)}</span>
+              <div className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 mb-2 shadow-lg" style={{ background: getRatingBg(), boxShadow: getRatingGlow(featured.unified_rating ?? featured.vote_average) }}>
+                <Star size={12} className="fill-current" style={{ color: getRatingHex(featured.unified_rating ?? featured.vote_average) }} />
+                <span className="text-xs font-bold drop-shadow-sm" style={{ color: getRatingHex(featured.unified_rating ?? featured.vote_average) }}>{(featured.unified_rating ?? featured.vote_average).toFixed(1)}</span>
               </div>
             )}
             <h3 className="font-serif text-xl text-white leading-tight group-hover:text-accent transition-colors">
