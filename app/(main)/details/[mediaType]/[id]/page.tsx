@@ -1274,10 +1274,22 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Genres & Info card */}
             <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-white/70 mb-1">Genres</p>
-                <p className="text-sm text-white/50">{genres || 'N/A'}</p>
-              </div>
+              {data.genres?.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1.5">Genres</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {data.genres.map((g: any) => (
+                      <a
+                        key={g.id}
+                        href={`/search?q=${encodeURIComponent(g.name)}`}
+                        className="text-xs bg-white/[0.06] border border-white/[0.08] text-white/60 rounded-full px-2.5 py-1 hover:bg-accent/15 hover:text-accent hover:border-accent/30 transition-colors"
+                      >
+                        {g.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               {data.tagline && (
                 <div>
                   <p className="text-sm font-semibold text-white/70 mb-1">Tagline</p>
@@ -1287,7 +1299,21 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
               {data.production_companies?.length > 0 && (
                 <div>
                   <p className="text-sm font-semibold text-white/70 mb-1">Studio</p>
-                  <p className="text-sm text-white/50">{data.production_companies.slice(0, 3).map((c: any) => c.name).join(', ')}</p>
+                  <p className="text-sm text-white/50">
+                    {data.production_companies.slice(0, 3).map((c: any, i: number) => (
+                      <span key={c.id}>
+                        {i > 0 && ', '}
+                        <a
+                          href={`https://www.google.com/search?q=${encodeURIComponent(c.name + ' studio')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-accent transition-colors"
+                        >
+                          {c.name}
+                        </a>
+                      </span>
+                    ))}
+                  </p>
                 </div>
               )}
               {extRatings?.country && (
@@ -1328,18 +1354,88 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
               )}
             </div>
 
-            {/* Cast card */}
+            {/* Cast & Crew card */}
             <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5">
               <p className="text-sm font-semibold text-white/70 mb-2">Cast</p>
-              <p className="text-sm text-white/50 leading-relaxed">
-                {castList.slice(0, 12).map((c: any) => c.name).join(', ')}
-              </p>
+              <div className="flex flex-wrap gap-1 text-sm text-white/50 leading-relaxed">
+                {castList.slice(0, 12).map((c: any, i: number) => (
+                  <span key={c.id}>
+                    {i > 0 && <span className="text-white/20">, </span>}
+                    <a
+                      href={`/actors/${c.id}`}
+                      className="hover:text-accent transition-colors"
+                    >
+                      {c.name}
+                    </a>
+                  </span>
+                ))}
+              </div>
+
+              {/* Directors with profile images */}
               {directors.length > 0 && (
                 <div className="mt-4">
-                  <p className="text-sm font-semibold text-white/70 mb-1">Director{directors.length > 1 ? 's' : ''}</p>
-                  <p className="text-sm text-white/50">{directors.map((d: any) => d.name).join(', ')}</p>
+                  <p className="text-sm font-semibold text-white/70 mb-2">Director{directors.length > 1 ? 's' : ''}</p>
+                  <div className="space-y-2">
+                    {directors.map((d: any) => (
+                      <a
+                        key={d.id}
+                        href={`https://www.google.com/search?q=${encodeURIComponent(d.name + ' filmmaker')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -mx-1 transition-colors"
+                      >
+                        {d.profile_path ? (
+                          <img
+                            src={`${TMDB_PROFILE}${d.profile_path}`}
+                            alt={d.name}
+                            className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
+                            {d.name?.charAt(0)}
+                          </div>
+                        )}
+                        <span className="text-sm text-white/60 group-hover/crew:text-accent transition-colors">{d.name}</span>
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
+
+              {/* Writers with profile images */}
+              {(() => {
+                const writers = crew.filter((c: any) => c.department === 'Writing').slice(0, 3);
+                if (writers.length === 0) return null;
+                return (
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-white/70 mb-2">Writer{writers.length > 1 ? 's' : ''}</p>
+                    <div className="space-y-2">
+                      {writers.map((w: any) => (
+                        <a
+                          key={w.id + w.job}
+                          href={`https://www.google.com/search?q=${encodeURIComponent(w.name + ' writer')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 group/crew hover:bg-white/[0.04] rounded-lg p-1 -mx-1 transition-colors"
+                        >
+                          {w.profile_path ? (
+                            <img
+                              src={`${TMDB_PROFILE}${w.profile_path}`}
+                              alt={w.name}
+                              className="w-8 h-8 rounded-full object-cover border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-xs font-bold border border-white/[0.08] group-hover/crew:border-accent/40 transition-colors">
+                              {w.name?.charAt(0)}
+                            </div>
+                          )}
+                          <span className="text-sm text-white/60 group-hover/crew:text-accent transition-colors">{w.name}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </FadeInView>
