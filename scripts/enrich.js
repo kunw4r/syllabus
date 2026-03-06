@@ -445,6 +445,233 @@ async function fetchTier4(db) {
   return totalNew;
 }
 
+// ─── Tier 5: Genre Deep Dive ───
+// Discover titles genre-by-genre with lower vote thresholds
+const MOVIE_GENRES = [
+  28,12,16,35,80,99,18,10751,14,36,27,10402,9648,10749,878,10770,53,10752,37
+];
+const TV_GENRES = [
+  10759,16,35,80,99,18,10751,10762,9648,10763,10764,10765,10766,10767,10768,37
+];
+
+async function fetchTier5(db) {
+  log('\n── TIER 5: Genre Deep Dive ──');
+  let totalNew = 0;
+
+  // Track which genre+page we're up to so we resume across runs
+  const genreState = db._meta.genreCrawl || { movieIdx: 0, moviePage: 1, tvIdx: 0, tvPage: 1 };
+
+  // Movies by genre
+  if (!TV_ONLY) {
+    let gi = genreState.movieIdx;
+    let page = genreState.moviePage;
+    while (gi < MOVIE_GENRES.length && hasBudget()) {
+      const genreId = MOVIE_GENRES[gi];
+      log(`   🎬 Movie genre ${genreId} (page ${page})...`);
+
+      // Fetch several pages per genre, lower vote threshold to catch more
+      const pagesToFetch = Math.min(5, Math.floor((CALL_LIMIT - totalCalls) / 40) || 1);
+      const items = [];
+      for (let p = page; p < page + pagesToFetch && hasBudget(); p++) {
+        try {
+          const data = await tmdb('/discover/movie', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=20&page=${p}`);
+          const results = data.results || [];
+          if (results.length === 0) break;
+          items.push(...results);
+        } catch { break; }
+        await sleep(100);
+      }
+
+      const unique = dedup(items);
+      const newItems = unique.filter(m => !db.movie[String(m.id)]);
+      if (newItems.length > 0) {
+        log(`   Found ${newItems.length} new movies in genre ${genreId}`);
+        totalNew += await enrichItems(newItems, 'movie', db);
+      }
+
+      page += pagesToFetch;
+      if (page > 25 || items.length === 0) { // TMDB max 500 results (25 pages)
+        gi++;
+        page = 1;
+      }
+
+      genreState.movieIdx = gi;
+      genreState.moviePage = page;
+      db._meta.genreCrawl = genreState;
+      saveScores(db);
+    }
+  }
+
+  // TV by genre
+  if (!MOVIES_ONLY && hasBudget()) {
+    let gi = genreState.tvIdx;
+    let page = genreState.tvPage;
+    while (gi < TV_GENRES.length && hasBudget()) {
+      const genreId = TV_GENRES[gi];
+      log(`   📺 TV genre ${genreId} (page ${page})...`);
+
+      const pagesToFetch = Math.min(5, Math.floor((CALL_LIMIT - totalCalls) / 40) || 1);
+      const items = [];
+      for (let p = page; p < page + pagesToFetch && hasBudget(); p++) {
+        try {
+          const data = await tmdb('/discover/tv', `&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=20&page=${p}`);
+          const results = data.results || [];
+          if (results.length === 0) break;
+          items.push(...results);
+        } catch { break; }
+        await sleep(100);
+      }
+
+      const unique = dedup(items);
+      const newItems = unique.filter(s => !db.tv[String(s.id)]);
+      if (newItems.length > 0) {
+        log(`   Found ${newItems.length} new TV shows in genre ${genreId}`);
+        totalNew += await enrichItems(newItems, 'tv', db);
+      }
+
+      page += pagesToFetch;
+      if (page > 25 || items.length === 0) {
+        gi++;
+        page = 1;
+      }
+
+      genreState.tvIdx = gi;
+      genreState.tvPage = page;
+      db._meta.genreCrawl = genreState;
+      saveScores(db);
+    }
+  }
+
+  // Reset genre crawl when all genres done so it cycles again next run
+  if (genreState.movieIdx >= MOVIE_GENRES.length && genreState.tvIdx >= TV_GENRES.length) {
+    log('   All genres crawled! Resetting for next cycle.');
+    db._meta.genreCrawl = { movieIdx: 0, moviePage: 1, tvIdx: 0, tvPage: 1 };
+  }
+
+  log(`   Tier 5 done: +${totalNew} new scores (${totalCalls} calls used)`);
+  return totalNew;
+}
+
+// ─── Tier 6: Deep Popularity Crawl ───
+// Crawl TMDB by popularity with very low vote threshold, paginated across runs
+async function fetchTier6(db) {
+  log('\n── TIER 6: Deep Popularity Crawl ──');
+  let totalNew = 0;
+
+  const crawlState = db._meta.deepCrawl || { moviePage: 1, tvPage: 1 };
+
+  // Movies — crawl by popularity, deep pages
+  if (!TV_ONLY && hasBudget()) {
+    let page = crawlState.moviePage;
+    const maxPage = Math.min(page + 20, 500); // 20 pages per run max
+    log(`   🎬 Deep movie crawl starting at page ${page}...`);
+
+    while (page <= maxPage && hasBudget()) {
+      try {
+        const data = await tmdb('/discover/movie', `&sort_by=popularity.desc&vote_count.gte=10&page=${page}`);
+        const results = data.results || [];
+        if (results.length === 0) { page = 1; break; } // reset when exhausted
+
+        const newItems = results.filter(m => !db.movie[String(m.id)]);
+        if (newItems.length > 0) {
+          totalNew += await enrichItems(newItems, 'movie', db);
+        }
+      } catch { break; }
+
+      page++;
+      await sleep(100);
+    }
+
+    crawlState.moviePage = page > 500 ? 1 : page;
+  }
+
+  // TV — same approach
+  if (!MOVIES_ONLY && hasBudget()) {
+    let page = crawlState.tvPage;
+    const maxPage = Math.min(page + 15, 500);
+    log(`   📺 Deep TV crawl starting at page ${page}...`);
+
+    while (page <= maxPage && hasBudget()) {
+      try {
+        const data = await tmdb('/discover/tv', `&sort_by=popularity.desc&vote_count.gte=10&page=${page}`);
+        const results = data.results || [];
+        if (results.length === 0) { page = 1; break; }
+
+        const newItems = results.filter(s => !db.tv[String(s.id)]);
+        if (newItems.length > 0) {
+          totalNew += await enrichItems(newItems, 'tv', db);
+        }
+      } catch { break; }
+
+      page++;
+      await sleep(100);
+    }
+
+    crawlState.tvPage = page > 500 ? 1 : page;
+  }
+
+  db._meta.deepCrawl = crawlState;
+  saveScores(db);
+
+  log(`   Tier 6 done: +${totalNew} new scores (${totalCalls} calls used)`);
+  return totalNew;
+}
+
+// ─── Tier 7: International & Language Crawl ───
+// Discover titles from specific languages/regions often missed
+const LANGUAGES = ['ko','hi','es','fr','de','it','pt','zh','th','tr','pl','da','sv','no','nl','fi'];
+
+async function fetchTier7(db) {
+  log('\n── TIER 7: International Cinema ──');
+  let totalNew = 0;
+
+  const langState = db._meta.langCrawl || { idx: 0, page: 1 };
+
+  while (langState.idx < LANGUAGES.length && hasBudget()) {
+    const lang = LANGUAGES[langState.idx];
+    let page = langState.page;
+
+    log(`   🌍 Language: ${lang} (page ${page})...`);
+
+    const pagesToFetch = Math.min(5, 25 - page + 1);
+    for (let p = page; p < page + pagesToFetch && hasBudget(); p++) {
+      try {
+        // Movies
+        if (!TV_ONLY) {
+          const data = await tmdb('/discover/movie', `&with_original_language=${lang}&sort_by=vote_count.desc&vote_count.gte=50&page=${p}`);
+          const newMovies = (data.results || []).filter(m => !db.movie[String(m.id)]);
+          if (newMovies.length > 0) totalNew += await enrichItems(newMovies, 'movie', db);
+        }
+        // TV
+        if (!MOVIES_ONLY && hasBudget()) {
+          const data = await tmdb('/discover/tv', `&with_original_language=${lang}&sort_by=vote_count.desc&vote_count.gte=30&page=${p}`);
+          const newShows = (data.results || []).filter(s => !db.tv[String(s.id)]);
+          if (newShows.length > 0) totalNew += await enrichItems(newShows, 'tv', db);
+        }
+      } catch { break; }
+      await sleep(100);
+    }
+
+    langState.page = page + pagesToFetch;
+    if (langState.page > 25) {
+      langState.idx++;
+      langState.page = 1;
+    }
+
+    db._meta.langCrawl = langState;
+    saveScores(db);
+  }
+
+  // Reset when all languages done
+  if (langState.idx >= LANGUAGES.length) {
+    log('   All languages crawled! Resetting.');
+    db._meta.langCrawl = { idx: 0, page: 1 };
+  }
+
+  log(`   Tier 7 done: +${totalNew} new scores (${totalCalls} calls used)`);
+  return totalNew;
+}
+
 // ─── Entry point ───
 async function main() {
   console.log('\n' + '═'.repeat(60));
@@ -487,6 +714,21 @@ async function main() {
   // ── Tier 4: Decade backfill (1990s → 1960s) ──
   if (hasBudget() && db._meta.backfillYear === 'done' && db._meta.backfillDecade !== 'done') {
     totalNew += await fetchTier4(db);
+  }
+
+  // ── Tier 5: Genre deep dive (genre-by-genre discovery) ──
+  if (hasBudget()) {
+    totalNew += await fetchTier5(db);
+  }
+
+  // ── Tier 6: Deep popularity crawl (low-threshold, paginated) ──
+  if (hasBudget()) {
+    totalNew += await fetchTier6(db);
+  }
+
+  // ── Tier 7: International cinema (by language) ──
+  if (hasBudget()) {
+    totalNew += await fetchTier7(db);
   }
 
   // Count anime entries
