@@ -956,11 +956,27 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
     : false;
   const avgScore = computeUnifiedRating(extRatings, malData, isAnime);
 
+  // Inline trailer player state
+  const [showTrailer, setShowTrailer] = useState(false);
+
+  // Quick-add to watchlist state
+  const { user } = useAuth();
+  const [quickAdded, setQuickAdded] = useState(false);
+  const [quickAdding, setQuickAdding] = useState(false);
+
   useEffect(() => {
     if (avgScore != null && data?.id) {
       setSyllabusScore(mediaType, data.id, avgScore);
     }
   }, [avgScore, data?.id, mediaType]);
+
+  // Check if already in library
+  useEffect(() => {
+    if (!user || !data?.id) return;
+    getLibraryItemByMediaId({ tmdb_id: data.id }).then((item) => {
+      if (item) setQuickAdded(true);
+    }).catch(() => {});
+  }, [user, data?.id]);
 
   if (loading) {
     return (
@@ -1006,22 +1022,6 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
     if (gVibes) vibes.push(...gVibes);
   });
   const uniqueVibes = [...new Set(vibes)].slice(0, 5);
-
-  // Inline trailer player state
-  const [showTrailer, setShowTrailer] = useState(false);
-
-  // Quick-add to watchlist state
-  const { user } = useAuth();
-  const [quickAdded, setQuickAdded] = useState(false);
-  const [quickAdding, setQuickAdding] = useState(false);
-
-  // Check if already in library
-  useEffect(() => {
-    if (!user || !data?.id) return;
-    getLibraryItemByMediaId({ tmdb_id: data.id }).then((item) => {
-      if (item) setQuickAdded(true);
-    }).catch(() => {});
-  }, [user, data?.id]);
 
   const handleQuickAdd = async () => {
     if (!user) return toast('Please log in first', 'error');
