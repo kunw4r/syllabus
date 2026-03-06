@@ -178,12 +178,12 @@ export default function MediaCard({
             )}
 
             {/* Resting state — title + year at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/70 via-black/30 to-transparent group-hover/card:opacity-0 transition-opacity duration-200 pointer-events-none">
-              <p className="text-[13px] font-semibold text-white truncate drop-shadow-lg">
+            <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black via-black/70 via-[40%] to-transparent group-hover/card:opacity-0 transition-opacity duration-200 pointer-events-none">
+              <p className="text-[13px] font-semibold text-white truncate" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6)' }}>
                 {title}
               </p>
               {year && (
-                <p className="text-[11px] text-white/45 mt-0.5">{year}</p>
+                <p className="text-[11px] text-white/50 mt-0.5" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{year}</p>
               )}
             </div>
 
