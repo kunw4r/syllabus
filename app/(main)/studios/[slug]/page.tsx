@@ -31,65 +31,137 @@ type Tab = 'movies' | 'tv';
 
 // ── Hero Banner — uses the top movie's backdrop ──
 
-function StudioHero({ movie, studio }: { movie: any; studio: Studio }) {
-  const backdrop = movie.backdrop_path
+function StudioHero({
+  movie,
+  studio,
+  searchQuery,
+  onSearchChange,
+  tab,
+  onTabChange,
+}: {
+  movie: any | null;
+  studio: Studio;
+  searchQuery: string;
+  onSearchChange: (v: string) => void;
+  tab: Tab;
+  onTabChange: (t: Tab) => void;
+}) {
+  const router = useRouter();
+  const backdrop = movie?.backdrop_path
     ? `${TMDB_IMG_ORIGINAL}${movie.backdrop_path}`
     : null;
 
-  if (!backdrop) return null;
-
   return (
-    <Link
-      href={`/details/movie/${movie.id}`}
-      className="group relative block w-full aspect-[2.4/1] sm:aspect-[2.8/1] rounded-2xl overflow-hidden mb-8"
-    >
-      <img
-        src={backdrop}
-        alt={movie.title}
-        className="absolute inset-0 w-full h-full object-cover object-[center_20%] transition-transform duration-700 group-hover:scale-[1.02]"
-      />
-      {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0e1117] via-[#0e1117]/40 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0e1117]/70 via-transparent to-transparent" />
-
-      {/* Content */}
-      <div className="absolute bottom-0 left-0 p-5 sm:p-8 max-w-lg">
-        <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">
-          Featured from {studio.name}
-        </p>
-        <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight mb-1.5">
-          {movie.title}
-        </h2>
-        {movie.overview && (
-          <p className="text-sm text-white/45 line-clamp-2 leading-relaxed hidden sm:block">
-            {movie.overview}
-          </p>
+    <div className="relative -mx-[clamp(20px,5vw,64px)] mb-8" style={{ width: 'calc(100% + 2 * clamp(20px, 5vw, 64px))' }}>
+      <div className="relative w-full aspect-[2.8/1] sm:aspect-[3/1] overflow-hidden">
+        {backdrop ? (
+          <img
+            src={backdrop}
+            alt={movie.title}
+            className="absolute inset-0 w-full h-full object-cover object-[center_20%]"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-dark-700 to-dark-900" />
         )}
-        {(() => {
-          const rating = movie.unified_rating || movie.vote_average;
-          if (!rating || rating <= 0) return null;
-          return (
-            <div className="flex items-center gap-2.5 mt-2.5">
-              <span
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold"
-                style={{
-                  background: getRatingBg(Number(rating)),
-                  boxShadow: getRatingGlow(Number(rating)),
-                }}
-              >
-                <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-                <span style={{ color: getRatingHex(Number(rating)) }}>
-                  {Number(rating).toFixed(1)}
-                </span>
-              </span>
-              {movie.release_date && (
-                <span className="text-xs text-white/40">{movie.release_date.slice(0, 4)}</span>
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0e1117] via-[#0e1117]/50 to-[#0e1117]/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0e1117]/80 via-[#0e1117]/20 to-transparent" />
+
+        {/* Top bar: Back button */}
+        <div className="absolute top-0 left-0 right-0 px-[clamp(20px,5vw,64px)] pt-4">
+          <button
+            onClick={() => router.push('/studios')}
+            className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors"
+          >
+            <ArrowLeft size={15} />
+            Studios
+          </button>
+        </div>
+
+        {/* Content overlay */}
+        <div className="absolute bottom-0 left-0 right-0 px-[clamp(20px,5vw,64px)] pb-6 sm:pb-8">
+          {/* Studio name */}
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-none mb-1">
+            {studio.name}
+          </h1>
+          <p className="text-white/30 text-sm mb-5">
+            {studio.tmdb_id ? 'Production Company' : studio.language === 'hi' ? 'Indian Film Industry' : studio.language === 'ko' ? 'South Korean Cinema' : 'Japanese Animation'}
+          </p>
+
+          {/* Search + Tabs inline */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder={`Search in ${studio.name}...`}
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/[0.08] border border-white/[0.08] text-sm text-white placeholder-white/25 outline-none focus:border-white/15 focus:bg-white/[0.12] backdrop-blur-md transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => onSearchChange('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                >
+                  <X size={14} />
+                </button>
               )}
             </div>
-          );
-        })()}
+            <div className="flex gap-1 bg-white/[0.06] backdrop-blur-md rounded-xl p-1 border border-white/[0.08]">
+              {(['movies', 'tv'] as Tab[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => onTabChange(t)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    tab === t
+                      ? 'bg-white/15 text-white shadow-sm'
+                      : 'text-white/40 hover:text-white/70'
+                  }`}
+                >
+                  {t === 'movies' ? 'Movies' : 'TV Shows'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Featured movie info */}
+          {movie && !searchQuery && (
+            <Link href={`/details/movie/${movie.id}`} className="group mt-5 block max-w-lg">
+              <p className="text-[11px] font-medium text-white/40 uppercase tracking-wider mb-1">
+                Featured
+              </p>
+              <h2 className="text-lg sm:text-xl font-bold text-white leading-tight mb-1 group-hover:text-accent transition-colors">
+                {movie.title}
+              </h2>
+              {(() => {
+                const rating = movie.unified_rating || movie.vote_average;
+                if (!rating || rating <= 0) return null;
+                return (
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold"
+                      style={{
+                        background: getRatingBg(Number(rating)),
+                        boxShadow: getRatingGlow(Number(rating)),
+                      }}
+                    >
+                      <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+                      <span style={{ color: getRatingHex(Number(rating)) }}>
+                        {Number(rating).toFixed(1)}
+                      </span>
+                    </span>
+                    {movie.release_date && (
+                      <span className="text-xs text-white/35">{movie.release_date.slice(0, 4)}</span>
+                    )}
+                  </div>
+                );
+              })()}
+            </Link>
+          )}
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -212,67 +284,14 @@ export default function StudioPage() {
 
   return (
     <div className="min-w-0">
-      {/* Back button */}
-      <button
-        onClick={() => router.push('/studios')}
-        className="flex items-center gap-1.5 text-white/35 hover:text-white text-sm mb-5 transition-colors"
-      >
-        <ArrowLeft size={15} />
-        Studios
-      </button>
-
-      {/* Studio name + subtitle */}
-      <div className="mb-5">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-none">{studio.name}</h1>
-        <p className="text-white/35 text-sm mt-1">
-          {studio.tmdb_id ? 'Production Company' : studio.language === 'hi' ? 'Indian Film Industry' : studio.language === 'ko' ? 'South Korean Cinema' : 'Japanese Animation'}
-        </p>
-      </div>
-
-      {/* Search + Tabs row */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search in ${studio.name}...`}
-            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-white/20 outline-none focus:border-white/12 focus:bg-white/[0.06] transition-all"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-        <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
-          {(['movies', 'tv'] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                tab === t
-                  ? 'bg-white/10 text-white shadow-sm'
-                  : 'text-white/40 hover:text-white/70'
-              }`}
-            >
-              {t === 'movies' ? 'Movies' : 'TV Shows'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div
-        className="mb-6"
-        style={{
-          height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent)',
-        }}
+      {/* ── Integrated Hero with back, title, search, tabs ── */}
+      <StudioHero
+        movie={heroMovie}
+        studio={studio}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        tab={tab}
+        onTabChange={setTab}
       />
 
       {tab === 'movies' ? (
@@ -284,11 +303,6 @@ export default function StudioPage() {
           </div>
         ) : (
           <>
-            {/* Hero Banner — only when not searching */}
-            {!searchQuery && heroMovie && (
-              <StudioHero movie={heroMovie} studio={studio} />
-            )}
-
             {/* New Releases */}
             {filterBySearch(newReleases).length > 0 && (
               <ScrollRow title="New Releases">
