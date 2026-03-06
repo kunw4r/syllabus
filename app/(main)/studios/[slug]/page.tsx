@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { ArrowLeft, Search, Star, X } from 'lucide-react';
 import MediaCard from '@/components/ui/MediaCard';
 import ScrollRow from '@/components/ui/ScrollRow';
 import { SkeletonRow } from '@/components/ui/SkeletonCard';
@@ -22,6 +22,7 @@ import {
   loadStaticScoreDB,
   enrichItemsWithRatings,
 } from '@/lib/scoring';
+import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 import { STUDIOS, TMDB_IMG_ORIGINAL, type Studio } from '@/lib/constants';
 import { STUDIO_LOGOS } from '@/components/ui/StudioLogos';
 
@@ -63,16 +64,29 @@ function StudioHero({ movie, studio }: { movie: any; studio: Studio }) {
             {movie.overview}
           </p>
         )}
-        {movie.vote_average > 0 && (
-          <div className="flex items-center gap-2 mt-2.5">
-            <span className="text-xs font-semibold text-white/70 bg-white/10 px-2 py-0.5 rounded-md">
-              {movie.vote_average.toFixed(1)}
-            </span>
-            {movie.release_date && (
-              <span className="text-xs text-white/40">{movie.release_date.slice(0, 4)}</span>
-            )}
-          </div>
-        )}
+        {(() => {
+          const rating = movie.unified_rating || movie.vote_average;
+          if (!rating || rating <= 0) return null;
+          return (
+            <div className="flex items-center gap-2.5 mt-2.5">
+              <span
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold"
+                style={{
+                  background: getRatingBg(Number(rating)),
+                  boxShadow: getRatingGlow(Number(rating)),
+                }}
+              >
+                <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+                <span style={{ color: getRatingHex(Number(rating)) }}>
+                  {Number(rating).toFixed(1)}
+                </span>
+              </span>
+              {movie.release_date && (
+                <span className="text-xs text-white/40">{movie.release_date.slice(0, 4)}</span>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </Link>
   );
@@ -336,7 +350,7 @@ export default function StudioPage() {
               return (
                 <div className="mt-8">
                   <h2 className="text-lg sm:text-xl font-bold text-white mb-4">More from {studio.name}</h2>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                  <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
                     {moreItems.map((m: any) => (
                       <MediaCard key={m.id} item={m} mediaType="movie" />
                     ))}
@@ -361,7 +375,7 @@ export default function StudioPage() {
         ) : filterBySearch(tvPopular).length > 0 ? (
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-white mb-4">TV Shows</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
               {filterBySearch(tvPopular).map((s: any) => (
                 <MediaCard key={s.id} item={s} mediaType="tv" />
               ))}
