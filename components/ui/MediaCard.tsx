@@ -136,12 +136,16 @@ export default function MediaCard({
   if (mode === 'landscape') {
     return (
       <div
-        className="group/card relative cursor-pointer shrink-0 w-[240px] sm:w-[280px] min-w-0 z-0 hover:z-30"
+        className="group/card relative cursor-pointer shrink-0 w-[240px] sm:w-[280px] min-w-0 z-0 hover:z-50"
+        style={{ perspective: '800px' }}
         onClick={handleClick}
       >
-        {/* Scale wrapper — pops out and covers neighbors */}
-        <div className="transition-transform duration-300 ease-out group-hover/card:scale-[1.4] group-hover/card:delay-300 origin-center">
-          <div className="relative aspect-[16/9] rounded-lg overflow-hidden group-hover/card:shadow-[0_8px_40px_rgba(0,0,0,0.9)] transition-shadow duration-300">
+        {/* 3D lift + scale — pops out toward the viewer */}
+        <div
+          className="transition-all duration-[400ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] origin-center group-hover/card:delay-300"
+          style={{ transformStyle: 'preserve-3d' }}
+        >
+          <div className="relative aspect-[16/9] rounded-lg overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/card:rounded-xl group-hover/card:shadow-[0_14px_50px_rgba(0,0,0,0.95),0_0_0_1px_rgba(255,255,255,0.08)] group-hover/card:scale-[1.5] group-hover/card:-translate-y-2 group-hover/card:delay-300">
             {/* Image */}
             {displayImg ? (
               <img
@@ -156,10 +160,10 @@ export default function MediaCard({
               </div>
             )}
 
-            {/* Rating badge — always visible */}
+            {/* Rating badge — always visible, top-right */}
             {rating != null && (
               <div
-                className="absolute top-2 left-2 rounded-md px-1.5 py-0.5 flex items-center gap-1 backdrop-blur-md border border-white/10"
+                className="absolute top-2 right-2 rounded-md px-1.5 py-0.5 flex items-center gap-1 backdrop-blur-md border border-white/10 z-10"
                 style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
               >
                 <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
@@ -179,61 +183,55 @@ export default function MediaCard({
               )}
             </div>
 
-            {/* Hover overlay — dark gradient with controls */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
+            {/* Hover overlay — gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
 
-            {/* Action buttons — overlay on hover */}
+            {/* Hover controls overlay */}
             <div className="absolute inset-0 flex flex-col justify-between p-3 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-              {/* Top-right buttons */}
-              <div className="flex justify-end gap-2">
-                {showAdd && user && !added ? (
+              {/* Top row — add + info buttons */}
+              <div className="flex justify-between items-start">
+                <div />
+                <div className="flex gap-1.5">
+                  {showAdd && user && !added ? (
+                    <button
+                      onClick={handleAdd}
+                      className="w-8 h-8 rounded-full border-2 border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/60 transition-all active:scale-90"
+                      title="Add to Library"
+                    >
+                      <Plus size={16} className="text-white" />
+                    </button>
+                  ) : added ? (
+                    <div className="w-8 h-8 rounded-full border-2 border-green-500/60 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                      <Check size={16} className="text-green-400" />
+                    </div>
+                  ) : null}
                   <button
-                    onClick={handleAdd}
-                    className="w-9 h-9 rounded-full border-2 border-white/50 bg-black/30 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/50 transition-all active:scale-90"
-                    title="Add to Library"
+                    onClick={(e) => { e.stopPropagation(); handleClick(); }}
+                    className="w-8 h-8 rounded-full border-2 border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/60 transition-all"
                   >
-                    <Plus size={18} className="text-white" />
+                    <Info size={14} className="text-white" />
                   </button>
-                ) : added ? (
-                  <div className="w-9 h-9 rounded-full border-2 border-green-500/60 bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                    <Check size={18} className="text-green-400" />
-                  </div>
-                ) : null}
+                </div>
+              </div>
+
+              {/* Center — big play button */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <button
                   onClick={(e) => { e.stopPropagation(); handleClick(); }}
-                  className="w-9 h-9 rounded-full border-2 border-white/50 bg-black/30 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/50 transition-all"
+                  className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center hover:bg-white hover:scale-110 transition-all pointer-events-auto shadow-lg shadow-black/30"
                 >
-                  <Info size={16} className="text-white" />
+                  <Play size={22} className="text-black fill-black ml-0.5" />
                 </button>
               </div>
 
-              {/* Bottom section — play button + metadata */}
+              {/* Bottom — title + metadata */}
               <div>
-                {/* Play button */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleClick(); }}
-                  className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors mb-2.5"
-                >
-                  <Play size={20} className="text-black fill-black ml-0.5" />
-                </button>
-
-                {/* Title */}
                 <p className="text-sm font-bold text-white truncate drop-shadow-lg leading-tight">
                   {title}
                 </p>
-
-                {/* Year + Content Rating + Genres — single row, no overlap */}
-                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-white/70 flex-wrap">
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-white/70">
                   {year && <span className="font-medium">{year}</span>}
-                  {(item as any).certification && (
-                    <>
-                      {year && <span className="text-white/30">&#8226;</span>}
-                      <span className="px-1.5 py-0.5 rounded border border-white/25 text-[10px] font-bold text-white/80 leading-none">
-                        {(item as any).certification}
-                      </span>
-                    </>
-                  )}
-                  {genreNames.length > 0 && (year || (item as any).certification) && <span className="text-white/30">&#8226;</span>}
+                  {genreNames.length > 0 && year && <span className="text-white/30">&#8226;</span>}
                   {genreNames.map((g, i) => (
                     <span key={g} className="flex items-center gap-1.5">
                       {i > 0 && <span className="text-white/30">&#8226;</span>}
