@@ -1,6 +1,7 @@
 'use client';
 
 import { Star } from 'lucide-react';
+import { getRatingHex, getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
 
 interface VirtualShelfProps {
   items: any[];
@@ -51,8 +52,16 @@ export default function VirtualShelf({ items, onCardClick }: VirtualShelfProps) 
                     )}
                   </div>
                   {item.user_rating > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-gold rounded-full w-5 h-5 flex items-center justify-center">
-                      <span className="text-[8px] font-black text-dark-900">{Math.round(item.user_rating)}</span>
+                    <div
+                      className="absolute -top-2 -right-2 rounded-full w-6 h-6 flex items-center justify-center border border-white/10 backdrop-blur-sm shadow-lg"
+                      style={{
+                        background: getRatingBg(Number(item.user_rating)),
+                        boxShadow: getRatingGlow(Number(item.user_rating)),
+                      }}
+                    >
+                      <span className="text-[9px] font-black" style={{ color: getRatingHex(Number(item.user_rating)) }}>
+                        {Math.round(item.user_rating)}
+                      </span>
                     </div>
                   )}
                 </div>
