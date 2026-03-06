@@ -49,18 +49,19 @@ export function getRatingGlow(val: number): string {
   return `0 0 14px ${hex}55, 0 0 4px ${hex}77`;
 }
 
-// Text glow for the animated rating number — makes high scores look electric
-export function getRatingTextGlow(val: number): string | undefined {
-  if (val >= 10) return '0 0 20px #00e5ffbb, 0 0 40px #00e5ff55';
-  if (val >= 9.3) return '0 0 14px #38bdf888, 0 0 30px #38bdf844';
-  if (val >= 8.5) return `0 0 10px ${getRatingHex(val)}66`;
-  return undefined;
+// Text glow for the animated rating number — all scores glow, intensifies higher
+export function getRatingTextGlow(val: number): string {
+  const hex = getRatingHex(val);
+  if (val >= 10) return `0 0 20px ${hex}bb, 0 0 40px ${hex}55`;
+  if (val >= 9) return `0 0 16px ${hex}99, 0 0 32px ${hex}44`;
+  if (val >= 7) return `0 0 12px ${hex}77, 0 0 24px ${hex}33`;
+  return `0 0 10px ${hex}55, 0 0 20px ${hex}22`;
 }
 
-// Track glow for slider fill bar
-export function getRatingTrackGlow(val: number): string | undefined {
-  if (val >= 10) return '0 0 12px #00e5ff88, 0 0 3px #00e5ffaa';
-  if (val >= 9.3) return `0 0 8px ${getRatingHex(val)}55`;
-  if (val >= 8.5) return `0 0 5px ${getRatingHex(val)}33`;
-  return undefined;
+// Track glow for slider fill bar — all scores glow
+export function getRatingTrackGlow(val: number): string {
+  const hex = getRatingHex(val);
+  if (val >= 10) return `0 0 14px ${hex}99, 0 0 4px ${hex}bb`;
+  if (val >= 9) return `0 0 10px ${hex}66, 0 0 3px ${hex}88`;
+  return `0 0 8px ${hex}44, 0 0 2px ${hex}66`;
 }

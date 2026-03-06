@@ -136,6 +136,24 @@ async function enrichBatch(books: any[], batchSize = 4) {
   }
 }
 
+async function enrichBatchRatings(books: any[], batchSize = 5) {
+  for (let i = 0; i < books.length; i += batchSize) {
+    await Promise.all(books.slice(i, i + batchSize).map(async (book) => {
+      if (book.rating != null) return;
+      try {
+        const key = book.key?.replace('/works/', '') || '';
+        if (!key) return;
+        const res = await fetch(`${OL_BASE}/works/${key}/ratings.json`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.summary?.average) {
+          book.rating = Math.round(data.summary.average * 20) / 10;
+        }
+      } catch { /* skip */ }
+    }));
+  }
+}
+
 export function getTrendingBooks() {
   return cached('ol:trending', async () => {
     try {
@@ -143,8 +161,9 @@ export function getTrendingBooks() {
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       const books = (data.works || []).map(mapOLBook).slice(0, 20);
-      // Return immediately with OL covers; enrich with Google covers in background
+      // Enrich with covers and ratings in background
       enrichBatch(books).catch(() => {});
+      enrichBatchRatings(books).catch(() => {});
       return books.filter((b: any) => b.cover_urls.length > 0);
     } catch { return []; }
   });
@@ -160,7 +179,7 @@ export function getBooksBySubject(subject: string) {
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       let books = (data.works || []).map(mapSubjectWork);
-      await enrichBatch(books);
+      await Promise.all([enrichBatch(books), enrichBatchRatings(books)]);
       return books.filter((b: any) => b.cover_urls.length > 0);
     } catch { return []; }
   });
