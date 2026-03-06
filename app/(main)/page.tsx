@@ -133,15 +133,17 @@ export default function Home() {
       {/* Hero Banner — full bleed edge-to-edge */}
       {!loading && heroItems.length > 0 && (
         <div className="-mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-6 lg:-mt-4 mb-10">
-          <HeroBanner items={heroItems} />
+          <HeroBanner items={heroItems} onSearch={handleSearch} />
         </div>
       )}
 
       <div className="space-y-10">
-        {/* Search */}
-        <FadeInView>
-          <SearchBar onSearch={handleSearch} placeholder="Search movies, TV shows & books..." />
-        </FadeInView>
+        {/* Search — only show standalone when hero isn't visible */}
+        {(loading || heroItems.length === 0) && (
+          <FadeInView>
+            <SearchBar onSearch={handleSearch} placeholder="Search movies, TV shows & books..." />
+          </FadeInView>
+        )}
 
         {/* Stats row */}
         {user && library.length > 0 && (

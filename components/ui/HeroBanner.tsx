@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Info, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Star, Info, Play, Pause, Volume2, VolumeX, Search, X } from 'lucide-react';
 import { AnimatePresence, m } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { extractDominantColor } from '@/lib/utils/color-extract';
@@ -26,6 +26,7 @@ interface HeroItem {
 
 interface HeroBannerProps {
   items: HeroItem[];
+  onSearch?: (query: string) => void;
 }
 
 const GENRE_MAP: Record<number, string> = {
@@ -48,7 +49,7 @@ function ytCommand(iframe: HTMLIFrameElement | null, func: string) {
   );
 }
 
-export default function HeroBanner({ items }: HeroBannerProps) {
+export default function HeroBanner({ items, onSearch }: HeroBannerProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [ambientColor, setAmbientColor] = useState('233, 69, 96');
@@ -145,6 +146,21 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     setProgressKey((k) => k + 1);
   };
 
+  // Inline search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    if (onSearch) {
+      onSearch(q);
+    } else {
+      router.push(`/search?q=${encodeURIComponent(q)}`);
+    }
+  };
+
   if (heroItems.length === 0) return null;
 
   const current = heroItems[currentIndex];
@@ -220,6 +236,32 @@ export default function HeroBanner({ items }: HeroBannerProps) {
           style={{ background: `radial-gradient(ellipse at 30% 80%, rgb(${ambientColor}) 0%, transparent 70%)` }}
         />
       </div>
+
+      {/* Search overlay — top-right, studio-style */}
+      {onSearch && (
+        <div className="absolute top-0 left-0 right-0 z-[4] px-[clamp(36px,6vw,80px)] pt-4 flex justify-end">
+          <form onSubmit={handleSearchSubmit} className="relative w-56 sm:w-72">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search movies, TV & books..."
+              className="w-full pl-9 pr-8 py-2 rounded-xl bg-black/30 border border-white/[0.1] text-sm text-white placeholder-white/25 outline-none focus:border-white/20 focus:bg-black/50 backdrop-blur-md transition-all"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </form>
+        </div>
+      )}
 
       {/* Content overlay */}
       <div className="absolute bottom-0 left-0 right-0 z-[3] pb-16 sm:pb-20 px-[clamp(36px,6vw,80px)]">
