@@ -292,7 +292,7 @@ function StatsPanel({ items }: { items: any[] }) {
                   <p className="text-sm font-semibold truncate max-w-[120px]">
                     {item.title}
                   </p>
-                  <p className="text-xs font-bold" style={{ color: getRatingHex(Number(item.user_rating)) }}>
+                  <p className="text-xs font-bold text-red-400">
                     {item.user_rating}/10
                   </p>
                 </div>
@@ -1070,9 +1070,9 @@ export default function LibraryPage() {
                             {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 flex items-center gap-1" style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
-                          <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
-                          <span className="text-xs font-black drop-shadow-sm" style={{ color: getRatingHex(Number(item.user_rating)) }}>
+                        <div className="absolute top-2 right-2 backdrop-blur-md border border-red-400/25 bg-red-500/15 rounded-lg px-2 py-0.5 flex items-center gap-1 shadow-[0_0_12px_rgba(239,68,68,0.15)]">
+                          <Star size={12} className="fill-current text-red-400" />
+                          <span className="text-xs font-black drop-shadow-sm text-red-400">
                             {Number(item.user_rating) % 1 === 0 ? item.user_rating : Number(item.user_rating).toFixed(1)}
                           </span>
                         </div>
