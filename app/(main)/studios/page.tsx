@@ -101,6 +101,7 @@ const FEATURED_STUDIOS = [
     name: 'Paramount',
     image: '/studios/paramount-card.png',
     imagePosition: 'center 58%',
+    cropInset: '0%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,40,80,0.5) 0%, rgba(12,22,50,0.8) 50%, rgba(8,12,26,0.95) 100%)',
     border: 'rgba(60,100,180,0.20)',
     glow: '0 0 40px rgba(35,70,150,0.12), 0 0 80px rgba(25,50,120,0.06)',
@@ -112,6 +113,7 @@ const FEATURED_STUDIOS = [
     name: 'Lionsgate',
     image: '/studios/lionsgate-card.png',
     imagePosition: 'center 55%',
+    cropInset: '0%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,50,100,0.5) 0%, rgba(10,28,60,0.8) 50%, rgba(6,14,30,0.95) 100%)',
     border: 'rgba(50,110,200,0.20)',
     glow: '0 0 40px rgba(30,80,170,0.12), 0 0 80px rgba(20,55,130,0.06)',
@@ -122,6 +124,7 @@ const FEATURED_STUDIOS = [
     slug: 'netflix',
     name: 'Netflix',
     image: '/studios/netflix-card.png',
+    imagePosition: 'center 42%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(120,20,20,0.5) 0%, rgba(60,10,10,0.8) 50%, rgba(20,6,6,0.95) 100%)',
     border: 'rgba(200,50,50,0.22)',
     glow: '0 0 40px rgba(180,30,30,0.15), 0 0 80px rgba(140,20,20,0.08)',
@@ -132,6 +135,7 @@ const FEATURED_STUDIOS = [
     slug: 'mgm',
     name: 'Metro-Goldwyn-Mayer',
     image: '/studios/mgm-card.png',
+    imagePosition: 'center 42%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(80,60,20,0.5) 0%, rgba(40,30,10,0.8) 50%, rgba(16,12,6,0.95) 100%)',
     border: 'rgba(200,160,60,0.22)',
     glow: '0 0 40px rgba(160,120,40,0.12), 0 0 80px rgba(120,90,30,0.06)',
@@ -142,6 +146,7 @@ const FEATURED_STUDIOS = [
     slug: '20th-century',
     name: '20th Century Studios',
     image: '/studios/20th-century-card.png',
+    imagePosition: 'center 42%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(80,60,20,0.5) 0%, rgba(40,28,10,0.8) 50%, rgba(16,12,6,0.95) 100%)',
     border: 'rgba(200,150,50,0.22)',
     glow: '0 0 40px rgba(160,110,30,0.12), 0 0 80px rgba(120,80,20,0.06)',
@@ -152,6 +157,7 @@ const FEATURED_STUDIOS = [
     slug: 'columbia',
     name: 'Columbia Pictures',
     image: '/studios/columbia-card.png',
+    imagePosition: 'center 42%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(60,50,30,0.5) 0%, rgba(30,25,15,0.8) 50%, rgba(14,12,8,0.95) 100%)',
     border: 'rgba(180,150,80,0.20)',
     glow: '0 0 40px rgba(140,110,50,0.12), 0 0 80px rgba(100,80,30,0.06)',
@@ -162,6 +168,7 @@ const FEATURED_STUDIOS = [
     slug: 'legendary',
     name: 'Legendary',
     image: '/studios/legendary-card.png',
+    imagePosition: 'center 42%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(80,50,15,0.5) 0%, rgba(40,25,8,0.8) 50%, rgba(16,10,4,0.95) 100%)',
     border: 'rgba(200,140,50,0.22)',
     glow: '0 0 40px rgba(160,100,30,0.12), 0 0 80px rgba(120,70,20,0.06)',
@@ -172,6 +179,7 @@ const FEATURED_STUDIOS = [
     slug: 'skydance',
     name: 'Skydance',
     image: '/studios/skydance-card.png',
+    imagePosition: 'center 42%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(60,50,30,0.5) 0%, rgba(30,25,15,0.8) 50%, rgba(14,12,8,0.95) 100%)',
     border: 'rgba(180,140,60,0.20)',
     glow: '0 0 40px rgba(140,100,40,0.12), 0 0 80px rgba(100,70,20,0.06)',
@@ -182,6 +190,7 @@ const FEATURED_STUDIOS = [
     slug: 'ghibli',
     name: 'Studio Ghibli',
     image: '/studios/ghibli-card.png',
+    imagePosition: 'center 42%',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,40,80,0.5) 0%, rgba(10,22,50,0.8) 50%, rgba(6,12,28,0.95) 100%)',
     border: 'rgba(60,100,180,0.20)',
     glow: '0 0 40px rgba(30,70,150,0.12), 0 0 80px rgba(20,50,120,0.06)',
@@ -289,19 +298,25 @@ function FeaturedStudioCard({
       }}
     >
       {/* Image background (when provided) */}
-      {hasImage && (
-        <div className="absolute -inset-[15%] group-hover:scale-[1.03] transition-transform duration-500 ease-out">
-          <Image
-            src={featured.image!}
-            alt={featured.name}
-            fill
-            className="object-cover"
-            style={{ objectPosition: featured.imagePosition || 'center center' }}
-            sizes="(max-width: 640px) 100vw, 50vw"
-            priority
-          />
-        </div>
-      )}
+      {hasImage && (() => {
+        const inset = ('cropInset' in featured && featured.cropInset) || '15%';
+        return (
+          <div
+            className="absolute group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+            style={{ top: `-${inset}`, right: `-${inset}`, bottom: `-${inset}`, left: `-${inset}` }}
+          >
+            <Image
+              src={featured.image!}
+              alt={featured.name}
+              fill
+              className="object-cover"
+              style={{ objectPosition: featured.imagePosition || 'center center' }}
+              sizes="(max-width: 640px) 100vw, 50vw"
+              priority
+            />
+          </div>
+        );
+      })()}
 
       {/* For non-image cards: internal light streaks */}
       {!hasImage && (
