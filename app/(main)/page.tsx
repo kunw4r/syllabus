@@ -123,16 +123,6 @@ export default function Home() {
   const watchlist = library.filter((i) => i.status === 'want').slice(0, 20);
   const finishedCount = library.filter((i) => i.status === 'finished').length;
 
-  const navigateToItem = (item: LibraryItem) => {
-    const mt = item.media_type || 'movie';
-    if (mt === 'book') {
-      const k = item.openlibrary_key?.replace('/works/', '');
-      if (k) router.push(`/details/book/${k}`);
-    } else {
-      router.push(`/details/${mt}/${item.tmdb_id}`);
-    }
-  };
-
   const heroItems = trendingMovies
     .filter((m) => m.backdrop_path && (m.vote_average || 0) >= 6)
     .slice(0, 5)
@@ -198,52 +188,35 @@ export default function Home() {
         {/* Continue Watching */}
         {continueWatching.length > 0 && (
           <FadeInView>
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg sm:text-xl font-bold text-white">Continue Watching</h2>
-                <button
-                  onClick={() => router.push('/library?tab=watching')}
-                  className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
-                >
-                  See all <ChevronRight size={14} />
-                </button>
-              </div>
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-                {continueWatching.map((item) => (
-                  <div
-                    key={item.id}
-                    className="shrink-0 w-[240px] sm:w-[280px] cursor-pointer group"
-                    onClick={() => navigateToItem(item)}
+            <ScrollRow
+              title={
+                <div className="flex items-center justify-between w-full">
+                  <span>Continue Watching</span>
+                  <button
+                    onClick={() => router.push('/library?tab=watching')}
+                    className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors font-normal"
                   >
-                    <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
-                      {item.poster_url ? (
-                        <img
-                          src={item.poster_url}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-                          {(item.media_type || 'movie') === 'book' ? '\u{1F4D6}' : '\u{1F3AC}'}
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-sm font-semibold text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
-                          {item.title}
-                        </p>
-                        {item.updated_at && (
-                          <p className="text-[10px] text-white/40 mt-0.5">
-                            {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+                    See all <ChevronRight size={14} />
+                  </button>
+                </div>
+              }
+            >
+              {continueWatching.map((item) => (
+                <MediaCard
+                  key={item.id}
+                  item={{
+                    id: item.tmdb_id,
+                    title: item.title,
+                    backdrop_path: null,
+                    poster_path: item.poster_url || null,
+                    vote_average: item.external_rating,
+                    media_type: item.media_type || 'movie',
+                  }}
+                  mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
+                  showAdd={false}
+                />
+              ))}
+            </ScrollRow>
           </FadeInView>
         )}
 
@@ -261,32 +234,19 @@ export default function Home() {
           <FadeInView>
             <ScrollRow title="Your Watchlist">
               {watchlist.map((item) => (
-                <div
+                <MediaCard
                   key={item.id}
-                  className="shrink-0 w-[240px] sm:w-[280px] cursor-pointer group"
-                  onClick={() => navigateToItem(item)}
-                >
-                  <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
-                    {item.poster_url ? (
-                      <img
-                        src={item.poster_url}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-                        {(item.media_type || 'movie') === 'book' ? '\u{1F4D6}' : '\u{1F3AC}'}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-sm font-semibold text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
-                        {item.title}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                  item={{
+                    id: item.tmdb_id,
+                    title: item.title,
+                    backdrop_path: null,
+                    poster_path: item.poster_url || null,
+                    vote_average: item.external_rating,
+                    media_type: item.media_type || 'movie',
+                  }}
+                  mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
+                  showAdd={false}
+                />
               ))}
             </ScrollRow>
           </FadeInView>
