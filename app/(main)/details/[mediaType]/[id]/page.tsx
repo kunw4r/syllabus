@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Star, Clock, Eye, CheckCircle2, Play, ExternalLink, Globe, Award,
   DollarSign, Film, Tv, BookOpen, Users, Calendar, X, Heart, Plus, Minus,
@@ -1479,11 +1480,42 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       {recommendations.length > 0 && (
         <div id="recommendations" className="px-4 sm:px-6 lg:px-10 mt-12 pb-10 max-w-7xl mx-auto scroll-mt-16">
           <FadeInView>
-            <ScrollRow title="You Might Also Like">
-              {recommendations.map((r: any) => (
-                <MediaCard key={r.id} item={r} mediaType={mediaType as 'movie' | 'tv'} />
-              ))}
-            </ScrollRow>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-5">You Might Also Like</h2>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-4">
+              {recommendations.map((r: any) => {
+                const img = r.poster_path
+                  ? `${TMDB_IMG}${r.poster_path}`
+                  : r.backdrop_path
+                    ? `${TMDB_IMG_ORIGINAL}${r.backdrop_path}`
+                    : null;
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/details/${mediaType}/${r.id}`}
+                    className="shrink-0 group/rec relative w-[160px] sm:w-[185px] aspect-[2/3] rounded-xl overflow-hidden"
+                  >
+                    {img ? (
+                      <img
+                        src={img}
+                        alt={r.title || r.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
+                        {r.title || r.name}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-semibold text-white drop-shadow-lg line-clamp-2 leading-tight">
+                        {r.title || r.name}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </FadeInView>
         </div>
       )}
