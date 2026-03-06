@@ -679,16 +679,20 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
 
   const totalSeasons = regularSeasons.length;
 
+  // Track which imdbId we've already started loading for
+  const loadedForRef = useRef<string | null>(null);
+
   // Auto-load all season ratings when imdbId becomes available
   useEffect(() => {
     if (!imdbId || totalSeasons === 0) {
-      // If no imdbId yet, keep loading state (it might arrive from extRatings)
-      // Only stop loading if we truly have no seasons
       if (totalSeasons === 0) setLoadingSeasons(false);
       return;
     }
 
-    // Build season numbers from props
+    // Don't restart if we already loaded/are loading for this same imdbId
+    if (loadedForRef.current === imdbId) return;
+    loadedForRef.current = imdbId;
+
     const seasonNumbers = seasons
       .filter((s: any) => s.season_number > 0)
       .map((s: any) => s.season_number)
@@ -710,8 +714,7 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
         count++;
         if (!cancelled) {
           setLoadedCount(count);
-          // Update progressively so seasons appear as they load
-          setEpisodesBySeason(prev => ({ ...prev, ...results }));
+          setEpisodesBySeason({ ...results });
         }
       }
       if (!cancelled) {
