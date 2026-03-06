@@ -53,7 +53,6 @@ export default function Navbar() {
   const userNav: NavItem[] = user ? [
     { to: '/library', Icon: LibraryIcon, label: 'Library' },
     { to: '/social', Icon: SocialIcon, label: 'Social' },
-    { to: '/profile', Icon: ProfileIcon, label: 'Profile' },
   ] : [];
 
   const mobileTabs: NavItem[] = [
@@ -62,7 +61,6 @@ export default function Navbar() {
     ...(user ? [
       { to: '/library', Icon: LibraryIcon, label: 'Library' },
       { to: '/social', Icon: SocialIcon, label: 'Social' },
-      { to: '/profile', Icon: ProfileIcon, label: 'Profile' },
     ] : [
       { to: '/top100', Icon: TrophyIcon, label: 'Top 100' },
       { to: '/login', Icon: LogInIcon, label: 'Sign In' },
