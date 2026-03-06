@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -10,6 +10,7 @@ import {
   TrophyIcon, FilmIcon, TvIcon, BookIcon, ActorsIcon, AwardsIcon,
   StudiosIcon, LogInIcon, LogOutIcon, XIcon,
 } from '@/components/layout/NavIcons';
+import { Search, ChevronDown, Menu, X } from 'lucide-react';
 
 interface NavItem {
   to: string;
@@ -30,9 +31,23 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
 
-  const navItems: NavItem[] = [
+  // Track scroll for background opacity
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  const primaryNav: NavItem[] = [
     { to: '/', Icon: HomeIcon, label: 'Home' },
     { to: '/movies', Icon: FilmIcon, label: 'Movies' },
     { to: '/tv', Icon: TvIcon, label: 'TV Shows' },
@@ -41,12 +56,13 @@ export default function Navbar() {
     { to: '/actors', Icon: ActorsIcon, label: 'Actors' },
     { to: '/studios', Icon: StudiosIcon, label: 'Studios' },
     { to: '/awards', Icon: AwardsIcon, label: 'Awards' },
-    ...(user ? [
-      { to: '/library', Icon: LibraryIcon, label: 'Library' },
-      { to: '/social', Icon: SocialIcon, label: 'Social' },
-      { to: '/profile', Icon: ProfileIcon, label: 'Profile' },
-    ] : []),
   ];
+
+  const userNav: NavItem[] = user ? [
+    { to: '/library', Icon: LibraryIcon, label: 'Library' },
+    { to: '/social', Icon: SocialIcon, label: 'Social' },
+    { to: '/profile', Icon: ProfileIcon, label: 'Profile' },
+  ] : [];
 
   const mobileTabs: NavItem[] = [
     { to: '/', Icon: HomeIcon, label: 'Home' },
@@ -73,71 +89,94 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <nav className="fixed left-0 top-0 hidden h-screen w-60 flex-col border-r border-white/5 bg-dark-800/80 backdrop-blur-xl lg:flex z-50">
-        <div className="flex items-center justify-center px-4 py-6">
-          <Link href="/">
-            <Image src="/logo.png" alt="Syllabus" width={176} height={40} className="w-44" priority />
+      {/* ── Desktop Top Navbar ── */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block transition-all duration-500 ${
+          scrolled
+            ? 'bg-dark-900/95 backdrop-blur-xl shadow-lg shadow-black/20'
+            : 'bg-gradient-to-b from-dark-900/80 to-transparent'
+        }`}
+      >
+        <div className="flex items-center h-16 px-6 xl:px-10">
+          {/* Logo */}
+          <Link href="/" className="shrink-0 mr-8">
+            <Image src="/logo.png" alt="Syllabus" width={140} height={32} className="h-8 w-auto" priority />
           </Link>
-        </div>
 
-        <ul className="flex flex-1 flex-col gap-1 px-3">
-          {navItems.map(({ to, Icon, label }) => {
-            const active = isActive(pathname, to);
-            return (
-              <li key={to}>
+          {/* Primary nav links */}
+          <div className="flex items-center gap-1">
+            {primaryNav.map(({ to, label }) => {
+              const active = isActive(pathname, to);
+              return (
                 <Link
+                  key={to}
                   href={to}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     active
-                      ? 'bg-white/10 text-accent'
-                      : 'text-white/50 hover:bg-white/5 hover:text-white'
+                      ? 'text-white font-semibold'
+                      : 'text-white/60 hover:text-white/90'
                   }`}
                 >
-                  <Icon size={20} active={active} />
                   {label}
                 </Link>
-              </li>
-            );
-          })}
-        </ul>
+              );
+            })}
+          </div>
 
-        <div className="border-t border-white/5 px-4 py-4">
-          {user ? (
-            <>
-              {user.email && (
-                <p className="mb-3 truncate px-2 text-xs text-white/30">{user.email}</p>
-              )}
+          {/* Right side */}
+          <div className="ml-auto flex items-center gap-3">
+            {userNav.map(({ to, label }) => {
+              const active = isActive(pathname, to);
+              return (
+                <Link
+                  key={to}
+                  href={to}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    active
+                      ? 'text-white font-semibold'
+                      : 'text-white/60 hover:text-white/90'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+
+            {user ? (
               <button
                 onClick={signOut}
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-white/50 transition-all hover:bg-white/5 hover:text-white"
+                className="text-sm text-white/40 hover:text-white transition-colors ml-2"
               >
-                <LogOutIcon size={20} />
                 Sign Out
               </button>
-            </>
-          ) : (
-            <button
-              onClick={() => router.push('/login')}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-accent transition-all hover:bg-accent/10"
-            >
-              <LogInIcon size={20} />
-              Sign In
-            </button>
-          )}
+            ) : (
+              <button
+                onClick={() => router.push('/login')}
+                className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* Mobile top bar */}
+      {/* ── Mobile Top Bar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 lg:hidden">
-        <div className="flex items-center px-4 py-2.5 bg-dark-900/80 backdrop-blur-xl border-b border-white/5">
+        <div
+          className={`flex items-center px-4 py-2.5 transition-all duration-300 ${
+            scrolled
+              ? 'bg-dark-900/95 backdrop-blur-xl'
+              : 'bg-gradient-to-b from-dark-900/80 to-transparent'
+          }`}
+        >
           <Link href="/" className="shrink-0">
             <Image src="/logo.png" alt="Syllabus" width={112} height={28} className="h-7 w-auto" priority />
           </Link>
         </div>
       </header>
 
-      {/* Mobile bottom tab bar */}
+      {/* ── Mobile Bottom Tab Bar ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex flex-row lg:hidden border-t border-white/5 bg-dark-900/90 backdrop-blur-xl safe-area-bottom">
         {mobileTabs.map(({ to, Icon, label }) => {
           if (to === '#explore') {
@@ -169,7 +208,7 @@ export default function Navbar() {
         })}
       </nav>
 
-      {/* Explore sheet */}
+      {/* ── Mobile Explore Sheet ── */}
       {exploreOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setExploreOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
