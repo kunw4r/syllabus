@@ -4,7 +4,6 @@ import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { TMDB_IMG_ORIGINAL, TMDB_IMG } from '@/lib/constants';
-import MediaCard from './MediaCard';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 interface EditorialRowProps {
@@ -19,14 +18,19 @@ export default function EditorialRow({ title, items, mediaType = 'movie' }: Edit
 
   if (items.length === 0) return null;
 
-  const featured = items[0];
-  const rest = items.slice(1);
-  const featuredTitle = featured.title || featured.name || 'Unknown';
-  const featuredMt = featured.media_type || mediaType;
-
   const scroll = (dir: number) => {
     if (ref.current) {
-      ref.current.scrollBy({ left: dir * 400, behavior: 'smooth' });
+      ref.current.scrollBy({ left: dir * 600, behavior: 'smooth' });
+    }
+  };
+
+  const handleClick = (item: any) => {
+    const mt = item.media_type || mediaType;
+    if (mt === 'book') {
+      const k = item.key?.replace('/works/', '') || item.openlibrary_key || item.google_books_id;
+      if (k) router.push(`/details/book/${k}`);
+    } else {
+      router.push(`/details/${mt}/${item.id}`);
     }
   };
 
@@ -51,62 +55,61 @@ export default function EditorialRow({ title, items, mediaType = 'movie' }: Edit
       </div>
 
       <div ref={ref} className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-        {/* Featured large card */}
-        <div
-          className="shrink-0 w-[280px] sm:w-[320px] cursor-pointer group relative rounded-xl overflow-hidden"
-          onClick={() => {
-            if (featuredMt === 'book') {
-              const k = featured.key?.replace('/works/', '') || featured.openlibrary_key || featured.google_books_id;
-              if (k) router.push(`/details/book/${k}`);
-            } else {
-              router.push(`/details/${featuredMt}/${featured.id}`);
-            }
-          }}
-        >
-          <div className="aspect-[16/10] relative overflow-hidden">
-            {featured.backdrop_path ? (
-              <img
-                src={`${TMDB_IMG_ORIGINAL}${featured.backdrop_path}`}
-                alt={featuredTitle}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
-            ) : featured.poster_path ? (
-              <img
-                src={mediaType === 'book' ? featured.poster_path : `${TMDB_IMG}${featured.poster_path}`}
-                alt={featuredTitle}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full bg-dark-700" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/30 to-transparent" />
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            {(featured.unified_rating ?? featured.vote_average) > 0 && (
-              <div className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 mb-2 shadow-lg" style={{ background: getRatingBg(featured.unified_rating ?? featured.vote_average), boxShadow: getRatingGlow(featured.unified_rating ?? featured.vote_average) }}>
-                <Star size={12} className="fill-current" style={{ color: getRatingHex(featured.unified_rating ?? featured.vote_average) }} />
-                <span className="text-xs font-bold drop-shadow-sm" style={{ color: getRatingHex(featured.unified_rating ?? featured.vote_average) }}>{(featured.unified_rating ?? featured.vote_average).toFixed(1)}</span>
-              </div>
-            )}
-            <h3 className="font-serif text-xl text-white leading-tight group-hover:text-accent transition-colors">
-              {featuredTitle}
-            </h3>
-            {featured.overview && (
-              <p className="text-xs text-white/50 line-clamp-1 mt-1">{featured.overview}</p>
-            )}
-          </div>
-        </div>
+        {items.map((item: any) => {
+          const itemTitle = item.title || item.name || 'Unknown';
+          const rating = item.unified_rating || item.vote_average;
+          const backdrop = item.backdrop_path
+            ? `${TMDB_IMG_ORIGINAL}${item.backdrop_path}`
+            : item.poster_path
+              ? `${TMDB_IMG}${item.poster_path}`
+              : null;
 
-        {/* Remaining standard cards */}
-        {rest.map((item: any) => (
-          <MediaCard
-            key={item.id || item.key || item.google_books_id}
-            item={item}
-            mediaType={item.media_type || mediaType}
-          />
-        ))}
+          return (
+            <div
+              key={item.id || item.key || item.google_books_id}
+              className="shrink-0 w-[260px] sm:w-[300px] cursor-pointer group"
+              onClick={() => handleClick(item)}
+            >
+              <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30">
+                {backdrop ? (
+                  <img
+                    src={backdrop}
+                    alt={itemTitle}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
+                    {mediaType === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
+                  </div>
+                )}
+
+                {/* Bottom gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                {/* Rating badge */}
+                {rating != null && rating > 0 && (
+                  <div
+                    className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10"
+                    style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+                  >
+                    <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+                    <span className="text-xs font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
+                      {Number(rating).toFixed(1)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Title overlay at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <p className="text-sm font-semibold text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+                    {itemTitle}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

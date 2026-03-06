@@ -58,6 +58,10 @@ export default function HeroBanner({ items }: HeroBannerProps) {
 
   const heroItems = items.filter((i) => i.backdrop_path).slice(0, 5);
 
+  // Stable ID of the current hero item — used as effect dependency
+  // so trailer/rating always match the displayed title
+  const currentItemId = heroItems[currentIndex]?.id;
+
   // Fetch trailer + content rating for current item
   useEffect(() => {
     setTrailerKey(null);
@@ -65,7 +69,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     setShowTrailer(false);
     setContentRating(null);
 
-    if (heroItems.length === 0) return;
+    if (!currentItemId) return;
     const current = heroItems[currentIndex];
     if (!current) return;
 
@@ -74,16 +78,16 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     const fetchTrailer = mt === 'tv' ? getTVTrailer : getMovieTrailer;
     const fetchRating = mt === 'tv' ? getTVContentRating : getMovieContentRating;
 
-    fetchTrailer(current.id).then((key) => {
+    fetchTrailer(currentItemId).then((key) => {
       if (!cancelled && key) setTrailerKey(key);
     }).catch(() => {});
 
-    fetchRating(current.id).then((rating) => {
+    fetchRating(currentItemId).then((rating) => {
       if (!cancelled && rating) setContentRating(rating);
     }).catch(() => {});
 
     return () => { cancelled = true; };
-  }, [currentIndex, heroItems.length]);
+  }, [currentItemId]);
 
   // Show trailer after delay once key is available
   useEffect(() => {
@@ -120,7 +124,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
         setAmbientColor
       );
     }
-  }, [currentIndex, heroItems]);
+  }, [currentItemId]);
 
   const goToSlide = (i: number) => {
     setCurrentIndex(i);
