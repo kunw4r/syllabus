@@ -323,7 +323,7 @@ type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof T
 // ── Tier aspect ratios ──
 
 const TIER_ASPECT = {
-  1: '16 / 9',
+  1: '3 / 2',
   2: '16 / 9',
   3: '16 / 9',
 } as const;
