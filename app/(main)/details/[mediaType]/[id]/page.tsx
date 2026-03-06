@@ -1007,175 +1007,320 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   });
   const uniqueVibes = [...new Set(vibes)].slice(0, 5);
 
+  // Cast & crew for More Details cards
+  const castList = data.aggregate_credits?.cast || data.credits?.cast || [];
+  const crew = data.credits?.crew || [];
+  const directors = crew.filter((c: any) => c.job === 'Director').slice(0, 3);
+  const starring = castList.slice(0, 5).map((c: any) => c.name).join(', ');
+
   return (
-    <div>
-      {/* Parallax Hero Backdrop */}
+    <div className="-mx-4 sm:-mx-6 lg:-mx-10 -my-6 lg:-my-8">
+      {/* Full-page transparent backdrop */}
       <HeroBackdrop backdropPath={data.backdrop_path} />
 
-      <button onClick={() => router.back()}
-        className="inline-flex items-center gap-1 text-white/50 hover:text-white mb-8 transition-colors relative z-10">
-        <ChevronLeft size={22} strokeWidth={2.5} /> Back
-      </button>
-
-      <div className="flex flex-col md:flex-row gap-8 relative z-10">
-        {/* Poster column -- sticky on desktop */}
-        <div className="flex-shrink-0 md:sticky md:top-8 md:self-start w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80">
-          <FadeInView yOffset={40}>
-            {data.poster_path ? (
-              <img src={`${TMDB_IMG}${data.poster_path}`} alt={title}
-                className="w-full rounded-2xl shadow-2xl shadow-black/50 aspect-[2/3] object-cover" />
-            ) : (
-              <div className="w-full aspect-[2/3] rounded-2xl bg-dark-700 flex items-center justify-center text-white/30 text-sm">
-                No Poster
-              </div>
-            )}
-          </FadeInView>
-
-          {/* Quick Facts card (desktop only) */}
-          <div className="hidden md:block mt-4">
-            <FadeInView delay={0.3}>
-              <QuickFactsCard data={data} extRatings={extRatings} ratingsLoaded={ratingsLoaded} />
-            </FadeInView>
-          </div>
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <FadeInView delay={0.1}>
-            <h1 className="font-serif text-4xl lg:text-6xl mb-3">{title}</h1>
-          </FadeInView>
-
-          <FadeInView delay={0.15}>
-            <p className="text-white/40 text-sm mb-2">
-              {year} {genres && `\u00B7 ${genres}`}
-              {data.runtime && ` \u00B7 ${data.runtime} min`}
-              {data.number_of_seasons && ` \u00B7 ${data.number_of_seasons} season${data.number_of_seasons > 1 ? 's' : ''}`}
-            </p>
-          </FadeInView>
-
-          {/* Vibes/Mood Tags */}
-          {uniqueVibes.length > 0 && (
-            <FadeInView delay={0.18}>
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {uniqueVibes.map((vibe) => (
-                  <button
-                    key={vibe}
-                    onClick={() => router.push(`/search?q=${encodeURIComponent(vibe)}`)}
-                    className="text-[10px] bg-accent/10 border border-accent/20 text-accent/80 rounded-full px-3 py-1 hover:bg-accent/20 transition-colors"
-                  >
-                    {vibe}
-                  </button>
-                ))}
-              </div>
-            </FadeInView>
-          )}
-
-          {/* Ratings */}
-          <RatingCluster
-            avgScore={avgScore}
-            tmdbScore={data.vote_average}
-            mediaType={mediaType}
-            dataId={data.id}
-            extRatings={extRatings}
-            ratingsLoaded={ratingsLoaded}
-            imdbId={imdbId}
-            isAnime={isAnime}
-            malData={malData}
-            title={title}
-            getSyllabusScore={getSyllabusScore}
-          />
-
-          {/* Overview */}
-          <FadeInView delay={0.2}>
-            <p className="text-white/60 leading-relaxed mb-6 max-w-3xl text-[15px]">{data.overview}</p>
-          </FadeInView>
-
-          {/* Quick Facts card (mobile only) */}
-          <div className="md:hidden mb-6">
-            <QuickFactsCard data={data} extRatings={extRatings} ratingsLoaded={ratingsLoaded} />
-          </div>
-
-          {/* Trailers & More */}
-          {videoList.length > 0 && (
-            <FadeInView>
-              <div className="mb-10">
-                <h3 className="text-lg font-bold text-white mb-4">Trailers & More</h3>
-                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
-                  {videoList.map((vid: any) => (
-                    <a
-                      key={vid.key}
-                      href={`https://www.youtube.com/watch?v=${vid.key}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 group/vid"
-                    >
-                      <div className="relative w-[320px] sm:w-[380px] aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
-                        <img
-                          src={`https://img.youtube.com/vi/${vid.key}/hqdefault.jpg`}
-                          alt={vid.name}
-                          className="w-full h-full object-cover group-hover/vid:scale-105 transition-transform duration-500"
-                        />
-                        {/* Dark overlay */}
-                        <div className="absolute inset-0 bg-black/30 group-hover/vid:bg-black/10 transition-colors duration-300" />
-                        {/* Play icon */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover/vid:bg-white/30 group-hover/vid:scale-110 transition-all duration-300">
-                            <Play size={20} className="text-white ml-0.5" fill="white" />
-                          </div>
-                        </div>
-                        {/* Type badge */}
-                        <div className="absolute top-3 left-3 flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">{vid.type}</span>
-                          {vid.official && <span className="text-[9px] font-medium bg-white/10 text-white/60 px-1.5 py-0.5 rounded">Official</span>}
-                        </div>
-                      </div>
-                      <p className="text-xs text-white/50 mt-2 max-w-[320px] sm:max-w-[380px] truncate group-hover/vid:text-white/70 transition-colors">{vid.name}</p>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </FadeInView>
-          )}
-
-          {/* Cast */}
-          <FadeInView>
-            <CastRow cast={data.aggregate_credits?.cast || data.credits?.cast || []} />
-          </FadeInView>
-
-          {/* Season Ratings (TV only) */}
-          {mediaType === 'tv' && data.seasons?.length > 0 && (
-            <FadeInView>
-              <SeasonRatings imdbId={imdbId} seasons={data.seasons} />
-            </FadeInView>
-          )}
-
-          {/* Where to Watch */}
-          <FadeInView>
-            <StreamingProviders providers={providers} title={title} />
-          </FadeInView>
-
-          {/* Fun Facts */}
-          <MovieTVFunFacts data={data} extRatings={extRatings} ratingsLoaded={ratingsLoaded} />
-
-          {/* Library Panel */}
-          <LibraryPanel
-            mediaId={{ tmdb_id: data.id }}
-            addPayload={{
-              tmdb_id: data.id,
-              media_type: mediaType,
-              title: data.title || data.name,
-              poster_url: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
-              external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
-              genres: data.genres?.map((g: any) => g.name).join(', '),
-            }}
-          />
-        </div>
+      {/* Back button */}
+      <div className="px-4 sm:px-6 lg:px-10 pt-4 lg:pt-6">
+        <button onClick={() => router.back()}
+          className="inline-flex items-center gap-1 text-white/50 hover:text-white mb-4 transition-colors relative z-10">
+          <ChevronLeft size={22} strokeWidth={2.5} /> Back
+        </button>
       </div>
 
-      {/* Recommendations */}
-      {recommendations.length > 0 && (
+      {/* ── Hero Image Container ── */}
+      <div className="px-4 sm:px-6 lg:px-10">
+        <FadeInView yOffset={30}>
+          <div className="relative w-full max-w-6xl mx-auto aspect-[16/8] sm:aspect-[16/7] rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
+            {data.backdrop_path ? (
+              <img
+                src={`${TMDB_IMG_ORIGINAL}${data.backdrop_path}`}
+                alt={title}
+                className="w-full h-full object-cover object-[center_20%]"
+                loading="eager"
+              />
+            ) : data.poster_path ? (
+              <img
+                src={`${TMDB_IMG_ORIGINAL}${data.poster_path}`}
+                alt={title}
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
+            ) : (
+              <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-lg">
+                No Image
+              </div>
+            )}
+            {/* Gradient overlays on hero image */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+
+            {/* Title overlay at bottom-left */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-10">
+              <h1 className="font-serif text-3xl sm:text-4xl lg:text-6xl text-white drop-shadow-lg mb-3">{title}</h1>
+            </div>
+          </div>
+        </FadeInView>
+      </div>
+
+      {/* ── Play / Action Buttons ── */}
+      <FadeInView delay={0.1}>
+        <div className="flex items-center justify-center gap-4 mt-6 px-4">
+          {trailer && (
+            <a
+              href={`https://www.youtube.com/watch?v=${trailer.key}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 bg-white text-black font-bold text-base px-8 py-3.5 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+            >
+              <Play size={20} fill="black" /> Play
+            </a>
+          )}
+          <button
+            onClick={() => {
+              const el = document.getElementById('library-panel');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center hover:border-white/60 transition-colors"
+            title="Add to Library"
+          >
+            <Plus size={22} className="text-white/80" />
+          </button>
+        </div>
+      </FadeInView>
+
+      {/* ── Info Card (glassmorphic) ── */}
+      <div className="px-4 sm:px-6 lg:px-10 mt-8 max-w-6xl mx-auto">
+        <FadeInView delay={0.15}>
+          <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.10] rounded-2xl p-6 sm:p-8">
+            <div className="flex flex-col lg:flex-row lg:gap-10">
+              {/* Left: title, meta, description */}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-2xl font-bold mb-2">{title}</h2>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-white/50 mb-4">
+                  {year && <span>{year}</span>}
+                  {data.runtime > 0 && (
+                    <>
+                      <span className="text-white/20">&bull;</span>
+                      <span className="text-accent font-semibold text-xs">HD</span>
+                      <span className="text-white/20">&bull;</span>
+                      <span>{Math.floor(data.runtime / 60)}h {data.runtime % 60}m</span>
+                    </>
+                  )}
+                  {data.number_of_seasons > 0 && (
+                    <>
+                      <span className="text-white/20">&bull;</span>
+                      <span>{data.number_of_seasons} season{data.number_of_seasons > 1 ? 's' : ''}</span>
+                    </>
+                  )}
+                  {genres && (
+                    <>
+                      <span className="text-white/20">&bull;</span>
+                      <span>{genres}</span>
+                    </>
+                  )}
+                </div>
+                {data.overview && (
+                  <p className="text-white/60 leading-relaxed text-[15px] max-w-2xl">{data.overview}</p>
+                )}
+              </div>
+              {/* Right: starring */}
+              {starring && (
+                <div className="mt-4 lg:mt-0 lg:w-72 flex-shrink-0">
+                  <p className="text-sm text-white/40 mb-1">
+                    <span className="font-semibold text-white/60">Starring:</span> {starring}
+                  </p>
+                  {directors.length > 0 && (
+                    <p className="text-sm text-white/40 mt-2">
+                      <span className="font-semibold text-white/60">Director:</span> {directors.map((d: any) => d.name).join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </FadeInView>
+      </div>
+
+      {/* ── Ratings ── */}
+      <div className="px-4 sm:px-6 lg:px-10 mt-6 max-w-6xl mx-auto">
+        <RatingCluster
+          avgScore={avgScore}
+          tmdbScore={data.vote_average}
+          mediaType={mediaType}
+          dataId={data.id}
+          extRatings={extRatings}
+          ratingsLoaded={ratingsLoaded}
+          imdbId={imdbId}
+          isAnime={isAnime}
+          malData={malData}
+          title={title}
+          getSyllabusScore={getSyllabusScore}
+        />
+      </div>
+
+      {/* ── Trailers & More ── */}
+      {videoList.length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-10 mt-8 max-w-6xl mx-auto">
+          <FadeInView>
+            <h3 className="text-xl font-bold text-white mb-4">Trailers & More</h3>
+            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
+              {videoList.map((vid: any) => (
+                <a
+                  key={vid.key}
+                  href={`https://www.youtube.com/watch?v=${vid.key}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 group/vid"
+                >
+                  <div className="relative w-[320px] sm:w-[380px] aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
+                    <img
+                      src={`https://img.youtube.com/vi/${vid.key}/hqdefault.jpg`}
+                      alt={vid.name}
+                      className="w-full h-full object-cover group-hover/vid:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/30 group-hover/vid:bg-black/10 transition-colors duration-300" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover/vid:bg-white/30 group-hover/vid:scale-110 transition-all duration-300">
+                        <Play size={20} className="text-white ml-0.5" fill="white" />
+                      </div>
+                    </div>
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">{vid.type}</span>
+                      {vid.official && <span className="text-[9px] font-medium bg-white/10 text-white/60 px-1.5 py-0.5 rounded">Official</span>}
+                    </div>
+                  </div>
+                  <p className="text-xs text-white/50 mt-2 max-w-[320px] sm:max-w-[380px] truncate group-hover/vid:text-white/70 transition-colors">{vid.name}</p>
+                </a>
+              ))}
+            </div>
+          </FadeInView>
+        </div>
+      )}
+
+      {/* ── More Details (XPrime-style glass grid) ── */}
+      <div className="px-4 sm:px-6 lg:px-10 mt-10 max-w-6xl mx-auto">
         <FadeInView>
-          <div className="mt-16">
+          <h3 className="text-xl font-bold text-white mb-4">More Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Genres & Info card */}
+            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-white/70 mb-1">Genres</p>
+                <p className="text-sm text-white/50">{genres || 'N/A'}</p>
+              </div>
+              {data.tagline && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1">Tagline</p>
+                  <p className="text-sm text-white/50 italic">&ldquo;{data.tagline}&rdquo;</p>
+                </div>
+              )}
+              {data.production_companies?.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1">Studio</p>
+                  <p className="text-sm text-white/50">{data.production_companies.slice(0, 3).map((c: any) => c.name).join(', ')}</p>
+                </div>
+              )}
+              {extRatings?.country && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1">Country</p>
+                  <p className="text-sm text-white/50">{extRatings.country}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Ratings & Awards card */}
+            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 space-y-4">
+              {extRatings?.rated && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1">Rated</p>
+                  <p className="text-sm text-white/50">{extRatings.rated}</p>
+                </div>
+              )}
+              {extRatings?.awards && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1">Awards</p>
+                  <p className="text-sm text-white/50 leading-relaxed">{extRatings.awards}</p>
+                </div>
+              )}
+              {(data.budget > 0 || data.revenue > 0 || extRatings?.boxOffice) && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1">Box Office</p>
+                  {data.budget > 0 && <p className="text-sm text-white/50">Budget: ${(data.budget / 1e6).toFixed(0)}M</p>}
+                  {extRatings?.boxOffice && <p className="text-sm text-white/50">Gross: {extRatings.boxOffice}</p>}
+                  {data.revenue > 0 && <p className="text-sm text-white/50">Revenue: ${(data.revenue / 1e6).toFixed(0)}M</p>}
+                </div>
+              )}
+              {data.original_language && (
+                <div>
+                  <p className="text-sm font-semibold text-white/70 mb-1">Language</p>
+                  <p className="text-sm text-white/50">{data.original_language.toUpperCase()}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Cast card */}
+            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5">
+              <p className="text-sm font-semibold text-white/70 mb-2">Cast</p>
+              <p className="text-sm text-white/50 leading-relaxed">
+                {castList.slice(0, 12).map((c: any) => c.name).join(', ')}
+              </p>
+              {directors.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-white/70 mb-1">Director{directors.length > 1 ? 's' : ''}</p>
+                  <p className="text-sm text-white/50">{directors.map((d: any) => d.name).join(', ')}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </FadeInView>
+      </div>
+
+      {/* ── Full Cast Row ── */}
+      <div className="px-4 sm:px-6 lg:px-10 mt-10 max-w-6xl mx-auto">
+        <FadeInView>
+          <CastRow cast={castList} />
+        </FadeInView>
+      </div>
+
+      {/* ── Season Ratings (TV only) ── */}
+      {mediaType === 'tv' && data.seasons?.length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+          <FadeInView>
+            <SeasonRatings imdbId={imdbId} seasons={data.seasons} />
+          </FadeInView>
+        </div>
+      )}
+
+      {/* ── Where to Watch ── */}
+      <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+        <FadeInView>
+          <StreamingProviders providers={providers} title={title} />
+        </FadeInView>
+      </div>
+
+      {/* ── Fun Facts ── */}
+      <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+        <MovieTVFunFacts data={data} extRatings={extRatings} ratingsLoaded={ratingsLoaded} />
+      </div>
+
+      {/* ── Library Panel ── */}
+      <div id="library-panel" className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+        <LibraryPanel
+          mediaId={{ tmdb_id: data.id }}
+          addPayload={{
+            tmdb_id: data.id,
+            media_type: mediaType,
+            title: data.title || data.name,
+            poster_url: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
+            external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
+            genres: data.genres?.map((g: any) => g.name).join(', '),
+          }}
+        />
+      </div>
+
+      {/* ── Recommendations ── */}
+      {recommendations.length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-10 mt-12 pb-10 max-w-6xl mx-auto">
+          <FadeInView>
             <ScrollRow title="You Might Also Like">
               {recommendations.map((r: any) => (
                 <div key={r.id} className="flex-shrink-0 w-[150px]">
@@ -1183,8 +1328,8 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                 </div>
               ))}
             </ScrollRow>
-          </div>
-        </FadeInView>
+          </FadeInView>
+        </div>
       )}
     </div>
   );
