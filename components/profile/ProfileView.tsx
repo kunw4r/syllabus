@@ -131,10 +131,14 @@ function StatCard({ icon: Icon, label, value, color = 'text-white' }: {
   color?: string;
 }) {
   return (
-    <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-4 flex flex-col items-center gap-1.5 hover:bg-white/[0.05] transition-colors">
-      <Icon size={18} className={color} />
-      <span className="text-2xl font-black text-white">{value}</span>
-      <span className="text-[10px] uppercase tracking-wider text-white/25">{label}</span>
+    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 flex items-center gap-3 hover:bg-white/[0.05] hover:border-white/[0.1] transition-all duration-200 group">
+      <div className={`w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:scale-110 transition-transform`}>
+        <Icon size={18} className={color} />
+      </div>
+      <div>
+        <span className="text-xl font-black text-white block leading-tight">{value}</span>
+        <span className="text-[10px] uppercase tracking-wider text-white/25">{label}</span>
+      </div>
     </div>
   );
 }
@@ -151,15 +155,12 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
 
   return (
     <div className="space-y-6">
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Stats grid — single unified row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         <StatCard icon={Library} label="Total" value={stats.total} color="text-accent" />
         <StatCard icon={CheckCircle2} label="Completed" value={stats.finished} color="text-green-400" />
         <StatCard icon={Eye} label="In Progress" value={stats.watching} color="text-blue-400" />
         <StatCard icon={Clock} label="Up Next" value={stats.want} color="text-purple-400" />
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
         <StatCard icon={Film} label="Movies" value={stats.movies} color="text-rose-400" />
         <StatCard icon={Tv} label="TV Shows" value={stats.tv} color="text-cyan-400" />
         <StatCard icon={BookOpen} label="Books" value={stats.books} color="text-amber-400" />
@@ -167,105 +168,139 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Rating stats */}
-        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-3 flex items-center gap-2">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-gold/[0.06] rounded-full blur-2xl pointer-events-none" />
+          <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
             <Star size={14} className="text-gold" /> Rating Stats
           </h3>
           {stats.avgRating ? (
-            <div>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-4xl font-black" style={{ color: getRatingHex(Number(stats.avgRating)) }}>{stats.avgRating}</span>
-                <span className="text-white/30 text-sm">/10 average</span>
+            <div className="flex items-center gap-5">
+              <div className="relative w-20 h-20 shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="3" />
+                  <circle cx="18" cy="18" r="15.5" fill="none" stroke={getRatingHex(Number(stats.avgRating))} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${Number(stats.avgRating) * 9.74} 100`} />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-black" style={{ color: getRatingHex(Number(stats.avgRating)) }}>{stats.avgRating}</span>
+                </div>
               </div>
-              <p className="text-xs text-white/30">{stats.rated} items rated</p>
+              <div>
+                <p className="text-sm text-white/50">Average Rating</p>
+                <p className="text-xs text-white/25 mt-1">{stats.rated} items rated</p>
+              </div>
             </div>
-          ) : <p className="text-sm text-white/30">Rate items to see stats</p>}
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-full bg-white/[0.02] border border-white/[0.06] flex items-center justify-center">
+                <Star size={24} className="text-white/[0.08]" />
+              </div>
+              <p className="text-sm text-white/30">Rate items to see stats</p>
+            </div>
+          )}
         </div>
 
         {/* Top genres */}
-        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-3 flex items-center gap-2">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-accent/[0.06] rounded-full blur-2xl pointer-events-none" />
+          <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
             <TrendingUp size={14} className="text-accent" /> Top Genres
           </h3>
           {stats.topGenres.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {stats.topGenres.map(([genre, count], idx) => (
-                <div key={genre} className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white/20 w-4">{idx + 1}</span>
+                <div key={genre} className="flex items-center gap-3">
+                  <span className={`text-xs font-black w-5 text-center ${idx === 0 ? 'text-accent' : 'text-white/20'}`}>{idx + 1}</span>
                   <div className="flex-1">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm text-white/70">{genre}</span>
-                      <span className="text-xs text-white/30">{count}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-white/70 font-medium">{genre}</span>
+                      <span className="text-[11px] text-white/30 font-mono">{count}</span>
                     </div>
-                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent/60 rounded-full" style={{ width: `${(count / stats.topGenres[0][1]) * 100}%` }} />
+                    <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-500 ${idx === 0 ? 'bg-accent/70' : 'bg-white/15'}`} style={{ width: `${(count / stats.topGenres[0][1]) * 100}%` }} />
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          ) : <p className="text-sm text-white/30">Add items to see genres</p>}
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-center">
+                <TrendingUp size={20} className="text-white/[0.08]" />
+              </div>
+              <p className="text-sm text-white/30">Add items to see genres</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Recent activity */}
       {activity.length > 0 && (
-        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+          <h3 className="text-sm font-semibold text-white/40 mb-5 flex items-center gap-2">
             <Activity size={14} className="text-accent" /> Recent Activity
           </h3>
-          <div className="space-y-3">
-            {activity.slice(0, 10).map(a => (
-              <div key={a.id} className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                  {a.action === 'added' && <PlusIcon size={14} className="text-green-400" />}
-                  {a.action === 'rated' && <Star size={14} className="text-gold" />}
-                  {a.action === 'reviewed' && <MessageSquareIcon size={14} className="text-blue-400" />}
-                  {a.action === 'followed' && <UserPlus size={14} className="text-accent" />}
-                  {a.action === 'finished' && <CheckCircle2 size={14} className="text-green-400" />}
-                  {!['added','rated','reviewed','followed','finished'].includes(a.action) && <Activity size={14} className="text-white/30" />}
+          <div className="space-y-1">
+            {activity.slice(0, 10).map(a => {
+              const actionColor = a.action === 'added' ? 'bg-green-500/15 text-green-400' :
+                a.action === 'rated' ? 'bg-amber-500/15 text-gold' :
+                a.action === 'reviewed' ? 'bg-blue-500/15 text-blue-400' :
+                a.action === 'followed' ? 'bg-accent/15 text-accent' :
+                a.action === 'finished' ? 'bg-emerald-500/15 text-emerald-400' :
+                'bg-white/5 text-white/30';
+              return (
+                <div key={a.id} className="flex items-center gap-3 text-sm py-2.5 px-3 rounded-xl hover:bg-white/[0.03] transition-colors group">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${actionColor} transition-transform group-hover:scale-110`}>
+                    {a.action === 'added' && <PlusIcon size={14} />}
+                    {a.action === 'rated' && <Star size={14} />}
+                    {a.action === 'reviewed' && <MessageSquareIcon size={14} />}
+                    {a.action === 'followed' && <UserPlus size={14} />}
+                    {a.action === 'finished' && <CheckCircle2 size={14} />}
+                    {!['added','rated','reviewed','followed','finished'].includes(a.action) && <Activity size={14} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-white/60 group-hover:text-white/80 transition-colors">
+                      {a.action === 'followed' ? `Followed ${a.title}` :
+                       a.action === 'rated' ? <span>Rated &ldquo;{a.title}&rdquo; <span className="font-bold text-gold">{a.rating}/10</span></span> :
+                       a.action === 'finished' ? `Completed "${a.title}"` :
+                       `${a.action.charAt(0).toUpperCase() + a.action.slice(1)} "${a.title}"`}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-white/15 shrink-0 font-mono">{timeAgo(a.created_at)}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-white/70">
-                    {a.action === 'followed' ? `Followed ${a.title}` :
-                     a.action === 'rated' ? `Rated "${a.title}" ${a.rating}/10` :
-                     a.action === 'finished' ? `Completed "${a.title}"` :
-                     `${a.action.charAt(0).toUpperCase() + a.action.slice(1)} "${a.title}"`}
-                  </span>
-                </div>
-                <span className="text-xs text-white/20 shrink-0">{timeAgo(a.created_at)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* Discover Weekly */}
       {isOwnProfile && discoverWeekly.length > 0 && (
-        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute -top-16 -left-16 w-40 h-40 bg-purple-500/[0.08] rounded-full blur-3xl pointer-events-none" />
+          <h3 className="text-sm font-semibold text-white/40 mb-1 flex items-center gap-2 relative">
             <Sparkles size={14} className="text-purple-400" /> Discover Weekly
           </h3>
-          <p className="text-xs text-white/30 mb-3">Based on your library -- updated weekly</p>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          <p className="text-[11px] text-white/20 mb-4 relative">Personalized picks based on your library</p>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide relative">
             {discoverWeekly.map((item: any) => (
               <button
                 key={item.id}
                 onClick={() => router.push(`/details/${item.media_type}/${item.id}`)}
-                className="shrink-0 w-32 group text-left"
+                className="shrink-0 w-36 group text-left"
               >
-                <div className="aspect-[2/3] rounded-xl overflow-hidden mb-2 ring-1 ring-white/10 group-hover:ring-accent/50 transition-all">
+                <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/[0.08] group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300 relative">
                   {item.poster_path ? (
-                    <img src={`${TMDB_IMG}${item.poster_path}`} alt="" className="w-full h-full object-cover" />
+                    <img src={`${TMDB_IMG}${item.poster_path}`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full bg-dark-700 flex items-center justify-center">
                       <Film size={24} className="text-white/10" />
                     </div>
                   )}
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
+                  <p className="absolute bottom-2.5 left-3 right-3 text-xs text-white/80 font-medium truncate drop-shadow-lg group-hover:text-accent transition-colors">
+                    {item.title || item.name}
+                  </p>
                 </div>
-                <p className="text-xs text-white/70 truncate group-hover:text-accent transition-colors">
-                  {item.title || item.name}
-                </p>
               </button>
             ))}
           </div>
@@ -319,31 +354,33 @@ function LibraryTab({ library }: { library: LibraryItem[] }) {
               }}
               className="group text-left"
             >
-              <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 transition-all mb-2 relative">
+              <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/[0.08] group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300 relative">
                 {item.poster_url ? (
-                  <img src={item.poster_url} alt="" className="w-full h-full object-cover" />
+                  <img src={item.poster_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
                   <div className="w-full h-full bg-dark-700 flex items-center justify-center">
                     <Film size={20} className="text-white/10" />
                   </div>
                 )}
+                {/* Bottom gradient */}
+                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 {item.user_rating && (
-                  <div className="absolute top-1 right-1 backdrop-blur-md border border-white/10 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg" style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
-                    <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
+                  <div className="absolute top-1.5 right-1.5 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg" style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
+                    <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
                     <span className="text-[10px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(item.user_rating)) }}>{item.user_rating}</span>
                   </div>
                 )}
-                <div className="absolute bottom-1 left-1">
-                  <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded-md ${
-                    item.status === 'finished' ? 'bg-green-500/80' :
-                    item.status === 'watching' ? 'bg-blue-500/80' :
-                    'bg-purple-500/80'
-                  } text-white`}>
+                <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                  <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 rounded-md inline-block mb-1.5 ${
+                    item.status === 'finished' ? 'bg-green-500/20 text-green-400 border border-green-500/20' :
+                    item.status === 'watching' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' :
+                    'bg-purple-500/20 text-purple-400 border border-purple-500/20'
+                  }`}>
                     {item.status === 'finished' ? 'Completed' : item.status === 'watching' ? 'In Progress' : 'Up Next'}
                   </span>
+                  <p className="text-xs text-white font-medium truncate drop-shadow-lg group-hover:text-accent transition-colors">{item.title}</p>
                 </div>
               </div>
-              <p className="text-xs text-white/60 truncate group-hover:text-accent transition-colors">{item.title}</p>
             </button>
           ))}
         </div>
