@@ -667,25 +667,37 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
   const [episodesBySeason, setEpisodesBySeason] = useState<Record<number, any[]>>({});
   const [expandedSeason, setExpandedSeason] = useState<number | null>(null);
   const [loadingSeasons, setLoadingSeasons] = useState(true);
+  const [loadedCount, setLoadedCount] = useState(0);
 
   // Filter out "Specials" (season 0) and sort by season number
   const regularSeasons = seasons
     .filter((s: any) => s.season_number > 0)
     .sort((a: any, b: any) => a.season_number - b.season_number);
 
+  const totalSeasons = regularSeasons.length;
+
   // Auto-load all season ratings on mount
   useEffect(() => {
-    if (!imdbId || regularSeasons.length === 0) { setLoadingSeasons(false); return; }
+    if (!imdbId || totalSeasons === 0) { setLoadingSeasons(false); return; }
+
+    // Build season numbers from props to avoid stale closure
+    const seasonNumbers = seasons
+      .filter((s: any) => s.season_number > 0)
+      .map((s: any) => s.season_number)
+      .sort((a: number, b: number) => a - b);
+
     let cancelled = false;
     async function loadAll() {
       const results: Record<number, any[]> = {};
-      // Load seasons sequentially to avoid hammering OMDb
-      for (const season of regularSeasons) {
+      let count = 0;
+      for (const num of seasonNumbers) {
         if (cancelled) return;
         try {
-          const episodes = await getOMDbSeasonEpisodes(imdbId!, season.season_number);
-          if (episodes) results[season.season_number] = episodes;
+          const episodes = await getOMDbSeasonEpisodes(imdbId!, num);
+          if (episodes) results[num] = episodes;
         } catch { /* skip */ }
+        count++;
+        if (!cancelled) setLoadedCount(count);
       }
       if (!cancelled) {
         setEpisodesBySeason(results);
@@ -694,12 +706,12 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
     }
     loadAll();
     return () => { cancelled = true; };
-  }, [imdbId]);
+  }, [imdbId, totalSeasons, seasons]);
 
-  if (regularSeasons.length === 0) return null;
+  if (totalSeasons === 0) return null;
 
   // Compute average IMDb rating for a season
-  const getSeasonAvg = (seasonNumber: number) => {
+  const getSeasonAvg = (seasonNumber: number): number | null => {
     const eps = episodesBySeason[seasonNumber];
     if (!eps || eps.length === 0) return null;
     const rated = eps.filter((e: any) => e.imdbRating != null);
@@ -707,7 +719,6 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
     return rated.reduce((sum: number, e: any) => sum + e.imdbRating, 0) / rated.length;
   };
 
-  // Find best and worst episodes across all seasons
   const getBestEpisode = (seasonNumber: number) => {
     const eps = episodesBySeason[seasonNumber];
     if (!eps) return null;
@@ -716,8 +727,7 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
     return rated.reduce((best: any, e: any) => e.imdbRating > best.imdbRating ? e : best, rated[0]);
   };
 
-  // Rating bar width as percentage (scale 0-10)
-  const ratingBarWidth = (rating: number) => `${Math.max((rating / 10) * 100, 8)}%`;
+  const ratingBarPct = (rating: number) => Math.max((rating / 10) * 100, 8);
 
   return (
     <div className="mb-8">
@@ -725,142 +735,125 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
         <Tv size={14} /> Season Breakdown
       </h3>
 
-      {loadingSeasons ? (
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+      {loadingSeasons && (
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 mb-3">
           <div className="flex items-center justify-center gap-3">
             <div className="w-4 h-4 border-2 border-dark-500 border-t-accent rounded-full animate-spin" />
-            <span className="text-sm text-white/30">Loading IMDb ratings...</span>
+            <span className="text-sm text-white/30">Loading IMDb ratings… {loadedCount}/{totalSeasons}</span>
           </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {regularSeasons.map((season: any, idx: number) => {
-            const seasonAvg = getSeasonAvg(season.season_number);
-            const episodes = episodesBySeason[season.season_number];
-            const isExpanded = expandedSeason === season.season_number;
-            const bestEp = getBestEpisode(season.season_number);
+      )}
 
-            return (
-              <m.div
-                key={season.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/[0.1] transition-colors duration-300"
+      <div className="space-y-2">
+        {regularSeasons.map((season: any, idx: number) => {
+          const seasonAvg = getSeasonAvg(season.season_number);
+          const episodes = episodesBySeason[season.season_number] || [];
+          const isExpanded = expandedSeason === season.season_number;
+          const bestEp = getBestEpisode(season.season_number);
+
+          return (
+            <div
+              key={season.id}
+              className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/[0.1] transition-all duration-300"
+              style={{ animationDelay: `${idx * 50}ms` }}
+            >
+              {/* Season header */}
+              <button
+                onClick={() => setExpandedSeason(isExpanded ? null : season.season_number)}
+                className="w-full text-left px-4 py-3.5 hover:bg-white/[0.02] transition-colors duration-200"
               >
-                {/* Season header */}
-                <button
-                  onClick={() => setExpandedSeason(isExpanded ? null : season.season_number)}
-                  className="w-full px-4 py-3.5 hover:bg-white/[0.02] transition-colors duration-200"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold">Season {season.season_number}</span>
-                      <span className="text-[11px] text-white/25">{season.episode_count} episodes</span>
-                      {season.air_date && (
-                        <span className="text-[11px] text-white/15">{season.air_date.slice(0, 4)}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      {seasonAvg != null && (
-                        <div className="flex items-center gap-1.5">
-                          <Star size={13} className="fill-current" style={{ color: getRatingHex(seasonAvg) }} />
-                          <span className="text-base font-black tabular-nums" style={{ color: getRatingHex(seasonAvg) }}>
-                            {seasonAvg.toFixed(1)}
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold">Season {season.season_number}</span>
+                    <span className="text-[11px] text-white/25">{season.episode_count} episodes</span>
+                    {season.air_date && (
+                      <span className="text-[11px] text-white/15">{season.air_date.slice(0, 4)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    {seasonAvg != null && (
+                      <div className="flex items-center gap-1.5">
+                        <Star size={13} className="fill-current" style={{ color: getRatingHex(seasonAvg) }} />
+                        <span className="text-base font-black tabular-nums" style={{ color: getRatingHex(seasonAvg) }}>
+                          {seasonAvg.toFixed(1)}
+                        </span>
+                      </div>
+                    )}
+                    <ChevronLeft
+                      size={14}
+                      className={`text-white/25 transition-transform duration-200 ${isExpanded ? '-rotate-90' : ''}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Rating bar */}
+                {seasonAvg != null && (
+                  <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(seasonAvg)} transition-all duration-700 ease-out`}
+                      style={{ width: `${ratingBarPct(seasonAvg)}%` }}
+                    />
+                  </div>
+                )}
+
+                {/* Best episode teaser */}
+                {bestEp && !isExpanded && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <Award size={10} className="text-accent/60" />
+                    <span className="text-[10px] text-white/25 truncate">
+                      Best: E{bestEp.number} &ldquo;{bestEp.title}&rdquo;
+                      <span className="ml-1 font-bold" style={{ color: getRatingHex(bestEp.imdbRating) }}>
+                        {bestEp.imdbRating.toFixed(1)}
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </button>
+
+              {/* Expanded episode list — CSS transition, no framer-motion height hacks */}
+              {isExpanded && episodes.length > 0 && (
+                <div className="border-t border-white/[0.04] max-h-[350px] overflow-y-auto scrollbar-hide">
+                  {episodes.map((ep: any) => (
+                    <div
+                      key={ep.imdbID || ep.number}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.03] border-b border-white/[0.02] last:border-b-0 transition-colors"
+                    >
+                      <span className="text-[11px] text-white/15 w-7 flex-shrink-0 tabular-nums font-medium">E{ep.number}</span>
+
+                      {/* Mini rating bar */}
+                      <div className="w-16 flex-shrink-0">
+                        {ep.imdbRating != null ? (
+                          <div className="w-full h-1 bg-white/[0.04] rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(ep.imdbRating)}`}
+                              style={{ width: `${ratingBarPct(ep.imdbRating)}%` }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full h-1 bg-white/[0.04] rounded-full" />
+                        )}
+                      </div>
+
+                      <span className="text-xs text-white/50 truncate flex-1 min-w-0">{ep.title}</span>
+
+                      {ep.imdbRating != null ? (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Star size={10} className="fill-current" style={{ color: getRatingHex(ep.imdbRating) }} />
+                          <span className="text-xs font-bold tabular-nums" style={{ color: getRatingHex(ep.imdbRating) }}>
+                            {ep.imdbRating.toFixed(1)}
                           </span>
                         </div>
+                      ) : (
+                        <span className="text-[10px] text-white/15 flex-shrink-0">N/A</span>
                       )}
-                      <m.div
-                        animate={{ rotate: isExpanded ? -90 : 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <ChevronLeft size={14} className="text-white/25" />
-                      </m.div>
                     </div>
-                  </div>
-
-                  {/* Rating bar */}
-                  {seasonAvg != null && (
-                    <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                      <m.div
-                        className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(seasonAvg)}`}
-                        initial={{ width: 0 }}
-                        animate={{ width: ratingBarWidth(seasonAvg) }}
-                        transition={{ duration: 0.6, delay: idx * 0.05 + 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Best episode teaser */}
-                  {bestEp && !isExpanded && (
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <Award size={10} className="text-accent/60" />
-                      <span className="text-[10px] text-white/25">
-                        Best: E{bestEp.number} &ldquo;{bestEp.title}&rdquo;
-                        <span className="ml-1 font-bold" style={{ color: getRatingHex(bestEp.imdbRating) }}>{bestEp.imdbRating.toFixed(1)}</span>
-                      </span>
-                    </div>
-                  )}
-                </button>
-
-                {/* Expanded episode list */}
-                <m.div
-                  initial={false}
-                  animate={{
-                    height: isExpanded ? 'auto' : 0,
-                    opacity: isExpanded ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="overflow-hidden"
-                >
-                  {episodes && episodes.length > 0 && (
-                    <div className="border-t border-white/[0.04] max-h-[350px] overflow-y-auto scrollbar-hide">
-                      {episodes.map((ep: any, epIdx: number) => (
-                        <m.div
-                          key={ep.imdbID || ep.number}
-                          initial={{ opacity: 0, x: -8 }}
-                          animate={isExpanded ? { opacity: 1, x: 0 } : { opacity: 0, x: -8 }}
-                          transition={{ duration: 0.25, delay: epIdx * 0.02 }}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.03] border-b border-white/[0.02] last:border-b-0 transition-colors"
-                        >
-                          <span className="text-[11px] text-white/15 w-7 flex-shrink-0 tabular-nums font-medium">E{ep.number}</span>
-
-                          {/* Mini rating bar */}
-                          <div className="w-16 flex-shrink-0">
-                            {ep.imdbRating != null ? (
-                              <div className="w-full h-1 bg-white/[0.04] rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(ep.imdbRating)}`}
-                                  style={{ width: ratingBarWidth(ep.imdbRating) }}
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-full h-1 bg-white/[0.04] rounded-full" />
-                            )}
-                          </div>
-
-                          <span className="text-xs text-white/50 truncate flex-1 min-w-0">{ep.title}</span>
-
-                          {ep.imdbRating != null ? (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Star size={10} className="fill-current" style={{ color: getRatingHex(ep.imdbRating) }} />
-                              <span className="text-xs font-bold tabular-nums" style={{ color: getRatingHex(ep.imdbRating) }}>
-                                {ep.imdbRating.toFixed(1)}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-white/15 flex-shrink-0">N/A</span>
-                          )}
-                        </m.div>
-                      ))}
-                    </div>
-                  )}
-                </m.div>
-              </m.div>
-            );
-          })}
-        </div>
-      )}
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
