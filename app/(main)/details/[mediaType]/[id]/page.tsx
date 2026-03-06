@@ -1100,7 +1100,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                 <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider flex items-center gap-2">
                   <Play size={14} /> Trailer
                 </h3>
-                <div className="relative w-full max-w-2xl aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
+                <div className="relative w-full max-w-4xl aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
                   <iframe
                     src={`https://www.youtube.com/embed/${trailer.key}?rel=0&modestbranding=1`}
                     title={trailer.name}

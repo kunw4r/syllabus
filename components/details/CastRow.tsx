@@ -31,7 +31,7 @@ export default function CastRow({ cast }: CastRowProps) {
     <div className="mb-8">
       <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider">Cast</h3>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        {sorted.slice(0, 10).map((actor) => {
+        {sorted.slice(0, 30).map((actor) => {
           // For aggregate_credits, character comes from roles array
           const character = actor.character || actor.roles?.map(r => r.character).filter(Boolean).join(', ') || '';
           const episodeCount = actor.total_episode_count;
