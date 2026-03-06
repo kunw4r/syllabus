@@ -1053,23 +1053,47 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   const directors = crew.filter((c: any) => c.job === 'Director').slice(0, 3);
   const starring = castList.slice(0, 5).map((c: any) => c.name).join(', ');
 
+  // Section nav items
+  const sectionItems = [
+    ...(videoList.length > 0 ? [{ id: 'trailers', label: 'Trailers' }] : []),
+    { id: 'details', label: 'More Details' },
+    ...(recommendations.length > 0 ? [{ id: 'recommendations', label: 'More to Watch' }] : []),
+  ];
+
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-10 -my-6 lg:-my-8">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-10 -my-6 lg:-my-8 lg:-ml-[calc(theme(spacing.10)+15rem)]">
       {/* Full-page transparent backdrop */}
       <HeroBackdrop backdropPath={data.backdrop_path} />
 
-      {/* Back button */}
-      <div className="px-4 sm:px-6 lg:px-10 pt-4 lg:pt-6">
-        <button onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-white/50 hover:text-white mb-4 transition-colors relative z-10">
-          <ChevronLeft size={22} strokeWidth={2.5} /> Back
-        </button>
+      {/* ── Floating Section Nav ── */}
+      <div className="sticky top-0 lg:top-0 z-40 flex justify-center pt-3 pb-2">
+        <nav className="flex items-center gap-1 bg-dark-800/80 backdrop-blur-xl rounded-full border border-white/[0.08] px-2 py-1.5 shadow-lg">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1 text-white/50 hover:text-white px-3 py-1.5 rounded-full text-sm transition-colors"
+          >
+            <ChevronLeft size={16} strokeWidth={2.5} /> Back
+          </button>
+          <div className="w-px h-5 bg-white/10 mx-1" />
+          {sectionItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                const el = document.getElementById(item.id);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="text-sm text-accent/80 hover:text-accent px-3 py-1.5 rounded-full hover:bg-white/[0.05] transition-colors"
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* ── Hero Image Container ── */}
+      {/* ── Hero Image Container (full-bleed) ── */}
       <div className="px-4 sm:px-6 lg:px-10">
         <FadeInView yOffset={30}>
-          <div className="relative w-full max-w-6xl mx-auto aspect-[16/8] sm:aspect-[16/7] rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
+          <div className="relative w-full aspect-[16/7] sm:aspect-[16/6] lg:aspect-[16/6] rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
             {data.backdrop_path ? (
               <img
                 src={`${TMDB_IMG_ORIGINAL}${data.backdrop_path}`}
@@ -1091,62 +1115,60 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             )}
             {/* Gradient overlays on hero image */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
 
-            {/* Title overlay at bottom-left */}
+            {/* Title + Play/Add overlaid at bottom-left */}
             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-10">
-              <h1 className="font-serif text-3xl sm:text-4xl lg:text-6xl text-white drop-shadow-lg mb-3">{title}</h1>
+              <h1 className="font-serif text-3xl sm:text-4xl lg:text-6xl text-white drop-shadow-lg mb-4">{title}</h1>
+              <div className="flex items-center gap-3">
+                {trailer && (
+                  <button
+                    onClick={() => setShowTrailer(!showTrailer)}
+                    className="inline-flex items-center gap-2.5 bg-white text-black font-bold text-base px-7 py-3 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+                  >
+                    <Play size={20} fill="black" /> {showTrailer ? 'Close' : 'Play'}
+                  </button>
+                )}
+                <button
+                  onClick={handleQuickAdd}
+                  disabled={quickAdded || quickAdding}
+                  className={`w-11 h-11 rounded-full border-2 flex items-center justify-center transition-all duration-300 backdrop-blur-sm ${
+                    quickAdded
+                      ? 'border-accent/60 bg-accent/10'
+                      : 'border-white/40 bg-white/10 hover:border-white/70'
+                  }`}
+                  title={quickAdded ? 'In your watchlist' : 'Add to watchlist'}
+                >
+                  {quickAdding ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-accent rounded-full animate-spin" />
+                  ) : quickAdded ? (
+                    <Check size={20} className="text-accent" />
+                  ) : (
+                    <Plus size={20} className="text-white" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </FadeInView>
       </div>
 
-      {/* ── Play / Add / Ratings Row ── */}
-      <FadeInView delay={0.1}>
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-6 px-4 sm:px-6 lg:px-10 max-w-6xl mx-auto">
-          {trailer && (
-            <button
-              onClick={() => setShowTrailer(!showTrailer)}
-              className="inline-flex items-center gap-2.5 bg-white text-black font-bold text-base px-8 py-3.5 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
-            >
-              <Play size={20} fill="black" /> {showTrailer ? 'Close' : 'Play'}
-            </button>
-          )}
-          <button
-            onClick={handleQuickAdd}
-            disabled={quickAdded || quickAdding}
-            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-              quickAdded
-                ? 'border-accent/60 bg-accent/10'
-                : 'border-white/30 hover:border-white/60'
-            }`}
-            title={quickAdded ? 'In your watchlist' : 'Add to watchlist'}
-          >
-            {quickAdding ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-accent rounded-full animate-spin" />
-            ) : quickAdded ? (
-              <Check size={22} className="text-accent" />
-            ) : (
-              <Plus size={22} className="text-white/80" />
-            )}
-          </button>
-
-          {/* Ratings inline */}
-          <RatingCluster
-            avgScore={avgScore}
-            tmdbScore={data.vote_average}
-            mediaType={mediaType}
-            dataId={data.id}
-            extRatings={extRatings}
-            ratingsLoaded={ratingsLoaded}
-            imdbId={imdbId}
-            isAnime={isAnime}
-            malData={malData}
-            title={title}
-            getSyllabusScore={getSyllabusScore}
-          />
-        </div>
-      </FadeInView>
+      {/* ── Ratings Row ── */}
+      <div className="px-4 sm:px-6 lg:px-10 mt-6 max-w-7xl mx-auto">
+        <RatingCluster
+          avgScore={avgScore}
+          tmdbScore={data.vote_average}
+          mediaType={mediaType}
+          dataId={data.id}
+          extRatings={extRatings}
+          ratingsLoaded={ratingsLoaded}
+          imdbId={imdbId}
+          isAnime={isAnime}
+          malData={malData}
+          title={title}
+          getSyllabusScore={getSyllabusScore}
+        />
+      </div>
 
       {/* ── Inline Trailer Player ── */}
       {showTrailer && trailer && (
@@ -1155,7 +1177,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }}
-          className="px-4 sm:px-6 lg:px-10 mt-6 max-w-5xl mx-auto"
+          className="px-4 sm:px-6 lg:px-10 mt-6 max-w-7xl mx-auto"
         >
           <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40 bg-black">
             <iframe
@@ -1176,7 +1198,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       )}
 
       {/* ── Info Card (glassmorphic) ── */}
-      <div className="px-4 sm:px-6 lg:px-10 mt-8 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-10 mt-8 max-w-7xl mx-auto">
         <FadeInView delay={0.15}>
           <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.10] rounded-2xl p-6 sm:p-8">
             <div className="flex flex-col lg:flex-row lg:gap-10">
@@ -1230,7 +1252,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 
       {/* ── Trailers & More ── */}
       {videoList.length > 0 && (
-        <div className="px-4 sm:px-6 lg:px-10 mt-8 max-w-6xl mx-auto">
+        <div id="trailers" className="px-4 sm:px-6 lg:px-10 mt-8 max-w-7xl mx-auto scroll-mt-16">
           <FadeInView>
             <h3 className="text-xl font-bold text-white mb-4">Trailers & More</h3>
             <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
@@ -1268,7 +1290,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       )}
 
       {/* ── More Details (XPrime-style glass grid) ── */}
-      <div className="px-4 sm:px-6 lg:px-10 mt-10 max-w-6xl mx-auto">
+      <div id="details" className="px-4 sm:px-6 lg:px-10 mt-10 max-w-7xl mx-auto scroll-mt-16">
         <FadeInView>
           <h3 className="text-xl font-bold text-white mb-4">More Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1442,7 +1464,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       </div>
 
       {/* ── Full Cast Row ── */}
-      <div className="px-4 sm:px-6 lg:px-10 mt-10 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-10 mt-10 max-w-7xl mx-auto">
         <FadeInView>
           <CastRow cast={castList} />
         </FadeInView>
@@ -1450,7 +1472,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 
       {/* ── Season Ratings (TV only) ── */}
       {mediaType === 'tv' && data.seasons?.length > 0 && (
-        <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-7xl mx-auto">
           <FadeInView>
             <SeasonRatings imdbId={imdbId} seasons={data.seasons} />
           </FadeInView>
@@ -1458,19 +1480,19 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       )}
 
       {/* ── Where to Watch ── */}
-      <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-7xl mx-auto">
         <FadeInView>
           <StreamingProviders providers={providers} title={title} />
         </FadeInView>
       </div>
 
       {/* ── Fun Facts ── */}
-      <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-7xl mx-auto">
         <MovieTVFunFacts data={data} extRatings={extRatings} ratingsLoaded={ratingsLoaded} />
       </div>
 
       {/* ── Library Panel ── */}
-      <div id="library-panel" className="px-4 sm:px-6 lg:px-10 mt-2 max-w-6xl mx-auto">
+      <div id="library-panel" className="px-4 sm:px-6 lg:px-10 mt-2 max-w-7xl mx-auto">
         <LibraryPanel
           mediaId={{ tmdb_id: data.id }}
           addPayload={{
@@ -1486,7 +1508,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 
       {/* ── Recommendations ── */}
       {recommendations.length > 0 && (
-        <div className="px-4 sm:px-6 lg:px-10 mt-12 pb-10 max-w-6xl mx-auto">
+        <div id="recommendations" className="px-4 sm:px-6 lg:px-10 mt-12 pb-10 max-w-7xl mx-auto scroll-mt-16">
           <FadeInView>
             <ScrollRow title="You Might Also Like">
               {recommendations.map((r: any) => (
