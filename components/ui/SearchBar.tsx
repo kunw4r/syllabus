@@ -152,7 +152,7 @@ export default function SearchBar({
           autoFocus={autoFocus}
           className={`w-full bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none transition-all focus:border-accent/50 focus:bg-white/[0.07] ${
             isNavbar
-              ? 'pl-9 pr-8 py-1.5 text-xs rounded-full'
+              ? 'pl-9 pr-8 py-2 text-sm rounded-full'
               : 'pl-11 pr-10 py-3 text-sm rounded-xl'
           }`}
         />
