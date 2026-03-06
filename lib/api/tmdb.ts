@@ -170,6 +170,21 @@ export function getTopRatedByLanguage(lang: string) {
   return tmdbCached('/discover/movie', `with_original_language=${lang}&sort_by=vote_average.desc&vote_count.gte=500`).then((d: any) => d.results || []);
 }
 
+// New releases (last 6 months) by studio
+export function getNewReleasesByCompany(companyId: number) {
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()).toISOString().split('T')[0];
+  const today = now.toISOString().split('T')[0];
+  return tmdbCached('/discover/movie', `with_companies=${companyId}&primary_release_date.gte=${sixMonthsAgo}&primary_release_date.lte=${today}&sort_by=primary_release_date.desc`).then((d: any) => d.results || []);
+}
+
+export function getNewReleasesByLanguage(lang: string) {
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()).toISOString().split('T')[0];
+  const today = now.toISOString().split('T')[0];
+  return tmdbCached('/discover/movie', `with_original_language=${lang}&primary_release_date.gte=${sixMonthsAgo}&primary_release_date.lte=${today}&sort_by=primary_release_date.desc&vote_count.gte=10`).then((d: any) => d.results || []);
+}
+
 // ─── Multi-search ───
 
 export async function multiSearchTMDB(query: string) {
