@@ -431,13 +431,13 @@ export default function ActorDetailPage() {
           <p className="text-lg">No {tab === 'movies' ? 'movie' : 'TV'} credits found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {credits.map((c: any) => (
             <div key={`${c.id}-${c.character}`}>
               <MediaCard
                 item={c}
                 mediaType={tab === 'movies' ? 'movie' : 'tv'}
-                variant="poster"
+                variant="landscape"
               />
               {c.character && (
                 <p className="text-[10px] text-white/25 mt-1.5 truncate px-0.5">

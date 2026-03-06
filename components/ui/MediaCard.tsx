@@ -140,8 +140,8 @@ export default function MediaCard({
   if (mode === 'landscape') {
     return (
       <div
-        className={`group/card relative cursor-pointer shrink-0 min-w-0 z-0 hover:z-50 ${
-          size === 'small' ? 'w-[240px] sm:w-[280px]' : 'w-[320px] sm:w-[380px]'
+        className={`group/card relative cursor-pointer min-w-0 z-0 hover:z-50 ${
+          variant ? 'w-full' : `shrink-0 ${size === 'small' ? 'w-[240px] sm:w-[280px]' : 'w-[320px] sm:w-[380px]'}`
         }`}
         style={{ perspective: '800px' }}
         onClick={handleClick}
