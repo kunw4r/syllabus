@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, Award, Film, Tv } from 'lucide-react';
 import { TMDB_IMG } from '@/lib/constants';
-import { getRatingHex } from '@/lib/utils/rating-colors';
+import { getRatingBg } from '@/lib/utils/rating-colors';
 import {
   enrichChart,
   applyStoredScores,
@@ -142,9 +142,9 @@ function AwardItem({
       {/* Rating */}
       {rating != null && rating > 0 && (
         <div className="flex flex-col items-end flex-shrink-0">
-          <div className="flex items-center gap-1.5">
-            <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
+          <div className="flex items-center gap-1.5 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(rating)) }}>
+            <Star size={14} className="text-white fill-white/90" />
+            <span className="text-sm font-bold text-white">
               {Number(rating).toFixed(1)}
             </span>
             <span className="text-[10px] text-white/20 hidden sm:inline">

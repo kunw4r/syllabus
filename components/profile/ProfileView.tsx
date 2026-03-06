@@ -19,7 +19,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/providers/ToastProvider';
 import { TMDB_IMG } from '@/lib/constants';
 import AvatarPicker from './AvatarPicker';
-import { getRatingHex } from '@/lib/utils/rating-colors';
+import { getRatingHex, getRatingBg } from '@/lib/utils/rating-colors';
 
 // ─── Types ───
 
@@ -328,9 +328,9 @@ function LibraryTab({ library }: { library: LibraryItem[] }) {
                   </div>
                 )}
                 {item.user_rating && (
-                  <div className="absolute top-1 right-1 bg-black/70 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
-                    <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
-                    <span className="text-[10px] font-bold" style={{ color: getRatingHex(Number(item.user_rating)) }}>{item.user_rating}</span>
+                  <div className="absolute top-1 right-1 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg" style={{ background: getRatingBg(Number(item.user_rating)) }}>
+                    <Star size={12} className="text-white fill-white/90" />
+                    <span className="text-[10px] font-bold text-white">{item.user_rating}</span>
                   </div>
                 )}
                 <div className="absolute bottom-1 left-1">
