@@ -162,6 +162,8 @@ const TIER_3 = [
   {
     slug: 'a24',
     name: 'A24',
+    image: '/studios/a24-card.png',
+    imagePosition: 'center center',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(40,40,40,0.5) 0%, rgba(20,20,20,0.8) 50%, rgba(10,10,10,0.95) 100%)',
     border: 'rgba(160,160,160,0.18)',
     glow: '0 0 40px rgba(100,100,100,0.08), 0 0 80px rgba(80,80,80,0.04)',
@@ -267,9 +269,56 @@ const TIER_3 = [
     accent: 'rgba(180,50,50,0.10)',
     streakColor: 'rgba(220,80,80,0.05)',
   },
+  {
+    slug: 'annapurna',
+    name: 'Annapurna Pictures',
+    image: '/studios/annapurna-card.png',
+    imagePosition: 'center center',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,30,80,0.5) 0%, rgba(10,15,45,0.8) 50%, rgba(6,8,25,0.95) 100%)',
+    border: 'rgba(60,80,200,0.20)',
+    glow: '0 0 40px rgba(40,60,160,0.12), 0 0 80px rgba(30,40,120,0.06)',
+    accent: 'rgba(50,70,180,0.10)',
+    streakColor: 'rgba(80,100,240,0.05)',
+  },
 ];
 
-type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof TIER_3)[number];
+const TIER_REGIONAL = [
+  {
+    slug: 'bollywood',
+    name: 'Bollywood',
+    image: '/studios/bollywood-card.png',
+    imagePosition: 'center center',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(90,60,10,0.5) 0%, rgba(45,30,5,0.8) 50%, rgba(18,12,4,0.95) 100%)',
+    border: 'rgba(220,170,50,0.22)',
+    glow: '0 0 40px rgba(180,130,30,0.15), 0 0 80px rgba(140,100,20,0.08)',
+    accent: 'rgba(200,150,40,0.10)',
+    streakColor: 'rgba(240,190,60,0.05)',
+  },
+  {
+    slug: 'korean',
+    name: 'Korean Cinema',
+    image: '/studios/korean-card.png',
+    imagePosition: 'center center',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(80,20,40,0.5) 0%, rgba(40,10,20,0.8) 50%, rgba(16,6,10,0.95) 100%)',
+    border: 'rgba(200,60,100,0.20)',
+    glow: '0 0 40px rgba(160,40,70,0.12), 0 0 80px rgba(120,20,50,0.06)',
+    accent: 'rgba(180,50,80,0.10)',
+    streakColor: 'rgba(220,80,120,0.05)',
+  },
+  {
+    slug: 'anime',
+    name: 'Anime Films',
+    image: '/studios/anime-card.png',
+    imagePosition: 'center center',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(60,20,80,0.5) 0%, rgba(30,10,45,0.8) 50%, rgba(14,6,20,0.95) 100%)',
+    border: 'rgba(140,60,200,0.20)',
+    glow: '0 0 40px rgba(100,40,160,0.12), 0 0 80px rgba(70,20,120,0.06)',
+    accent: 'rgba(120,50,180,0.10)',
+    streakColor: 'rgba(160,80,240,0.05)',
+  },
+];
+
+type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof TIER_3)[number] | (typeof TIER_REGIONAL)[number];
 
 // ── Tier aspect ratios ──
 
@@ -558,6 +607,16 @@ export default function StudiosPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
         {TIER_3.map((s) => (
           <StudioCard key={s.slug} studio={s} tier={3} />
+        ))}
+      </div>
+
+      <SectionDivider />
+
+      {/* Regional / World Cinema */}
+      <SectionLabel>World Cinema</SectionLabel>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5">
+        {TIER_REGIONAL.map((s) => (
+          <StudioCard key={s.slug} studio={s} tier={2} />
         ))}
       </div>
     </>
