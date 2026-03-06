@@ -584,7 +584,7 @@ export default function StudiosPage() {
 
       {/* Tier 1: Iconic Studios */}
       <SectionLabel>Iconic Studios</SectionLabel>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {TIER_1.map((s) => (
           <StudioCard key={s.slug} studio={s} tier={1} />
         ))}
