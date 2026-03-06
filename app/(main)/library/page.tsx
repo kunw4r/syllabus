@@ -46,12 +46,40 @@ import {
   getTVDetails,
 } from '@/lib/api/tmdb';
 import { TMDB_IMG } from '@/lib/constants';
-import { getRatingHex, getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
+import { getRatingHex, getRatingBg, getRatingGlow, getUserRatingRed, getUserRatingGlow, getUserRatingBg } from '@/lib/utils/rating-colors';
 import { loadStaticScoreDB, getSyllabusScore, applyStoredScores } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 import DragDropShelf from '@/components/library/DragDropShelf';
 import VirtualShelf from '@/components/library/VirtualShelf';
+
+/* ================================================================
+   BRIGHTNESS SAMPLING — for adaptive badge tinting
+   ================================================================ */
+
+function sampleTopLeftBrightness(img: HTMLImageElement): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    const size = 30;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+    // Sample top-left quadrant where the badge sits
+    const sw = Math.min(img.naturalWidth * 0.3, img.naturalWidth);
+    const sh = Math.min(img.naturalHeight * 0.25, img.naturalHeight);
+    ctx.drawImage(img, 0, 0, sw, sh, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+    let totalLum = 0;
+    const pixels = size * size;
+    for (let i = 0; i < data.length; i += 4) {
+      totalLum += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    }
+    return totalLum / pixels > 150;
+  } catch {
+    return false;
+  }
+}
 
 /* ================================================================
    STATS PANEL
@@ -802,6 +830,149 @@ function AnimatedRatingNumber({ value }: { value: number }) {
   return <span ref={ref}>{value > 0 ? value.toFixed(1) : '\u2014'}</span>;
 }
 
+/* ================================================================
+   LIBRARY GRID CARD — extracted for per-card brightness state
+   ================================================================ */
+
+function LibraryGridCard({
+  item,
+  onCardClick,
+  onStatusChange,
+  onRemove,
+  onRate,
+}: {
+  item: any;
+  onCardClick: (item: any) => void;
+  onStatusChange: (id: string, status: string) => void;
+  onRemove: (id: string) => void;
+  onRate: (item: any) => void;
+}) {
+  const [isBright, setIsBright] = useState(false);
+
+  const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    setIsBright(sampleTopLeftBrightness(e.currentTarget));
+  }, []);
+
+  const ratingVal = Number(item.user_rating);
+  const redHex = getUserRatingRed(ratingVal);
+
+  return (
+    <div
+      className="group relative rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.06] transition-all duration-300 hover:border-white/[0.12] cursor-pointer hover:scale-[1.03] hover:shadow-2xl hover:shadow-black/40"
+      onClick={() => onCardClick(item)}
+    >
+      <div className="relative">
+        {item.poster_url ? (
+          <img
+            src={item.poster_url}
+            alt={item.title}
+            loading="lazy"
+            crossOrigin="anonymous"
+            onLoad={handleImgLoad}
+            className="w-full aspect-[2/3] object-cover"
+          />
+        ) : (
+          <div className="w-full aspect-[2/3] bg-dark-600 flex items-center justify-center text-white/30 text-xs p-4 text-center">
+            {item.title}
+          </div>
+        )}
+
+        {/* External rating — top right */}
+        {item.external_rating > 0 && (
+          <div className="absolute top-2.5 right-2.5 backdrop-blur-xl border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.external_rating)), boxShadow: getRatingGlow(Number(item.external_rating)) }}>
+            <Star size={11} className="fill-current" style={{ color: getRatingHex(Number(item.external_rating)) }} />
+            <span className="drop-shadow-sm" style={{ color: getRatingHex(Number(item.external_rating)) }}>{Number(item.external_rating).toFixed(1)}</span>
+          </div>
+        )}
+
+        {/* User rating — top left, red neon scale + brightness-aware tint */}
+        {item.user_rating > 0 && (
+          <div
+            className="absolute top-2.5 left-2.5 backdrop-blur-xl rounded-lg px-1.5 py-0.5 text-xs font-bold flex items-center gap-1 transition-colors duration-300"
+            style={{
+              background: getUserRatingBg(ratingVal, isBright),
+              boxShadow: getUserRatingGlow(ratingVal),
+              borderWidth: 1,
+              borderColor: `${redHex}40`,
+            }}
+          >
+            <span style={{ color: redHex, textShadow: `0 0 6px ${redHex}88` }}>
+              {ratingVal % 1 === 0 ? item.user_rating : ratingVal.toFixed(1)}
+            </span>
+            <span style={{ color: redHex, opacity: 0.45 }}>/10</span>
+          </div>
+        )}
+
+        {/* Status badge — bottom left of poster */}
+        <div
+          className={`absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold backdrop-blur-xl border ${
+            item.status === 'finished'
+              ? 'bg-green-500/15 border-green-500/30 text-green-400'
+              : item.status === 'watching'
+                ? 'bg-blue-500/15 border-blue-500/30 text-blue-400'
+                : 'bg-purple-500/15 border-purple-500/30 text-purple-400'
+          }`}
+        >
+          {item.status === 'want' ? (
+            <><Clock size={11} /> Up Next</>
+          ) : item.status === 'watching' ? (
+            <><Eye size={11} /> In Progress</>
+          ) : (
+            <><CheckCircle2 size={11} /> Completed</>
+          )}
+        </div>
+
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col justify-end">
+          <div className="flex gap-1.5 px-2.5 mb-2">
+            {[
+              { key: 'want', icon: Clock, label: 'Up Next', activeBorder: 'border-purple-400/50', activeBg: 'bg-purple-500/20', activeText: 'text-purple-300' },
+              { key: 'watching', icon: Eye, label: 'In Progress', activeBorder: 'border-blue-400/50', activeBg: 'bg-blue-500/20', activeText: 'text-blue-300' },
+              { key: 'finished', icon: CheckCircle2, label: 'Completed', activeBorder: 'border-green-400/50', activeBg: 'bg-green-500/20', activeText: 'text-green-300' },
+            ].map((s) => (
+              <button
+                key={s.key}
+                onClick={(e) => { e.stopPropagation(); onStatusChange(item.id, s.key); }}
+                className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 transition-all backdrop-blur-sm border ${
+                  item.status === s.key
+                    ? `${s.activeBg} ${s.activeBorder} ${s.activeText}`
+                    : 'bg-white/[0.06] border-white/[0.08] text-white/50 hover:bg-white/10 hover:text-white/80'
+                }`}
+              >
+                <s.icon size={12} />
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 px-2.5 mb-2.5">
+            <button
+              onClick={(e) => { e.stopPropagation(); onRate(item); }}
+              className="flex-1 py-2 rounded-lg bg-white/[0.08] border border-white/[0.1] hover:bg-white/[0.14] text-white/80 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all backdrop-blur-sm"
+            >
+              <Star size={13} /> Rate
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+              className="py-2 px-3 rounded-lg bg-white/[0.06] border border-white/[0.08] hover:bg-red-500/20 hover:border-red-500/30 text-white/40 hover:text-red-400 text-xs transition-all backdrop-blur-sm"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-3">
+        <p className="text-sm font-semibold truncate text-white/90">{item.title}</p>
+        {item.review && (
+          <p className="text-[11px] text-white/25 mt-1.5 line-clamp-2 italic leading-relaxed">
+            &ldquo;{item.review}&rdquo;
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function LibraryPage() {
   const [allItems, setAllItems] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
@@ -1188,148 +1359,14 @@ export default function LibraryPage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {filteredItems.map((item) => (
-                <div
+                <LibraryGridCard
                   key={item.id}
-                  className="group relative rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.06] transition-all duration-300 hover:border-white/[0.12] cursor-pointer hover:scale-[1.03] hover:shadow-2xl hover:shadow-black/40"
-                  onClick={() => handleCardClick(item)}
-                >
-                  {/* Poster */}
-                  <div className="relative">
-                    {item.poster_url ? (
-                      <img
-                        src={item.poster_url}
-                        alt={item.title}
-                        loading="lazy"
-                        className="w-full aspect-[2/3] object-cover"
-                      />
-                    ) : (
-                      <div className="w-full aspect-[2/3] bg-dark-600 flex items-center justify-center text-white/30 text-xs p-4 text-center">
-                        {item.title}
-                      </div>
-                    )}
-
-                    {/* External rating — top right */}
-                    {item.external_rating > 0 && (
-                      <div className="absolute top-2.5 right-2.5 backdrop-blur-xl border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.external_rating)), boxShadow: getRatingGlow(Number(item.external_rating)) }}>
-                        <Star size={11} className="fill-current" style={{ color: getRatingHex(Number(item.external_rating)) }} />
-                        <span className="drop-shadow-sm" style={{ color: getRatingHex(Number(item.external_rating)) }}>{Number(item.external_rating).toFixed(1)}</span>
-                      </div>
-                    )}
-
-                    {/* User rating — top left */}
-                    {item.user_rating > 0 && (
-                      <div className="absolute top-2.5 left-2.5 backdrop-blur-xl border border-red-500/30 rounded-lg px-1.5 py-0.5 text-xs font-bold flex items-center gap-1" style={{ background: 'rgba(20, 0, 0, 0.75)', boxShadow: '0 0 12px rgba(239,68,68,0.2)' }}>
-                        <span className="text-red-400 drop-shadow-[0_0_6px_rgba(239,68,68,0.5)]">
-                          {Number(item.user_rating) % 1 === 0
-                            ? item.user_rating
-                            : Number(item.user_rating).toFixed(1)}
-                        </span>
-                        <span className="text-red-400/50">/10</span>
-                      </div>
-                    )}
-
-                    {/* Status badge — bottom left of poster */}
-                    <div
-                      className={`absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold backdrop-blur-xl border ${
-                        item.status === 'finished'
-                          ? 'bg-green-500/15 border-green-500/30 text-green-400'
-                          : item.status === 'watching'
-                            ? 'bg-blue-500/15 border-blue-500/30 text-blue-400'
-                            : 'bg-purple-500/15 border-purple-500/30 text-purple-400'
-                      }`}
-                    >
-                      {item.status === 'want' ? (
-                        <><Clock size={11} /> Up Next</>
-                      ) : item.status === 'watching' ? (
-                        <><Eye size={11} /> In Progress</>
-                      ) : (
-                        <><CheckCircle2 size={11} /> Completed</>
-                      )}
-                    </div>
-
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col justify-end">
-                      {/* Status buttons */}
-                      <div className="flex gap-1.5 px-2.5 mb-2">
-                        {[
-                          {
-                            key: 'want',
-                            icon: Clock,
-                            label: 'Up Next',
-                            activeBorder: 'border-purple-400/50',
-                            activeBg: 'bg-purple-500/20',
-                            activeText: 'text-purple-300',
-                          },
-                          {
-                            key: 'watching',
-                            icon: Eye,
-                            label: 'In Progress',
-                            activeBorder: 'border-blue-400/50',
-                            activeBg: 'bg-blue-500/20',
-                            activeText: 'text-blue-300',
-                          },
-                          {
-                            key: 'finished',
-                            icon: CheckCircle2,
-                            label: 'Completed',
-                            activeBorder: 'border-green-400/50',
-                            activeBg: 'bg-green-500/20',
-                            activeText: 'text-green-300',
-                          },
-                        ].map((s) => (
-                          <button
-                            key={s.key}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusChange(item.id, s.key);
-                            }}
-                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 transition-all backdrop-blur-sm border ${
-                              item.status === s.key
-                                ? `${s.activeBg} ${s.activeBorder} ${s.activeText}`
-                                : 'bg-white/[0.06] border-white/[0.08] text-white/50 hover:bg-white/10 hover:text-white/80'
-                            }`}
-                          >
-                            <s.icon size={12} />
-                            {s.label}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Action buttons */}
-                      <div className="flex gap-1.5 px-2.5 mb-2.5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openReview(item);
-                          }}
-                          className="flex-1 py-2 rounded-lg bg-white/[0.08] border border-white/[0.1] hover:bg-white/[0.14] text-white/80 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all backdrop-blur-sm"
-                        >
-                          <Star size={13} /> Rate
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemove(item.id);
-                          }}
-                          className="py-2 px-3 rounded-lg bg-white/[0.06] border border-white/[0.08] hover:bg-red-500/20 hover:border-red-500/30 text-white/40 hover:text-red-400 text-xs transition-all backdrop-blur-sm"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom info */}
-                  <div className="p-3">
-                    <p className="text-sm font-semibold truncate text-white/90">
-                      {item.title}
-                    </p>
-                    {item.review && (
-                      <p className="text-[11px] text-white/25 mt-1.5 line-clamp-2 italic leading-relaxed">
-                        &ldquo;{item.review}&rdquo;
-                      </p>
-                    )}
-                  </div>
-                </div>
+                  item={item}
+                  onCardClick={handleCardClick}
+                  onStatusChange={handleStatusChange}
+                  onRemove={handleRemove}
+                  onRate={openReview}
+                />
               ))}
             </div>
           )}

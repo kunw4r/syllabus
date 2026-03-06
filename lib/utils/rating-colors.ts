@@ -65,3 +65,34 @@ export function getRatingTrackGlow(val: number): string {
   if (val >= 9) return `0 0 10px ${hex}66, 0 0 3px ${hex}88`;
   return `0 0 8px ${hex}44, 0 0 2px ${hex}66`;
 }
+
+// ── User rating (red neon scale) — gets more electric at higher scores ──
+
+export function getUserRatingRed(val: number): string {
+  if (val <= 3) return '#cc4444';
+  if (val <= 5) return '#e04040';
+  if (val <= 7) return '#ef4444';
+  if (val <= 8) return '#f43f5e';
+  if (val <= 9) return '#ff2d55';
+  if (val <= 9.5) return '#ff1a4a';
+  return '#ff0044';
+}
+
+export function getUserRatingGlow(val: number): string {
+  const hex = getUserRatingRed(val);
+  if (val >= 9.5) return `0 0 20px ${hex}bb, 0 0 8px ${hex}dd`;
+  if (val >= 8.5) return `0 0 16px ${hex}88, 0 0 6px ${hex}aa`;
+  if (val >= 7) return `0 0 12px ${hex}55, 0 0 4px ${hex}77`;
+  return `0 0 8px ${hex}33`;
+}
+
+export function getUserRatingBg(val: number, bright: boolean): string {
+  const hex = getUserRatingRed(val);
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  if (bright) {
+    return `rgba(${Math.round(r * 0.06)}, ${Math.round(g * 0.04)}, ${Math.round(b * 0.04)}, 0.82)`;
+  }
+  return `rgba(${Math.round(r * 0.1)}, ${Math.round(g * 0.05)}, ${Math.round(b * 0.05)}, 0.55)`;
+}
