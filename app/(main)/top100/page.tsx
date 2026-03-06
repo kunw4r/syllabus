@@ -13,7 +13,7 @@ import {
   getChartAge,
   applyStoredScores,
 } from '@/lib/scoring';
-import { MOVIE_GENRES, TV_GENRES, TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
+import { MOVIE_GENRES, TV_GENRES, TMDB_IMG } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 // ─── Genre lists ───
@@ -61,7 +61,6 @@ function RankedCard({
   title,
   year,
   poster,
-  backdrop,
   mediaType,
 }: {
   rank: number;
@@ -69,7 +68,6 @@ function RankedCard({
   title: string;
   year: string;
   poster: string | null;
-  backdrop: string | null;
   mediaType: string;
 }) {
   const router = useRouter();
@@ -89,40 +87,37 @@ function RankedCard({
     }
   };
 
-  // Top 3 get gold/silver/bronze accent
-  const rankAccent =
-    rank === 1 ? 'from-yellow-500/30 to-yellow-600/10 border-yellow-500/30'
-    : rank === 2 ? 'from-gray-300/20 to-gray-400/10 border-gray-300/20'
-    : rank === 3 ? 'from-amber-600/20 to-amber-700/10 border-amber-600/20'
-    : 'from-white/[0.03] to-white/[0.01] border-white/[0.06]';
+  // Top 3 get gold/silver/bronze ring
+  const ringClass =
+    rank === 1 ? 'ring-yellow-500/40'
+    : rank === 2 ? 'ring-gray-300/30'
+    : rank === 3 ? 'ring-amber-600/30'
+    : 'ring-white/[0.06]';
 
   const rankColor =
     rank === 1 ? 'text-yellow-400'
     : rank === 2 ? 'text-gray-300'
     : rank === 3 ? 'text-amber-500'
-    : 'text-white/15';
-
-  // Use backdrop for movies/TV, poster for books
-  const displayImg = !isBook && backdrop ? backdrop : poster;
+    : 'text-white/60';
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br ${rankAccent} cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-black/30 transition-all duration-300`}
+      className="group relative cursor-pointer"
       onClick={handleClick}
     >
-      {/* Background image */}
-      <div className="relative aspect-[16/9]">
+      {/* Poster */}
+      <div className={`relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ${ringClass} group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300`}>
         {isBook ? (
           <div className="absolute inset-0 bg-dark-700 flex items-center justify-center">
             <BookCover
               coverUrls={item.cover_urls || (poster ? [poster] : [])}
               alt={title}
-              className="h-full w-auto max-w-[60%] object-contain"
+              className="h-full w-auto max-w-[90%] object-contain"
             />
           </div>
-        ) : displayImg && !imgBroken ? (
+        ) : poster && !imgBroken ? (
           <img
-            src={displayImg}
+            src={poster}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={() => setImgBroken(true)}
@@ -134,40 +129,44 @@ function RankedCard({
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-
-        {/* Rank number — large, bottom-left */}
-        <div className="absolute bottom-3 left-4">
-          <span className={`text-5xl sm:text-6xl font-black ${rankColor} drop-shadow-lg`} style={{ WebkitTextStroke: rank <= 3 ? 'none' : '1px rgba(255,255,255,0.08)' }}>
-            {rank}
-          </span>
-        </div>
+        {/* Bottom gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
         {/* Rating badge — top-right */}
         {rating > 0 && (
           <div
-            className="absolute top-3 right-3 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1"
+            className="absolute top-2.5 right-2.5 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5"
             style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
-            <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
+            <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-xs font-bold" style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
           </div>
         )}
 
-        {/* Title + meta — bottom, next to rank */}
-        <div className="absolute bottom-3 left-20 sm:left-24 right-3">
-          <p className="font-bold text-base sm:text-lg text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+        {/* Rank number — bottom-left, bold with strong shadow for readability */}
+        <div className="absolute bottom-2 left-2.5">
+          <span
+            className={`text-4xl sm:text-5xl font-black ${rankColor} leading-none`}
+            style={{
+              textShadow: '0 0 12px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.8), 0 0 0 2px rgba(0,0,0,0.6)',
+              paintOrder: 'stroke fill',
+              WebkitTextStroke: rank <= 3 ? 'none' : '1px rgba(255,255,255,0.15)',
+            }}
+          >
+            {rank}
+          </span>
+        </div>
+
+        {/* Title + year — bottom */}
+        <div className="absolute bottom-2 left-14 sm:left-16 right-2.5">
+          <p className="font-bold text-sm text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
             {title}
           </p>
-          <p className="text-xs text-white/40 mt-0.5 truncate">
+          <p className="text-[11px] text-white/40 mt-0.5 truncate">
             {year}
             {isBook && item.author ? ` \u00b7 ${item.author}` : ''}
-            {!isBook && item.genres?.length > 0
-              ? ` \u00b7 ${item.genres.map((g: any) => g.name).join(', ')}`
-              : ''}
           </p>
         </div>
       </div>
@@ -188,9 +187,9 @@ export default function Top100Page() {
           </div>
           <p className="text-white/40 text-sm">The highest rated of all time, ranked by Syllabus Score.</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 9 }, (_, i) => (
-            <div key={i} className="aspect-[16/9] rounded-2xl bg-white/[0.02] animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div key={i} className="aspect-[2/3] rounded-xl bg-white/[0.02] animate-pulse" />
           ))}
         </div>
       </div>
@@ -391,9 +390,9 @@ function Top100Content() {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 9 }, (_, i) => (
-            <div key={i} className="aspect-[16/9] rounded-2xl bg-white/[0.02] animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div key={i} className="aspect-[2/3] rounded-xl bg-white/[0.02] animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -402,7 +401,7 @@ function Top100Content() {
           <p className="text-sm mt-1">Try a different category</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {items.map((item, i) => {
             const title = item.title || item.name;
             const isBook = mediaType === 'book';
@@ -414,9 +413,6 @@ function Top100Content() {
               : item.poster_path
                 ? `${TMDB_IMG}${item.poster_path}`
                 : null;
-            const backdrop = !isBook && item.backdrop_path
-              ? `${TMDB_IMG_ORIGINAL}${item.backdrop_path}`
-              : null;
 
             return (
               <RankedCard
@@ -426,7 +422,6 @@ function Top100Content() {
                 title={title}
                 year={year}
                 poster={poster}
-                backdrop={backdrop}
                 mediaType={mediaType}
               />
             );

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, Award, Film, Tv } from 'lucide-react';
-import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
+import { TMDB_IMG } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 import {
   enrichChart,
@@ -101,19 +101,17 @@ function AwardCard({
   const [imgBroken, setImgBroken] = useState(false);
 
   const rating = entry.unified_rating ?? entry.vote_average;
-  const backdrop = entry.backdrop_path ? `${TMDB_IMG_ORIGINAL}${entry.backdrop_path}` : null;
   const poster = entry.poster_path ? `${TMDB_IMG}${entry.poster_path}` : null;
-  const displayImg = backdrop || poster;
 
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-white/[0.01] cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-black/30 transition-all duration-300"
+      className="group relative cursor-pointer"
       onClick={() => router.push(`/details/${mediaType}/${entry.tmdb_id}`)}
     >
-      <div className="relative aspect-[16/9]">
-        {displayImg && !imgBroken ? (
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/[0.06] group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300">
+        {poster && !imgBroken ? (
           <img
-            src={displayImg}
+            src={poster}
             alt={entry.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={() => setImgBroken(true)}
@@ -125,13 +123,13 @@ function AwardCard({
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        {/* Bottom gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
         {/* Year badge — top-left */}
-        <div className="absolute top-3 left-3">
-          <span className="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-2.5 py-1 text-sm font-bold text-gold">
-            <Award size={14} className="text-gold" />
+        <div className="absolute top-2.5 left-2.5">
+          <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 text-xs font-bold text-gold">
+            <Award size={12} className="text-gold" />
             {entry.year}
           </span>
         </div>
@@ -139,26 +137,21 @@ function AwardCard({
         {/* Rating badge — top-right */}
         {rating != null && rating > 0 && (
           <div
-            className="absolute top-3 right-3 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1"
+            className="absolute top-2.5 right-2.5 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5"
             style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
-            <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
+            <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-xs font-bold" style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
           </div>
         )}
 
-        {/* Title + overview — bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <p className="font-bold text-base sm:text-lg text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
+        {/* Title — bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <p className="font-bold text-sm text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
             {entry.title}
           </p>
-          {entry.overview && (
-            <p className="text-xs text-white/40 mt-1 line-clamp-2 leading-relaxed">
-              {entry.overview}
-            </p>
-          )}
         </div>
       </div>
     </div>
@@ -325,9 +318,9 @@ export default function AwardsPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 9 }, (_, i) => (
-            <div key={i} className="aspect-[16/9] rounded-2xl bg-white/[0.02] animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 10 }, (_, i) => (
+            <div key={i} className="aspect-[2/3] rounded-xl bg-white/[0.02] animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -335,7 +328,7 @@ export default function AwardsPage() {
           <p className="text-lg">No data available</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {items.map((entry) => (
             <AwardCard
               key={`${entry.year}-${entry.tmdb_id}`}
