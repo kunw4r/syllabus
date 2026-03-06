@@ -189,10 +189,10 @@ export default function MediaCard({
     );
   }
 
-  // ── Poster card (2:3 vertical) — books ──
+  // ── Poster card (2:3 vertical) ──
   return (
     <div
-      className="group cursor-pointer shrink-0 w-[140px] sm:w-[160px]"
+      className="group cursor-pointer shrink-0 w-[160px] sm:w-[185px]"
       onClick={handleClick}
     >
       <div

@@ -1512,7 +1512,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           <FadeInView>
             <ScrollRow title="You Might Also Like">
               {recommendations.map((r: any) => (
-                <MediaCard key={r.id} item={r} mediaType={mediaType as 'movie' | 'tv'} />
+                <MediaCard key={r.id} item={r} mediaType={mediaType as 'movie' | 'tv'} variant="poster" />
               ))}
             </ScrollRow>
           </FadeInView>
