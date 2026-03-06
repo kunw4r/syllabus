@@ -21,6 +21,7 @@ const FEATURED_STUDIOS = [
   {
     slug: 'pixar',
     name: 'Pixar',
+    image: '/studios/pixar-card.png',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,60,80,0.5) 0%, rgba(12,35,50,0.8) 50%, rgba(8,15,25,0.95) 100%)',
     border: 'rgba(60,160,180,0.22)',
     glow: '0 0 40px rgba(30,120,150,0.12), 0 0 80px rgba(20,80,120,0.06)',
@@ -46,6 +47,26 @@ const FEATURED_STUDIOS = [
     glow: '0 0 40px rgba(40,80,180,0.12), 0 0 80px rgba(30,60,140,0.06)',
     accent: 'rgba(50,100,200,0.10)',
     streakColor: 'rgba(80,140,255,0.05)',
+  },
+  {
+    slug: 'dreamworks',
+    name: 'DreamWorks',
+    image: '/studios/dreamworks-card.png',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,50,100,0.5) 0%, rgba(12,30,60,0.8) 50%, rgba(8,14,30,0.95) 100%)',
+    border: 'rgba(70,120,200,0.20)',
+    glow: '0 0 40px rgba(40,80,160,0.12), 0 0 80px rgba(30,60,130,0.06)',
+    accent: 'rgba(50,100,180,0.10)',
+    streakColor: 'rgba(80,140,240,0.05)',
+  },
+  {
+    slug: 'sony',
+    name: 'Sony Pictures',
+    image: '/studios/sony-card.png',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,45,90,0.5) 0%, rgba(12,25,55,0.8) 50%, rgba(8,12,28,0.95) 100%)',
+    border: 'rgba(60,110,200,0.20)',
+    glow: '0 0 40px rgba(35,75,170,0.12), 0 0 80px rgba(25,55,130,0.06)',
+    accent: 'rgba(45,90,190,0.10)',
+    streakColor: 'rgba(70,130,240,0.05)',
   },
 ];
 
