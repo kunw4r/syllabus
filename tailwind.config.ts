@@ -16,6 +16,7 @@ const config: Config = {
     'from-green-600', 'to-green-500',
     'from-green-800', 'to-green-700',
     'from-blue-600', 'to-blue-500',
+    'to-sky-500',
   ],
   theme: {
     extend: {

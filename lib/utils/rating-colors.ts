@@ -1,6 +1,7 @@
 /**
  * Dynamic rating colors — smooth gradient scale inspired by rating heatmaps.
- * Scale: purple (garbage) → red → orange → yellow → lime → green → dark green → blue
+ * Scale: purple → red → orange → yellow → lime → green → dark green → teal/blue
+ * The top tier blends from dark green into blue for a smooth transition.
  *
  * IMPORTANT: Use getRatingHex() with inline styles, NOT Tailwind classes.
  */
@@ -14,7 +15,7 @@ export function getRatingHex(val: number): string {
   if (val <= 7.5) return '#84cc16'; // lime — good
   if (val <= 8.5) return '#22c55e'; // green — great
   if (val < 9) return '#15803d';    // dark green — awesome
-  return '#3b82f6';                  // blue — absolute cinema
+  return '#0ea5e9';                  // sky blue — absolute cinema
 }
 
 // Returns a CSS linear-gradient string for badge backgrounds
@@ -26,7 +27,8 @@ export function getRatingBg(val: number): string {
   if (val <= 7.5) return 'linear-gradient(135deg, #65a30d, #84cc16)';
   if (val <= 8.5) return 'linear-gradient(135deg, #16a34a, #22c55e)';
   if (val < 9) return 'linear-gradient(135deg, #15803d, #166534)';
-  return 'linear-gradient(135deg, #2563eb, #3b82f6)';
+  // 9+ : dark green fading into sky blue — smooth transition from the tier below
+  return 'linear-gradient(135deg, #166534, #0ea5e9)';
 }
 
 // Tailwind gradient classes for progress bars / slider tracks
@@ -38,5 +40,5 @@ export function getRatingGradient(val: number): string {
   if (val <= 7.5) return 'from-lime-600 to-lime-400';
   if (val <= 8.5) return 'from-green-600 to-green-500';
   if (val < 9) return 'from-green-800 to-green-700';
-  return 'from-blue-600 to-blue-500';
+  return 'from-green-800 to-sky-500';
 }
