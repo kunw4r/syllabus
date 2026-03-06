@@ -191,7 +191,7 @@ export const STUDIOS: Studio[] = [
   { slug: 'korean', name: 'Korean Cinema', tmdb_id: null, language: 'ko', color: 'from-rose-400 to-pink-600', tint: '#201418', icon: '' },
   { slug: 'anime', name: 'Anime Films', tmdb_id: null, language: 'ja', color: 'from-pink-400 to-fuchsia-600', tint: '#1e1220', icon: '' },
   { slug: 'toei', name: 'Toei Animation', tmdb_id: 5542, color: 'from-red-400 to-rose-600', tint: '#201214', icon: '' },
-  { slug: 'apple-studios', name: 'Apple Studios', tmdb_id: 158738, color: 'from-gray-300 to-gray-500', tint: '#161616', icon: '' },
+  { slug: 'apple-studios', name: 'Apple TV+', tmdb_id: 194232, color: 'from-gray-300 to-gray-500', tint: '#161616', icon: '' },
   { slug: 'toho', name: 'Toho', tmdb_id: 882, color: 'from-red-500 to-red-700', tint: '#1e1010', icon: '' },
   { slug: 'netflix', name: 'Netflix', tmdb_id: 213, color: 'from-red-500 to-red-700', tint: '#1a0808', icon: '' },
   { slug: 'columbia', name: 'Columbia Pictures', tmdb_id: 5, color: 'from-amber-400 to-amber-600', tint: '#1a1610', icon: '' },
