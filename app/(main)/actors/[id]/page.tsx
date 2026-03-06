@@ -16,6 +16,7 @@ import { getPersonDetails } from '@/lib/api/person';
 import { getOmdbEntry } from '@/lib/scoring';
 import { aggregateActorAwards } from '@/lib/awards-data';
 import { TMDB_IMG } from '@/lib/constants';
+import { getRatingHex, getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
 
 const TMDB_PROFILE_LG = 'https://image.tmdb.org/t/p/w500';
 const MAX_ENRICH = 30;
@@ -167,6 +168,21 @@ export default function ActorDetailPage() {
   }, [sort]);
 
   const credits = tab === 'movies' ? movieCredits : tvCredits;
+
+  // Average Syllabus scores
+  const avgMovieScore = useMemo(() => {
+    const rated = movieCredits.filter((c) => (c.unified_rating ?? c.vote_average) > 0);
+    if (rated.length < 3) return null;
+    const sum = rated.reduce((acc, c) => acc + (c.unified_rating ?? c.vote_average ?? 0), 0);
+    return sum / rated.length;
+  }, [movieCredits]);
+
+  const avgTvScore = useMemo(() => {
+    const rated = tvCredits.filter((c) => (c.unified_rating ?? c.vote_average) > 0);
+    if (rated.length < 3) return null;
+    const sum = rated.reduce((acc, c) => acc + (c.unified_rating ?? c.vote_average ?? 0), 0);
+    return sum / rated.length;
+  }, [tvCredits]);
 
   // Parse personal details from biography
   const personalDetails = useMemo(() => {
@@ -357,7 +373,7 @@ export default function ActorDetailPage() {
           </div>
 
           {/* Glassmorphic Stats */}
-          <div className="flex gap-3 mb-5">
+          <div className="flex flex-wrap gap-3 mb-5">
             <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
               <p className="text-xl font-black">{movieCredits.length}</p>
               <p className="text-[10px] text-white/30 uppercase tracking-wider">Movies</p>
@@ -366,6 +382,30 @@ export default function ActorDetailPage() {
               <p className="text-xl font-black">{tvCredits.length}</p>
               <p className="text-[10px] text-white/30 uppercase tracking-wider">TV Shows</p>
             </div>
+            {avgMovieScore != null && (
+              <div
+                className="backdrop-blur-sm border rounded-xl px-5 py-3 text-center"
+                style={{ background: getRatingBg(avgMovieScore), borderColor: `${getRatingHex(avgMovieScore)}30`, boxShadow: getRatingGlow(avgMovieScore) }}
+              >
+                <p className="text-xl font-black flex items-center justify-center gap-1.5" style={{ color: getRatingHex(avgMovieScore) }}>
+                  <Star size={14} className="fill-current" />
+                  {avgMovieScore.toFixed(1)}
+                </p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">Avg Movie</p>
+              </div>
+            )}
+            {avgTvScore != null && (
+              <div
+                className="backdrop-blur-sm border rounded-xl px-5 py-3 text-center"
+                style={{ background: getRatingBg(avgTvScore), borderColor: `${getRatingHex(avgTvScore)}30`, boxShadow: getRatingGlow(avgTvScore) }}
+              >
+                <p className="text-xl font-black flex items-center justify-center gap-1.5" style={{ color: getRatingHex(avgTvScore) }}>
+                  <Star size={14} className="fill-current" />
+                  {avgTvScore.toFixed(1)}
+                </p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">Avg TV</p>
+              </div>
+            )}
             {careerStart && careerEnd && (
               <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
                 <p className="text-xl font-black">
