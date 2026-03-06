@@ -59,7 +59,7 @@ const TIER_2 = [
     slug: 'dreamworks',
     name: 'DreamWorks',
     image: '/studios/dreamworks-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,50,100,0.5) 0%, rgba(12,30,60,0.8) 50%, rgba(8,14,30,0.95) 100%)',
     border: 'rgba(70,120,200,0.20)',
     glow: '0 0 40px rgba(40,80,160,0.12), 0 0 80px rgba(30,60,130,0.06)',
@@ -81,7 +81,7 @@ const TIER_2 = [
     slug: 'universal',
     name: 'Universal',
     image: '/studios/universal-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,50,100,0.5) 0%, rgba(10,25,55,0.8) 50%, rgba(6,12,28,0.95) 100%)',
     border: 'rgba(60,120,210,0.20)',
     glow: '0 0 40px rgba(35,80,180,0.12), 0 0 80px rgba(25,60,140,0.06)',
@@ -92,7 +92,7 @@ const TIER_2 = [
     slug: 'warner-bros',
     name: 'Warner Bros.',
     image: '/studios/warner-bros-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(60,50,20,0.5) 0%, rgba(30,25,12,0.8) 50%, rgba(14,12,8,0.95) 100%)',
     border: 'rgba(180,150,60,0.20)',
     glow: '0 0 40px rgba(140,110,40,0.12), 0 0 80px rgba(100,80,30,0.06)',
@@ -127,7 +127,7 @@ const TIER_2 = [
     slug: 'netflix',
     name: 'Netflix',
     image: '/studios/netflix-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(120,20,20,0.5) 0%, rgba(60,10,10,0.8) 50%, rgba(20,6,6,0.95) 100%)',
     border: 'rgba(200,50,50,0.22)',
     glow: '0 0 40px rgba(180,30,30,0.15), 0 0 80px rgba(140,20,20,0.08)',
@@ -185,7 +185,7 @@ const TIER_3 = [
     slug: 'mgm',
     name: 'Metro-Goldwyn-Mayer',
     image: '/studios/mgm-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(80,60,20,0.5) 0%, rgba(40,30,10,0.8) 50%, rgba(16,12,6,0.95) 100%)',
     border: 'rgba(200,160,60,0.22)',
     glow: '0 0 40px rgba(160,120,40,0.12), 0 0 80px rgba(120,90,30,0.06)',
@@ -196,7 +196,7 @@ const TIER_3 = [
     slug: '20th-century',
     name: '20th Century Studios',
     image: '/studios/20th-century-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(80,60,20,0.5) 0%, rgba(40,28,10,0.8) 50%, rgba(16,12,6,0.95) 100%)',
     border: 'rgba(200,150,50,0.22)',
     glow: '0 0 40px rgba(160,110,30,0.12), 0 0 80px rgba(120,80,20,0.06)',
@@ -207,7 +207,7 @@ const TIER_3 = [
     slug: 'columbia',
     name: 'Columbia Pictures',
     image: '/studios/columbia-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(60,50,30,0.5) 0%, rgba(30,25,15,0.8) 50%, rgba(14,12,8,0.95) 100%)',
     border: 'rgba(180,150,80,0.20)',
     glow: '0 0 40px rgba(140,110,50,0.12), 0 0 80px rgba(100,80,30,0.06)',
@@ -218,7 +218,7 @@ const TIER_3 = [
     slug: 'legendary',
     name: 'Legendary',
     image: '/studios/legendary-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(80,50,15,0.5) 0%, rgba(40,25,8,0.8) 50%, rgba(16,10,4,0.95) 100%)',
     border: 'rgba(200,140,50,0.22)',
     glow: '0 0 40px rgba(160,100,30,0.12), 0 0 80px rgba(120,70,20,0.06)',
@@ -229,7 +229,7 @@ const TIER_3 = [
     slug: 'skydance',
     name: 'Skydance',
     image: '/studios/skydance-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(60,50,30,0.5) 0%, rgba(30,25,15,0.8) 50%, rgba(14,12,8,0.95) 100%)',
     border: 'rgba(180,140,60,0.20)',
     glow: '0 0 40px rgba(140,100,40,0.12), 0 0 80px rgba(100,70,20,0.06)',
@@ -240,7 +240,7 @@ const TIER_3 = [
     slug: 'ghibli',
     name: 'Studio Ghibli',
     image: '/studios/ghibli-card.png',
-    cropBottom: '25%',
+
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,40,80,0.5) 0%, rgba(10,22,50,0.8) 50%, rgba(6,12,28,0.95) 100%)',
     border: 'rgba(60,100,180,0.20)',
     glow: '0 0 40px rgba(30,70,150,0.12), 0 0 80px rgba(20,50,120,0.06)',
@@ -323,9 +323,9 @@ type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof T
 // ── Tier aspect ratios ──
 
 const TIER_ASPECT = {
-  1: '2.4 / 1',
-  2: '2.4 / 1',
-  3: '2.4 / 1',
+  1: '16 / 9',
+  2: '16 / 9',
+  3: '16 / 9',
 } as const;
 
 // ── Animation variants ──
@@ -440,7 +440,7 @@ function StudioCard({
     >
       {/* Image background */}
       {hasImage && (() => {
-        const ci = ('cropInset' in studio && studio.cropInset) || '15%';
+        const ci = ('cropInset' in studio && studio.cropInset) || '5%';
         const cb = ('cropBottom' in studio && studio.cropBottom) || ci;
         return (
           <div
