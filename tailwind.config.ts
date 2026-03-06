@@ -6,6 +6,11 @@ const config: Config = {
     './components/**/*.{ts,tsx}',
     './lib/**/*.{ts,tsx}',
   ],
+  safelist: [
+    // Dynamic rating colors used by lib/utils/rating-colors.ts
+    'text-red-500', 'text-amber-500', 'text-yellow-400', 'text-green-400', 'text-emerald-400',
+    'fill-red-500', 'fill-amber-500', 'fill-yellow-400', 'fill-green-400', 'fill-emerald-400',
+  ],
   theme: {
     extend: {
       colors: {

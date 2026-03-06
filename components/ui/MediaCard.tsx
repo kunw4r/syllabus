@@ -6,6 +6,7 @@ import { Star, Plus, Check } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG } from '@/lib/constants';
+import { getRatingHex } from '@/lib/utils/rating-colors';
 
 interface MediaItem {
   id?: number | string;
@@ -133,8 +134,8 @@ export default function MediaCard({
 
         {rating != null && (
           <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded-lg px-1.5 py-0.5 flex items-center gap-0.5">
-            <Star size={12} className="text-gold fill-gold" />
-            <span className="text-xs font-bold text-gold">
+            <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-xs font-bold" style={{ color: getRatingHex(Number(rating)) }}>
               {typeof rating === 'number' ? rating.toFixed(1) : rating}
             </span>
           </div>

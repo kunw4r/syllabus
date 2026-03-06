@@ -24,6 +24,8 @@ import {
   unfollowUser,
 } from '@/lib/api/social';
 
+import { getRatingHex } from '@/lib/utils/rating-colors';
+
 // ─── Helpers ───
 
 function timeAgo(dateStr: string): string {
@@ -203,8 +205,8 @@ function ActivityFeed({
 
                 {a.rating && (
                   <div className="flex items-center gap-1 mt-1">
-                    <Star size={14} className="text-gold fill-gold" />
-                    <span className="text-xs font-bold text-gold">
+                    <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(a.rating)) }} />
+                    <span className="text-xs font-bold" style={{ color: getRatingHex(Number(a.rating)) }}>
                       {a.rating}/10
                     </span>
                   </div>

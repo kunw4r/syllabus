@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Star, Clock, Eye, CheckCircle2, Play, ExternalLink, Globe, Award,
@@ -8,11 +8,11 @@ import {
   ChevronLeft, Check, Trash2, Info, Sparkles, Lightbulb, ShoppingCart,
   BookCopy, BookMarked, PenLine,
 } from 'lucide-react';
-import { m } from 'framer-motion';
+import { m, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getMovieDetails, getTVDetails } from '@/lib/api/tmdb';
-import { getOMDbRatings } from '@/lib/api/omdb';
+import { getOMDbRatings, getOMDbSeasonEpisodes } from '@/lib/api/omdb';
 import { getMALRating } from '@/lib/api/jikan';
 import { getBookDetails, getBookRecommendations } from '@/lib/api/books';
 import {
@@ -30,6 +30,7 @@ import RatingCluster from '@/components/details/RatingCluster';
 import CastRow from '@/components/details/CastRow';
 import StreamingProviders from '@/components/details/StreamingProviders';
 import QuickFactsCard from '@/components/details/QuickFactsCard';
+import { getRatingHex, getRatingGradient } from '@/lib/utils/rating-colors';
 
 // ─── Image base URLs ───
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
@@ -37,12 +38,16 @@ const TMDB_LOGO = 'https://image.tmdb.org/t/p/w92';
 const TMDB_PROFILE = 'https://image.tmdb.org/t/p/w185';
 
 // ─── Rating helpers ───
-function getRatingColor(val: number): string {
-  if (val <= 3) return 'from-red-500 to-red-600';
-  if (val <= 5) return 'from-orange-500 to-amber-500';
-  if (val <= 7) return 'from-yellow-500 to-lime-500';
-  if (val <= 9) return 'from-green-400 to-emerald-500';
-  return 'from-emerald-400 to-cyan-400';
+
+function AnimatedRatingNumber({ value }: { value: number }) {
+  const spring = useSpring(value, { stiffness: 200, damping: 30 });
+  const display = useTransform(spring, (v) => v > 0 ? v.toFixed(1) : '\u2014');
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => { spring.set(value); }, [value, spring]);
+  useEffect(() => display.on('change', (v) => { if (ref.current) ref.current.textContent = v; }), [display]);
+
+  return <span ref={ref}>{value > 0 ? value.toFixed(1) : '\u2014'}</span>;
 }
 
 function getRatingLabel(val: number): string {
@@ -270,13 +275,20 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
             <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-2">Your Rating</label>
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <input type="range" min="0" max="10" step="0.1" value={rating}
-                  onChange={(e) => setRating(parseFloat(e.target.value))}
-                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-dark-600
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-lg
-                    [&::-webkit-slider-thumb]:shadow-accent/30 [&::-webkit-slider-thumb]:cursor-pointer
-                    [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20" />
+                <div className="relative h-1.5 rounded-full bg-dark-600">
+                  <div
+                    className="absolute top-0 left-0 h-full rounded-full transition-all duration-150"
+                    style={{
+                      width: `${(rating / 10) * 100}%`,
+                      background: rating > 0 ? getRatingHex(rating) : 'transparent',
+                    }}
+                  />
+                  <input type="range" min="0" max="10" step="0.1" value={rating}
+                    onChange={(e) => setRating(parseFloat(e.target.value))}
+                    className="rating-slider absolute inset-0 w-full h-full appearance-none cursor-pointer bg-transparent"
+                    style={{ '--thumb-color': rating > 0 ? getRatingHex(rating) : '#666' } as React.CSSProperties}
+                  />
+                </div>
                 <div className="flex justify-between mt-1">
                   <span className="text-[9px] text-white/15">0</span>
                   <span className="text-[9px] text-white/15">5</span>
@@ -284,8 +296,8 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
                 </div>
               </div>
               <div className="text-right min-w-[60px]">
-                <span className={`text-2xl font-black bg-gradient-to-r ${rating > 0 ? getRatingColor(rating) : 'from-white/20 to-white/20'} bg-clip-text text-transparent`}>
-                  {rating > 0 ? Number(rating).toFixed(1) : '\u2014'}
+                <span className={`text-2xl font-black bg-gradient-to-r ${rating > 0 ? getRatingGradient(rating) : 'from-white/20 to-white/20'} bg-clip-text text-transparent`}>
+                  <AnimatedRatingNumber value={rating} />
                 </span>
                 {rating > 0 && <p className="text-[9px] text-white/30">{getRatingLabel(rating)}</p>}
               </div>
@@ -441,8 +453,8 @@ function BookDetailView({ workKey }: { workKey: string }) {
                 className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-accent/20 transition-colors"
               >
                 <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Star size={16} className="text-gold fill-gold" />
-                  <span className="text-xl font-black">{data.rating}</span>
+                  <Star size={16} className="fill-current" style={{ color: getRatingHex(Number(data.rating)) }} />
+                  <span className="text-xl font-black" style={{ color: getRatingHex(Number(data.rating)) }}>{data.rating}</span>
                   <span className="text-white/30 text-xs">/ 10</span>
                 </div>
                 <p className="text-[10px] text-white/40 uppercase tracking-wider">
@@ -644,6 +656,212 @@ function BookFunFacts({ data, isGoogleBook, totalReaders }: { data: any; isGoogl
         </div>
       </div>
     </FadeInView>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SeasonRatings — per-season rating breakdown for TV shows
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: any[] }) {
+  const [episodesBySeason, setEpisodesBySeason] = useState<Record<number, any[]>>({});
+  const [expandedSeason, setExpandedSeason] = useState<number | null>(null);
+  const [loadingSeasons, setLoadingSeasons] = useState(true);
+
+  // Filter out "Specials" (season 0) and sort by season number
+  const regularSeasons = seasons
+    .filter((s: any) => s.season_number > 0)
+    .sort((a: any, b: any) => a.season_number - b.season_number);
+
+  // Auto-load all season ratings on mount
+  useEffect(() => {
+    if (!imdbId || regularSeasons.length === 0) { setLoadingSeasons(false); return; }
+    let cancelled = false;
+    async function loadAll() {
+      const results: Record<number, any[]> = {};
+      // Load seasons sequentially to avoid hammering OMDb
+      for (const season of regularSeasons) {
+        if (cancelled) return;
+        try {
+          const episodes = await getOMDbSeasonEpisodes(imdbId!, season.season_number);
+          if (episodes) results[season.season_number] = episodes;
+        } catch { /* skip */ }
+      }
+      if (!cancelled) {
+        setEpisodesBySeason(results);
+        setLoadingSeasons(false);
+      }
+    }
+    loadAll();
+    return () => { cancelled = true; };
+  }, [imdbId]);
+
+  if (regularSeasons.length === 0) return null;
+
+  // Compute average IMDb rating for a season
+  const getSeasonAvg = (seasonNumber: number) => {
+    const eps = episodesBySeason[seasonNumber];
+    if (!eps || eps.length === 0) return null;
+    const rated = eps.filter((e: any) => e.imdbRating != null);
+    if (rated.length === 0) return null;
+    return rated.reduce((sum: number, e: any) => sum + e.imdbRating, 0) / rated.length;
+  };
+
+  // Find best and worst episodes across all seasons
+  const getBestEpisode = (seasonNumber: number) => {
+    const eps = episodesBySeason[seasonNumber];
+    if (!eps) return null;
+    const rated = eps.filter((e: any) => e.imdbRating != null);
+    if (rated.length === 0) return null;
+    return rated.reduce((best: any, e: any) => e.imdbRating > best.imdbRating ? e : best, rated[0]);
+  };
+
+  // Rating bar width as percentage (scale 0-10)
+  const ratingBarWidth = (rating: number) => `${Math.max((rating / 10) * 100, 8)}%`;
+
+  return (
+    <div className="mb-8">
+      <h3 className="text-sm font-semibold text-white/60 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <Tv size={14} /> Season Breakdown
+      </h3>
+
+      {loadingSeasons ? (
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-4 h-4 border-2 border-dark-500 border-t-accent rounded-full animate-spin" />
+            <span className="text-sm text-white/30">Loading IMDb ratings...</span>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {regularSeasons.map((season: any, idx: number) => {
+            const seasonAvg = getSeasonAvg(season.season_number);
+            const episodes = episodesBySeason[season.season_number];
+            const isExpanded = expandedSeason === season.season_number;
+            const bestEp = getBestEpisode(season.season_number);
+
+            return (
+              <m.div
+                key={season.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/[0.1] transition-colors duration-300"
+              >
+                {/* Season header */}
+                <button
+                  onClick={() => setExpandedSeason(isExpanded ? null : season.season_number)}
+                  className="w-full px-4 py-3.5 hover:bg-white/[0.02] transition-colors duration-200"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold">Season {season.season_number}</span>
+                      <span className="text-[11px] text-white/25">{season.episode_count} episodes</span>
+                      {season.air_date && (
+                        <span className="text-[11px] text-white/15">{season.air_date.slice(0, 4)}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      {seasonAvg != null && (
+                        <div className="flex items-center gap-1.5">
+                          <Star size={13} className="fill-current" style={{ color: getRatingHex(seasonAvg) }} />
+                          <span className="text-base font-black tabular-nums" style={{ color: getRatingHex(seasonAvg) }}>
+                            {seasonAvg.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                      <m.div
+                        animate={{ rotate: isExpanded ? -90 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronLeft size={14} className="text-white/25" />
+                      </m.div>
+                    </div>
+                  </div>
+
+                  {/* Rating bar */}
+                  {seasonAvg != null && (
+                    <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                      <m.div
+                        className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(seasonAvg)}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: ratingBarWidth(seasonAvg) }}
+                        transition={{ duration: 0.6, delay: idx * 0.05 + 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Best episode teaser */}
+                  {bestEp && !isExpanded && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <Award size={10} className="text-accent/60" />
+                      <span className="text-[10px] text-white/25">
+                        Best: E{bestEp.number} &ldquo;{bestEp.title}&rdquo;
+                        <span className="ml-1 font-bold" style={{ color: getRatingHex(bestEp.imdbRating) }}>{bestEp.imdbRating.toFixed(1)}</span>
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {/* Expanded episode list */}
+                <m.div
+                  initial={false}
+                  animate={{
+                    height: isExpanded ? 'auto' : 0,
+                    opacity: isExpanded ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  className="overflow-hidden"
+                >
+                  {episodes && episodes.length > 0 && (
+                    <div className="border-t border-white/[0.04] max-h-[350px] overflow-y-auto scrollbar-hide">
+                      {episodes.map((ep: any, epIdx: number) => (
+                        <m.div
+                          key={ep.imdbID || ep.number}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={isExpanded ? { opacity: 1, x: 0 } : { opacity: 0, x: -8 }}
+                          transition={{ duration: 0.25, delay: epIdx * 0.02 }}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.03] border-b border-white/[0.02] last:border-b-0 transition-colors"
+                        >
+                          <span className="text-[11px] text-white/15 w-7 flex-shrink-0 tabular-nums font-medium">E{ep.number}</span>
+
+                          {/* Mini rating bar */}
+                          <div className="w-16 flex-shrink-0">
+                            {ep.imdbRating != null ? (
+                              <div className="w-full h-1 bg-white/[0.04] rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full bg-gradient-to-r ${getRatingGradient(ep.imdbRating)}`}
+                                  style={{ width: ratingBarWidth(ep.imdbRating) }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-full h-1 bg-white/[0.04] rounded-full" />
+                            )}
+                          </div>
+
+                          <span className="text-xs text-white/50 truncate flex-1 min-w-0">{ep.title}</span>
+
+                          {ep.imdbRating != null ? (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Star size={10} className="fill-current" style={{ color: getRatingHex(ep.imdbRating) }} />
+                              <span className="text-xs font-bold tabular-nums" style={{ color: getRatingHex(ep.imdbRating) }}>
+                                {ep.imdbRating.toFixed(1)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-white/15 flex-shrink-0">N/A</span>
+                          )}
+                        </m.div>
+                      ))}
+                    </div>
+                  )}
+                </m.div>
+              </m.div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -861,8 +1079,15 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 
           {/* Cast */}
           <FadeInView>
-            <CastRow cast={data.credits?.cast || []} />
+            <CastRow cast={data.aggregate_credits?.cast || data.credits?.cast || []} />
           </FadeInView>
+
+          {/* Season Ratings (TV only) */}
+          {mediaType === 'tv' && data.seasons?.length > 0 && (
+            <FadeInView>
+              <SeasonRatings imdbId={imdbId} seasons={data.seasons} />
+            </FadeInView>
+          )}
 
           {/* Where to Watch */}
           <FadeInView>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Trash2,
@@ -28,7 +28,7 @@ import {
   Search,
   Flame,
 } from 'lucide-react';
-import { m } from 'framer-motion';
+import { m, useSpring, useTransform } from 'framer-motion';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
@@ -46,6 +46,7 @@ import {
   getTVDetails,
 } from '@/lib/api/tmdb';
 import { TMDB_IMG } from '@/lib/constants';
+import { getRatingHex, getRatingGradient } from '@/lib/utils/rating-colors';
 import { loadStaticScoreDB, getSyllabusScore } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
@@ -218,7 +219,7 @@ function StatsPanel({ items }: { items: any[] }) {
           {stats.avgRating ? (
             <div>
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-4xl font-black text-gold">
+                <span className="text-4xl font-black" style={{ color: getRatingHex(Number(stats.avgRating)) }}>
                   {stats.avgRating}
                 </span>
                 <span className="text-white/30 text-sm">/10 average</span>
@@ -291,7 +292,7 @@ function StatsPanel({ items }: { items: any[] }) {
                   <p className="text-sm font-semibold truncate max-w-[120px]">
                     {item.title}
                   </p>
-                  <p className="text-xs text-gold font-bold">
+                  <p className="text-xs font-bold" style={{ color: getRatingHex(Number(item.user_rating)) }}>
                     {item.user_rating}/10
                   </p>
                 </div>
@@ -341,8 +342,8 @@ function RecCard({
       )}
       {(item.unified_rating || item.vote_average) > 0 && (
         <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold">
-          <Star size={12} className="text-gold fill-gold" />
-          {Number(item.unified_rating ?? item.vote_average).toFixed(1)}
+          <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }} />
+          <span style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }}>{Number(item.unified_rating ?? item.vote_average).toFixed(1)}</span>
         </div>
       )}
       {item._source && (
@@ -768,6 +769,17 @@ function ForYouPanel({ items }: { items: any[] }) {
    MAIN LIBRARY COMPONENT
    ================================================================ */
 
+function AnimatedRatingNumber({ value }: { value: number }) {
+  const spring = useSpring(value, { stiffness: 200, damping: 30 });
+  const display = useTransform(spring, (v) => v > 0 ? v.toFixed(1) : '\u2014');
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => { spring.set(value); }, [value, spring]);
+  useEffect(() => display.on('change', (v) => { if (ref.current) ref.current.textContent = v; }), [display]);
+
+  return <span ref={ref}>{value > 0 ? value.toFixed(1) : '\u2014'}</span>;
+}
+
 export default function LibraryPage() {
   const [allItems, setAllItems] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
@@ -952,13 +964,6 @@ export default function LibraryPage() {
   };
 
   // Rating color gradient
-  const getRatingColor = (val: number): string => {
-    if (val <= 3) return 'from-red-500 to-red-600';
-    if (val <= 5) return 'from-orange-500 to-amber-500';
-    if (val <= 7) return 'from-yellow-500 to-lime-500';
-    if (val <= 9) return 'from-green-400 to-emerald-500';
-    return 'from-emerald-400 to-cyan-400';
-  };
 
   if (loading)
     return (
@@ -1040,9 +1045,9 @@ export default function LibraryPage() {
                             {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 bg-gold/90 backdrop-blur-sm rounded-lg px-2 py-0.5 flex items-center gap-1">
-                          <Star size={12} className="text-dark-900 fill-dark-900" />
-                          <span className="text-xs font-black text-dark-900">
+                        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-0.5 flex items-center gap-1">
+                          <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
+                          <span className="text-xs font-black" style={{ color: getRatingHex(Number(item.user_rating)) }}>
                             {Number(item.user_rating) % 1 === 0 ? item.user_rating : Number(item.user_rating).toFixed(1)}
                           </span>
                         </div>
@@ -1157,8 +1162,8 @@ export default function LibraryPage() {
                   )}
                   {item.external_rating > 0 && (
                     <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold">
-                      <Star size={12} className="text-gold fill-gold" />
-                      {Number(item.external_rating).toFixed(1)}
+                      <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.external_rating)) }} />
+                      <span style={{ color: getRatingHex(Number(item.external_rating)) }}>{Number(item.external_rating).toFixed(1)}</span>
                     </div>
                   )}
                   {item.user_rating > 0 && (
@@ -1368,13 +1373,9 @@ export default function LibraryPage() {
               {/* Big display */}
               <div className="text-center mb-4">
                 <span
-                  className={`text-5xl font-black bg-gradient-to-r ${userRating > 0 ? getRatingColor(userRating) : 'from-white/20 to-white/20'} bg-clip-text text-transparent`}
+                  className={`text-5xl font-black bg-gradient-to-r ${userRating > 0 ? getRatingGradient(userRating) : 'from-white/20 to-white/20'} bg-clip-text text-transparent`}
                 >
-                  {userRating > 0
-                    ? Number(userRating) % 1 === 0
-                      ? `${userRating}.0`
-                      : Number(userRating).toFixed(1)
-                    : '\u2014'}
+                  <AnimatedRatingNumber value={userRating} />
                 </span>
                 <span className="text-white/20 text-lg ml-1">/10</span>
                 {userRating > 0 && (
@@ -1386,20 +1387,25 @@ export default function LibraryPage() {
 
               {/* Slider */}
               <div className="relative px-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={userRating}
-                  onChange={(e) => setUserRating(parseFloat(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer bg-dark-600 accent-accent
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-lg
-                    [&::-webkit-slider-thumb]:shadow-accent/30 [&::-webkit-slider-thumb]:cursor-pointer
-                    [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20
-                    [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110"
-                />
+                <div className="relative h-2 rounded-full bg-dark-600">
+                  <div
+                    className="absolute top-0 left-0 h-full rounded-full transition-all duration-150"
+                    style={{
+                      width: `${(userRating / 10) * 100}%`,
+                      background: userRating > 0 ? getRatingHex(userRating) : 'transparent',
+                    }}
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={userRating}
+                    onChange={(e) => setUserRating(parseFloat(e.target.value))}
+                    className="rating-slider absolute inset-0 w-full h-full appearance-none cursor-pointer bg-transparent"
+                    style={{ '--thumb-color': userRating > 0 ? getRatingHex(userRating) : '#666' } as React.CSSProperties}
+                  />
+                </div>
                 {/* Track labels */}
                 <div className="flex justify-between mt-1.5 px-0.5">
                   <span className="text-[10px] text-white/20">0</span>

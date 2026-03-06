@@ -7,6 +7,7 @@ import MediaCard from '@/components/ui/MediaCard';
 import BookCover from '@/components/ui/BookCover';
 import ScrollRow from '@/components/ui/ScrollRow';
 import { SkeletonRow, SkeletonHero } from '@/components/ui/SkeletonCard';
+import { getRatingHex } from '@/lib/utils/rating-colors';
 import {
   getTrendingBooks,
   getBooksBySubject,
@@ -217,8 +218,8 @@ export default function BooksPage() {
                     </p>
                     <div className="flex items-center gap-3 text-xs text-white/40">
                       {hero.rating > 0 && (
-                        <span className="flex items-center gap-1 text-gold">
-                          <Star size={14} className="fill-gold" />{' '}
+                        <span className="flex items-center gap-1" style={{ color: getRatingHex(Number(hero.rating)) }}>
+                          <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(hero.rating)) }} />{' '}
                           {hero.rating}
                         </span>
                       )}

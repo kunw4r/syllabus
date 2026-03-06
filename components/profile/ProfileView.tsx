@@ -19,6 +19,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/providers/ToastProvider';
 import { TMDB_IMG } from '@/lib/constants';
 import AvatarPicker from './AvatarPicker';
+import { getRatingHex } from '@/lib/utils/rating-colors';
 
 // ─── Types ───
 
@@ -173,7 +174,7 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
           {stats.avgRating ? (
             <div>
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-4xl font-black text-gold">{stats.avgRating}</span>
+                <span className="text-4xl font-black" style={{ color: getRatingHex(Number(stats.avgRating)) }}>{stats.avgRating}</span>
                 <span className="text-white/30 text-sm">/10 average</span>
               </div>
               <p className="text-xs text-white/30">{stats.rated} items rated</p>
@@ -328,8 +329,8 @@ function LibraryTab({ library }: { library: LibraryItem[] }) {
                 )}
                 {item.user_rating && (
                   <div className="absolute top-1 right-1 bg-black/70 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
-                    <Star size={12} className="text-gold fill-gold" />
-                    <span className="text-[10px] font-bold text-gold">{item.user_rating}</span>
+                    <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
+                    <span className="text-[10px] font-bold" style={{ color: getRatingHex(Number(item.user_rating)) }}>{item.user_rating}</span>
                   </div>
                 )}
                 <div className="absolute bottom-1 left-1">

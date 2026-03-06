@@ -21,6 +21,7 @@ import {
   loadStaticScoreDB,
 } from '@/lib/scoring';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
+import { getRatingHex } from '@/lib/utils/rating-colors';
 
 const GENRES = [
   { id: 10759, name: 'Action & Adventure' },
@@ -235,8 +236,8 @@ export default function TVPage() {
                 </h1>
                 <div className="flex items-center gap-3 text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">
                   {(hero.unified_rating ?? hero.vote_average) > 0 && (
-                    <span className="flex items-center gap-1 text-gold">
-                      <Star size={14} className="fill-gold" />{' '}
+                    <span className="flex items-center gap-1" style={{ color: getRatingHex(Number(hero.unified_rating ?? hero.vote_average)) }}>
+                      <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(hero.unified_rating ?? hero.vote_average)) }} />{' '}
                       {Number(
                         hero.unified_rating ?? hero.vote_average
                       ).toFixed(1)}
@@ -300,10 +301,10 @@ export default function TVPage() {
                     )}
                     {(item.unified_rating ?? item.vote_average) > 0 && (
                       <div className="absolute top-1.5 right-1.5 z-20 bg-black/70 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold">
-                        <Star size={11} className="text-gold fill-gold" />
-                        {Number(
+                        <Star size={11} className="fill-current" style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }} />
+                        <span style={{ color: getRatingHex(Number(item.unified_rating ?? item.vote_average)) }}>{Number(
                           item.unified_rating ?? item.vote_average
-                        ).toFixed(1)}
+                        ).toFixed(1)}</span>
                       </div>
                     )}
                   </div>

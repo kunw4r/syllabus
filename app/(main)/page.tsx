@@ -50,7 +50,7 @@ export default function Home() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    loadStaticScoreDB();
+    await loadStaticScoreDB();
 
     const [movies, tv, books] = await Promise.all([
       getTrendingMovies(),
@@ -72,7 +72,16 @@ export default function Home() {
         setLibrary(lib);
 
         if (lib.length >= 3) {
-          getAllRecommendations(lib).then(setRecommendations).catch(() => {});
+          getAllRecommendations(lib).then((rows) => {
+            rows.forEach((row) => {
+              // Items can be mixed media types, apply scores per-type
+              const movies = row.items.filter((i: any) => i.media_type !== 'tv');
+              const tvShows = row.items.filter((i: any) => i.media_type === 'tv');
+              if (movies.length) applyStoredScores(movies, 'movie');
+              if (tvShows.length) applyStoredScores(tvShows, 'tv');
+            });
+            setRecommendations(rows);
+          }).catch(() => {});
         }
       } catch {
         // silently fail

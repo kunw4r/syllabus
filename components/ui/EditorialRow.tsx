@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { TMDB_IMG_ORIGINAL, TMDB_IMG } from '@/lib/constants';
 import MediaCard from './MediaCard';
+import { getRatingHex } from '@/lib/utils/rating-colors';
 
 interface EditorialRowProps {
   title: string;
@@ -85,8 +86,8 @@ export default function EditorialRow({ title, items, mediaType = 'movie' }: Edit
           <div className="absolute bottom-0 left-0 right-0 p-4">
             {(featured.unified_rating ?? featured.vote_average) > 0 && (
               <div className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-0.5 mb-2">
-                <Star size={12} className="text-gold fill-gold" />
-                <span className="text-xs font-bold text-gold">{(featured.unified_rating ?? featured.vote_average).toFixed(1)}</span>
+                <Star size={12} className="fill-current" style={{ color: getRatingHex(featured.unified_rating ?? featured.vote_average) }} />
+                <span className="text-xs font-bold" style={{ color: getRatingHex(featured.unified_rating ?? featured.vote_average) }}>{(featured.unified_rating ?? featured.vote_average).toFixed(1)}</span>
               </div>
             )}
             <h3 className="font-serif text-xl text-white leading-tight group-hover:text-accent transition-colors">

@@ -14,6 +14,7 @@ import {
   applyStoredScores,
 } from '@/lib/scoring';
 import { MOVIE_GENRES, TV_GENRES, TMDB_IMG } from '@/lib/constants';
+import { getRatingHex } from '@/lib/utils/rating-colors';
 
 // ─── Genre lists ───
 
@@ -164,8 +165,8 @@ function RankedItem({
       {rating > 0 && (
         <div className="flex flex-col items-end flex-shrink-0">
           <div className="flex items-center gap-1.5">
-            <Star size={14} className="text-gold fill-gold" />
-            <span className="text-sm font-bold">
+            <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
             <span className="text-[10px] text-white/20 hidden sm:inline">

@@ -55,7 +55,11 @@ export async function searchTV(query: string) {
 }
 
 export function getTVDetails(id: number | string) {
-  return tmdbCached(`/tv/${id}`, 'append_to_response=recommendations,credits,watch/providers,external_ids,videos');
+  return tmdbCached(`/tv/${id}`, 'append_to_response=recommendations,aggregate_credits,watch/providers,external_ids,videos');
+}
+
+export function getTVSeasonDetails(tvId: number | string, seasonNumber: number) {
+  return tmdbCached(`/tv/${tvId}/season/${seasonNumber}`);
 }
 
 // ─── Movie Discovery ───

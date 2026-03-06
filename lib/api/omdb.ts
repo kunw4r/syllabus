@@ -104,6 +104,33 @@ export function getOMDbRatings(imdbId: string, title: string | null = null, type
   });
 }
 
+export function getOMDbSeasonEpisodes(imdbId: string, seasonNumber: number) {
+  if (!imdbId) return Promise.resolve(null);
+  const storedKey = `season:${imdbId}:${seasonNumber}`;
+  const stored = getOmdbEntry(storedKey);
+  if (stored !== undefined) return Promise.resolve(stored);
+
+  return cached(`omdb:season:${imdbId}:${seasonNumber}`, async () => {
+    try {
+      const data = await omdbProxy(`i=${imdbId}&Season=${seasonNumber}`);
+      if (data.Error === 'Request limit reached!') throw new Error('OMDB_RATE_LIMIT');
+      if (data.Response === 'False') { saveOmdbEntry(storedKey, null); return null; }
+      const episodes = (data.Episodes || []).map((ep: any) => ({
+        number: parseInt(ep.Episode),
+        title: ep.Title,
+        imdbRating: ep.imdbRating !== 'N/A' ? parseFloat(ep.imdbRating) : null,
+        imdbID: ep.imdbID,
+        released: ep.Released,
+      }));
+      saveOmdbEntry(storedKey, episodes);
+      return episodes;
+    } catch (err: any) {
+      if (err?.message === 'OMDB_RATE_LIMIT') throw err;
+      return null;
+    }
+  });
+}
+
 export function getOMDbByTitle(title: string, year?: string, type = 'movie') {
   if (!title) return Promise.resolve(null);
   const omdbType = type === 'tv' ? 'series' : 'movie';

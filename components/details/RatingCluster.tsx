@@ -2,6 +2,7 @@
 
 import { Star, ExternalLink } from 'lucide-react';
 import { m } from 'framer-motion';
+import { getRatingHex } from '@/lib/utils/rating-colors';
 
 interface RatingClusterProps {
   avgScore: number | null;
@@ -134,7 +135,7 @@ export default function RatingCluster({
             {label}
           </span>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black leading-none text-white">{displayScore}</span>
+            <span className="text-2xl font-black leading-none" style={{ color: getRatingHex(Number(displayScore)) }}>{displayScore}</span>
             <span className="text-[10px] text-white/25">/ 10</span>
           </div>
         </m.div>
