@@ -735,21 +735,13 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
         <Tv size={14} /> Season Breakdown
       </h3>
 
-      {loadingSeasons && (
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 mb-3">
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-4 h-4 border-2 border-dark-500 border-t-accent rounded-full animate-spin" />
-            <span className="text-sm text-white/30">Loading IMDb ratings… {loadedCount}/{totalSeasons}</span>
-          </div>
-        </div>
-      )}
-
       <div className="space-y-2">
         {regularSeasons.map((season: any, idx: number) => {
           const seasonAvg = getSeasonAvg(season.season_number);
           const episodes = episodesBySeason[season.season_number] || [];
           const isExpanded = expandedSeason === season.season_number;
           const bestEp = getBestEpisode(season.season_number);
+          const hasLoaded = episodes.length > 0;
 
           return (
             <div
@@ -771,14 +763,16 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
                     )}
                   </div>
                   <div className="flex items-center gap-2.5">
-                    {seasonAvg != null && (
+                    {seasonAvg != null ? (
                       <div className="flex items-center gap-1.5">
                         <Star size={13} className="fill-current" style={{ color: getRatingHex(seasonAvg) }} />
                         <span className="text-base font-black tabular-nums" style={{ color: getRatingHex(seasonAvg) }}>
                           {seasonAvg.toFixed(1)}
                         </span>
                       </div>
-                    )}
+                    ) : loadingSeasons ? (
+                      <div className="w-3 h-3 border border-white/10 border-t-accent/50 rounded-full animate-spin" />
+                    ) : null}
                     <ChevronLeft
                       size={14}
                       className={`text-white/25 transition-transform duration-200 ${isExpanded ? '-rotate-90' : ''}`}
