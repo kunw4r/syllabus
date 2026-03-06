@@ -12,10 +12,10 @@ const config: Config = {
     'from-red-500', 'to-orange-400',
     'from-orange-500', 'to-yellow-400',
     'from-yellow-400', 'to-lime-400',
-    'from-lime-400', 'to-green-400',
-    'from-emerald-400', 'to-cyan-400',
+    'from-lime-400', 'from-green-400', 'to-green-400', 'to-cyan-400',
     'from-cyan-400', 'to-sky-400',
-    'from-blue-500', 'to-blue-400',
+    'from-sky-400', 'to-blue-400',
+    'from-blue-500',
   ],
   theme: {
     extend: {
