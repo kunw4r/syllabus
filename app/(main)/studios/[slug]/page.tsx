@@ -44,6 +44,8 @@ const STUDIO_CARD_IMAGES: Record<string, string> = {
   '20th-century': '/studios/20th-century-card.png',
   columbia: '/studios/columbia-card.png',
   legendary: '/studios/legendary-card.png',
+  skydance: '/studios/skydance-card.png',
+  ghibli: '/studios/ghibli-card.png',
 };
 
 type Tab = 'movies' | 'tv';

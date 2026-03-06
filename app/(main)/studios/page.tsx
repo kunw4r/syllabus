@@ -168,6 +168,26 @@ const FEATURED_STUDIOS = [
     accent: 'rgba(180,120,40,0.10)',
     streakColor: 'rgba(220,150,50,0.05)',
   },
+  {
+    slug: 'skydance',
+    name: 'Skydance',
+    image: '/studios/skydance-card.png',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(60,50,30,0.5) 0%, rgba(30,25,15,0.8) 50%, rgba(14,12,8,0.95) 100%)',
+    border: 'rgba(180,140,60,0.20)',
+    glow: '0 0 40px rgba(140,100,40,0.12), 0 0 80px rgba(100,70,20,0.06)',
+    accent: 'rgba(160,120,50,0.10)',
+    streakColor: 'rgba(200,160,70,0.05)',
+  },
+  {
+    slug: 'ghibli',
+    name: 'Studio Ghibli',
+    image: '/studios/ghibli-card.png',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,40,80,0.5) 0%, rgba(10,22,50,0.8) 50%, rgba(6,12,28,0.95) 100%)',
+    border: 'rgba(60,100,180,0.20)',
+    glow: '0 0 40px rgba(30,70,150,0.12), 0 0 80px rgba(20,50,120,0.06)',
+    accent: 'rgba(40,85,170,0.10)',
+    streakColor: 'rgba(60,120,220,0.05)',
+  },
 ];
 
 // ── Animation variants ──
@@ -264,21 +284,23 @@ function FeaturedStudioCard({
       style={{
         height: 'clamp(120px, 13vw, 160px)',
         background: hasImage ? '#080c18' : featured.gradient,
-        border: `1px solid ${featured.border}`,
+        border: hasImage ? 'none' : `1px solid ${featured.border}`,
         boxShadow: featured.glow,
       }}
     >
       {/* Image background (when provided) */}
       {hasImage && (
-        <Image
-          src={featured.image!}
-          alt={featured.name}
-          fill
-          className="object-cover group-hover:scale-[1.22] transition-transform duration-500 ease-out"
-          style={{ objectPosition: featured.imagePosition || 'center center', transform: 'scale(1.2)' }}
-          sizes="(max-width: 640px) 100vw, 50vw"
-          priority
-        />
+        <div className="absolute -inset-[15%] group-hover:scale-[1.03] transition-transform duration-500 ease-out">
+          <Image
+            src={featured.image!}
+            alt={featured.name}
+            fill
+            className="object-cover"
+            style={{ objectPosition: featured.imagePosition || 'center center' }}
+            sizes="(max-width: 640px) 100vw, 50vw"
+            priority
+          />
+        </div>
       )}
 
       {/* For non-image cards: internal light streaks */}
