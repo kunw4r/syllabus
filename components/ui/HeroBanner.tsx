@@ -7,7 +7,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { extractDominantColor } from '@/lib/utils/color-extract';
 import { getRatingHex } from '@/lib/utils/rating-colors';
-import { getMovieTrailer, getTVTrailer } from '@/lib/api/tmdb';
+import { getMovieTrailer, getTVTrailer, getMovieContentRating, getTVContentRating } from '@/lib/api/tmdb';
 
 interface HeroItem {
   id: number;
@@ -53,13 +53,17 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const trailerTimerRef = useRef<NodeJS.Timeout>(undefined);
 
+  // Content rating state (e.g. "R", "PG-13", "TV-MA")
+  const [contentRating, setContentRating] = useState<string | null>(null);
+
   const heroItems = items.filter((i) => i.backdrop_path).slice(0, 5);
 
-  // Fetch trailer for current item
+  // Fetch trailer + content rating for current item
   useEffect(() => {
     setTrailerKey(null);
     setTrailerReady(false);
     setShowTrailer(false);
+    setContentRating(null);
 
     if (heroItems.length === 0) return;
     const current = heroItems[currentIndex];
@@ -68,11 +72,14 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     let cancelled = false;
     const mt = current.media_type || 'movie';
     const fetchTrailer = mt === 'tv' ? getTVTrailer : getMovieTrailer;
+    const fetchRating = mt === 'tv' ? getTVContentRating : getMovieContentRating;
 
     fetchTrailer(current.id).then((key) => {
-      if (!cancelled && key) {
-        setTrailerKey(key);
-      }
+      if (!cancelled && key) setTrailerKey(key);
+    }).catch(() => {});
+
+    fetchRating(current.id).then((rating) => {
+      if (!cancelled && rating) setContentRating(rating);
     }).catch(() => {});
 
     return () => { cancelled = true; };
@@ -216,6 +223,11 @@ export default function HeroBanner({ items }: HeroBannerProps) {
             >
               {/* Meta info */}
               <div className="flex items-center gap-2 mb-3 text-sm text-white/50">
+                {contentRating && (
+                  <span className="inline-block border border-white/30 rounded px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-white/70 leading-none">
+                    {contentRating}
+                  </span>
+                )}
                 {year && <span>{year}</span>}
                 {genres.length > 0 && (
                   <>

@@ -51,6 +51,22 @@ export async function getMovieTrailer(id: number | string): Promise<string | nul
   return trailer?.key || null;
 }
 
+/** Fetch US content rating for a movie (e.g. "PG-13", "R") */
+export async function getMovieContentRating(id: number | string): Promise<string | null> {
+  const data = await tmdbCached(`/movie/${id}/release_dates`);
+  const us = (data.results || []).find((r: any) => r.iso_3166_1 === 'US');
+  if (!us) return null;
+  const cert = us.release_dates?.find((d: any) => d.certification)?.certification;
+  return cert || null;
+}
+
+/** Fetch US content rating for a TV show (e.g. "TV-MA", "TV-14") */
+export async function getTVContentRating(id: number | string): Promise<string | null> {
+  const data = await tmdbCached(`/tv/${id}/content_ratings`);
+  const us = (data.results || []).find((r: any) => r.iso_3166_1 === 'US');
+  return us?.rating || null;
+}
+
 /** Fetch YouTube trailer key for a TV show (returns null if none found) */
 export async function getTVTrailer(id: number | string): Promise<string | null> {
   const data = await tmdbCached(`/tv/${id}/videos`);
