@@ -40,9 +40,10 @@ async function parseWithClaude(query: string): Promise<ParsedIntent | null> {
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
+      signal: AbortSignal.timeout(2500),
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
+        max_tokens: 150,
         messages: [{
           role: 'user',
           content: `Parse this search query for a media discovery app. Return ONLY valid JSON, no other text.

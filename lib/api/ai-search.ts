@@ -30,10 +30,11 @@ async function parseIntent(query: string): Promise<ParsedIntent> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
+      signal: AbortSignal.timeout(3000),
     });
     if (res.ok) return await res.json();
   } catch {
-    // fallback
+    // timeout or network error — fallback to title search
   }
   return { type: 'title_search', originalQuery: query, keywords: [query] };
 }
@@ -46,6 +47,7 @@ async function semanticSearch(query: string, mediaType?: string): Promise<any[]>
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, mediaType, limit: 15 }),
+      signal: AbortSignal.timeout(4000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -92,7 +94,7 @@ function deduplicateById(items: any[]): any[] {
 
 // ─── Progressive Search Orchestrator ───
 // Phase 1: instant title results (~200ms)
-// Phase 2: AI-enhanced results layered on top (1-3s)
+// Phase 2: AI-enhanced results layered on top — all kicked off in parallel
 
 type ProgressCallback = (results: AISearchResults) => void;
 
@@ -103,18 +105,20 @@ export function aiSearchProgressive(
   let cancelled = false;
 
   (async () => {
-    // ── Phase 1: fast title search (no AI) ──
     const titleIntent: ParsedIntent = { type: 'title_search', originalQuery: query, keywords: [query] };
 
-    const [titleMovies, titleTV, titleBooks] = await Promise.all([
-      searchMovies(query),
-      searchTV(query),
-      searchBooks(query),
-    ]);
+    // Kick off EVERYTHING in parallel — don't wait for intent before starting AI searches
+    const titleMoviesP = searchMovies(query);
+    const titleTVP = searchTV(query);
+    const titleBooksP = searchBooks(query);
+    const intentP = parseIntent(query);
+    const scenarioP = searchByScenario(query).catch(() => [] as any[]);
+    const semanticP = semanticSearch(query).catch(() => [] as any[]);
 
+    // ── Phase 1: show title results as soon as they arrive ──
+    const [titleMovies, titleTV, titleBooks] = await Promise.all([titleMoviesP, titleTVP, titleBooksP]);
     if (cancelled) return;
 
-    // Show title results immediately
     onProgress({
       intent: titleIntent,
       movies: titleMovies,
@@ -123,11 +127,11 @@ export function aiSearchProgressive(
       semantic: [],
     });
 
-    // ── Phase 2: AI intent + enhanced results in background ──
-    const intent = await parseIntent(query);
+    // ── Phase 2: wait for AI results (already in-flight) ──
+    const [intent, scenarioResults, semantic] = await Promise.all([intentP, scenarioP, semanticP]);
     if (cancelled) return;
 
-    // For plain title searches the intent parser agrees — we're already done
+    // For plain title searches, we're done
     if (intent.type === 'title_search') {
       logSearch(query, intent, titleMovies.length + titleTV.length + titleBooks.length);
       return;
@@ -135,68 +139,38 @@ export function aiSearchProgressive(
 
     let movies: any[] = titleMovies;
     let tv: any[] = titleTV;
-    let semantic: any[] = [];
 
-    switch (intent.type) {
-      case 'mood':
-      case 'scenario': {
-        const [scenarioResults, sem] = await Promise.all([
-          searchByScenario(query),
-          semanticSearch(query),
-        ]);
-        if (cancelled) return;
-
-        movies = scenarioResults.filter((r: any) => r.media_type === 'movie');
-        tv = scenarioResults.filter((r: any) => r.media_type === 'tv');
-        // Fall back to title results if scenario returned nothing
-        if (movies.length === 0) movies = titleMovies;
-        if (tv.length === 0) tv = titleTV;
-        semantic = sem;
-        break;
-      }
-
-      case 'similar_to': {
-        const refTitle = intent.similarTo || query;
-        const [multiResults, sem] = await Promise.all([
-          multiSearchTMDB(refTitle),
-          semanticSearch(query),
-        ]);
-        if (cancelled) return;
-
+    if (intent.type === 'similar_to') {
+      // For "similar to X" — try to get recommendations
+      const refTitle = intent.similarTo || query;
+      try {
+        const multiResults = await multiSearchTMDB(refTitle);
         if (multiResults.length > 0) {
           const ref = multiResults[0];
-          try {
-            const mt = ref.media_type === 'tv' ? 'tv' : 'movie';
-            const res = await fetch(`/api/tmdb/${mt}/${ref.id}?append_to_response=recommendations`);
-            const data = await res.json();
-            const recs = (data.recommendations?.results || []).map((r: any) => ({
-              ...r,
-              media_type: r.media_type || mt,
-            }));
-            movies = recs.filter((r: any) => r.media_type === 'movie');
-            tv = recs.filter((r: any) => r.media_type === 'tv');
-          } catch {
-            // keep title results
-          }
+          const mt = ref.media_type === 'tv' ? 'tv' : 'movie';
+          const res = await fetch(`/api/tmdb/${mt}/${ref.id}?append_to_response=recommendations`);
+          const data = await res.json();
+          const recs = (data.recommendations?.results || []).map((r: any) => ({
+            ...r,
+            media_type: r.media_type || mt,
+          }));
+          movies = recs.filter((r: any) => r.media_type === 'movie');
+          tv = recs.filter((r: any) => r.media_type === 'tv');
         }
-        semantic = sem;
-        break;
+      } catch {
+        // keep title results
       }
+    } else {
+      // mood / scenario / natural_language — use scenario results
+      const scenarioMovies = scenarioResults.filter((r: any) => r.media_type === 'movie');
+      const scenarioTV = scenarioResults.filter((r: any) => r.media_type === 'tv');
 
-      case 'natural_language':
-      default: {
-        const [scenarioResults, sem] = await Promise.all([
-          searchByScenario(query),
-          semanticSearch(query),
-        ]);
-        if (cancelled) return;
-
-        const scenarioMovies = scenarioResults.filter((r: any) => r.media_type === 'movie');
-        const scenarioTV = scenarioResults.filter((r: any) => r.media_type === 'tv');
+      if (intent.type === 'mood' || intent.type === 'scenario') {
+        movies = scenarioMovies.length > 0 ? scenarioMovies : titleMovies;
+        tv = scenarioTV.length > 0 ? scenarioTV : titleTV;
+      } else {
         movies = deduplicateById([...scenarioMovies, ...titleMovies]);
         tv = deduplicateById([...scenarioTV, ...titleTV]);
-        semantic = sem;
-        break;
       }
     }
 
