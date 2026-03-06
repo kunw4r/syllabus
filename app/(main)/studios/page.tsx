@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
 import { STUDIO_LOGOS } from '@/components/ui/StudioLogos';
 
-// ── Featured studios config ──
+// ── Studio tiers ──
 
-const FEATURED_STUDIOS = [
+const TIER_1 = [
   {
     slug: 'disney',
     name: 'Disney',
@@ -52,6 +52,9 @@ const FEATURED_STUDIOS = [
     accent: 'rgba(50,100,200,0.10)',
     streakColor: 'rgba(80,140,255,0.05)',
   },
+];
+
+const TIER_2 = [
   {
     slug: 'dreamworks',
     name: 'DreamWorks',
@@ -132,6 +135,36 @@ const FEATURED_STUDIOS = [
     streakColor: 'rgba(255,80,80,0.05)',
   },
   {
+    slug: 'lucasfilm',
+    name: 'Lucasfilm',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(70,55,20,0.5) 0%, rgba(35,28,10,0.8) 50%, rgba(14,12,6,0.95) 100%)',
+    border: 'rgba(200,160,60,0.20)',
+    glow: '0 0 40px rgba(160,120,40,0.12), 0 0 80px rgba(120,90,30,0.06)',
+    accent: 'rgba(180,140,50,0.10)',
+    streakColor: 'rgba(220,180,80,0.05)',
+  },
+];
+
+const TIER_3 = [
+  {
+    slug: 'a24',
+    name: 'A24',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(40,40,40,0.5) 0%, rgba(20,20,20,0.8) 50%, rgba(10,10,10,0.95) 100%)',
+    border: 'rgba(160,160,160,0.18)',
+    glow: '0 0 40px rgba(100,100,100,0.08), 0 0 80px rgba(80,80,80,0.04)',
+    accent: 'rgba(140,140,140,0.08)',
+    streakColor: 'rgba(180,180,180,0.04)',
+  },
+  {
+    slug: 'blumhouse',
+    name: 'Blumhouse',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(100,15,15,0.5) 0%, rgba(50,8,8,0.8) 50%, rgba(18,5,5,0.95) 100%)',
+    border: 'rgba(180,40,40,0.22)',
+    glow: '0 0 40px rgba(150,25,25,0.15), 0 0 80px rgba(120,15,15,0.08)',
+    accent: 'rgba(170,30,30,0.10)',
+    streakColor: 'rgba(220,60,60,0.05)',
+  },
+  {
     slug: 'mgm',
     name: 'Metro-Goldwyn-Mayer',
     image: '/studios/mgm-card.png',
@@ -199,29 +232,31 @@ const FEATURED_STUDIOS = [
   },
 ];
 
+type StudioEntry = (typeof TIER_1)[number];
+
+// ── Tier heights ──
+
+const TIER_HEIGHTS = {
+  1: 'clamp(140px, 15vw, 200px)',
+  2: 'clamp(120px, 13vw, 160px)',
+  3: 'clamp(105px, 11vw, 140px)',
+} as const;
+
 // ── Animation variants ──
 
 const containerVariants = {
   hidden: {},
   visible: {
-    transition: { staggerChildren: 0.12, delayChildren: 0.15 },
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
   },
 };
 
-const featuredCardVariants = {
+const cardVariants = {
   hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
     transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const },
-  },
-};
-
-const placeholderVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.6, ease: 'easeOut' as const },
   },
 };
 
@@ -239,7 +274,6 @@ const headerVariants = {
 function CinematicBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* Deep dark base with blue ambience */}
       <div
         className="absolute inset-0"
         style={{
@@ -251,7 +285,6 @@ function CinematicBackground() {
           `,
         }}
       />
-      {/* Faint star-like particles */}
       <svg className="absolute inset-0 w-full h-full opacity-[0.35]" xmlns="http://www.w3.org/2000/svg">
         {Array.from({ length: 40 }).map((_, i) => {
           const x = ((i * 73 + 17) % 100);
@@ -259,14 +292,7 @@ function CinematicBackground() {
           const r = 0.3 + (i % 5) * 0.15;
           const opacity = 0.15 + (i % 4) * 0.1;
           return (
-            <circle
-              key={i}
-              cx={`${x}%`}
-              cy={`${y}%`}
-              r={r}
-              fill="white"
-              opacity={opacity}
-            />
+            <circle key={i} cx={`${x}%`} cy={`${y}%`} r={r} fill="white" opacity={opacity} />
           );
         })}
       </svg>
@@ -274,71 +300,99 @@ function CinematicBackground() {
   );
 }
 
-// ── Featured Studio Card ──
+// ── Section Label ──
 
-function FeaturedStudioCard({
-  featured,
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <m.div variants={headerVariants}>
+      <p className="text-[0.7rem] uppercase tracking-[0.2em] text-white/20 font-medium mb-3 ml-0.5">
+        {children}
+      </p>
+    </m.div>
+  );
+}
+
+// ── Divider ──
+
+function SectionDivider() {
+  return (
+    <div
+      className="my-8"
+      style={{
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent)',
+      }}
+    />
+  );
+}
+
+// ── Studio Card ──
+
+function StudioCard({
+  studio,
+  tier,
 }: {
-  featured: (typeof FEATURED_STUDIOS)[number];
+  studio: StudioEntry;
+  tier: 1 | 2 | 3;
 }) {
-  const Logo = STUDIO_LOGOS[featured.slug];
+  const Logo = STUDIO_LOGOS[studio.slug];
   const prefersReducedMotion = useReducedMotion();
-
-  const hasImage = 'image' in featured && featured.image;
+  const hasImage = 'image' in studio && studio.image;
+  const logoSize = tier === 1 ? 80 : tier === 2 ? 64 : 52;
 
   const card = (
     <Link
-      href={`/studios/${featured.slug}`}
+      href={`/studios/${studio.slug}`}
       className="group relative flex flex-col items-center justify-center rounded-2xl overflow-hidden"
       style={{
-        height: 'clamp(120px, 13vw, 160px)',
-        background: hasImage ? '#080c18' : featured.gradient,
-        border: hasImage ? 'none' : `1px solid ${featured.border}`,
-        boxShadow: featured.glow,
+        height: TIER_HEIGHTS[tier],
+        background: hasImage ? '#080c18' : studio.gradient,
+        border: hasImage ? 'none' : `1px solid ${studio.border}`,
+        boxShadow: studio.glow,
       }}
     >
-      {/* Image background (when provided) */}
+      {/* Image background */}
       {hasImage && (() => {
-        const ci = ('cropInset' in featured && featured.cropInset) || '15%';
-        const cb = ('cropBottom' in featured && featured.cropBottom) || ci;
+        const ci = ('cropInset' in studio && studio.cropInset) || '15%';
+        const cb = ('cropBottom' in studio && studio.cropBottom) || ci;
         return (
           <div
             className="absolute group-hover:scale-[1.03] transition-transform duration-500 ease-out"
             style={{ top: `-${ci}`, right: `-${ci}`, bottom: `-${cb}`, left: `-${ci}` }}
           >
             <Image
-              src={featured.image!}
-              alt={featured.name}
+              src={studio.image!}
+              alt={studio.name}
               fill
               className="object-cover"
-              style={{ objectPosition: featured.imagePosition || 'center center' }}
-              sizes="(max-width: 640px) 100vw, 50vw"
-              priority
+              style={{ objectPosition: studio.imagePosition || 'center center' }}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
+              priority={tier === 1}
             />
           </div>
         );
       })()}
 
-      {/* For non-image cards: internal light streaks */}
+      {/* Non-image cards: light streaks */}
       {!hasImage && (
         <>
           <div
             className="pointer-events-none absolute inset-0"
             style={{
               background: `
-                linear-gradient(135deg, transparent 20%, ${featured.streakColor} 40%, transparent 60%),
-                linear-gradient(225deg, transparent 30%, ${featured.streakColor} 50%, transparent 70%)
+                linear-gradient(135deg, transparent 20%, ${studio.streakColor} 40%, transparent 60%),
+                linear-gradient(225deg, transparent 30%, ${studio.streakColor} 50%, transparent 70%)
               `,
             }}
           />
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-px"
-            style={{ background: `linear-gradient(90deg, transparent, ${featured.border}, transparent)` }}
+            style={{ background: `linear-gradient(90deg, transparent, ${studio.border}, transparent)` }}
           />
           <div
             className="pointer-events-none absolute inset-0"
             style={{
-              background: `radial-gradient(ellipse at 50% 30%, ${featured.accent}, transparent 70%)`,
+              background: `radial-gradient(ellipse at 50% 30%, ${studio.accent}, transparent 70%)`,
             }}
           />
         </>
@@ -350,8 +404,8 @@ function FeaturedStudioCard({
         style={{
           background: hasImage
             ? 'rgba(255,255,255,0.03)'
-            : `radial-gradient(ellipse at 50% 40%, ${featured.accent}, transparent 70%)`,
-          boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.08)`,
+            : `radial-gradient(ellipse at 50% 40%, ${studio.accent}, transparent 70%)`,
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
         }}
       />
 
@@ -363,20 +417,20 @@ function FeaturedStudioCard({
         }}
       />
 
-      {/* Logo area (only for non-image cards) */}
+      {/* Logo (non-image cards) */}
       {!hasImage && (
         <>
           <div className="relative flex items-center justify-center flex-1 w-full">
             {Logo ? (
               <div className="opacity-80 group-hover:opacity-100 transition-all duration-[280ms] ease-out group-hover:scale-[1.03]">
-                <Logo size={featured.slug === 'marvel' ? 72 : 64} />
+                <Logo size={logoSize} />
               </div>
             ) : (
-              <span className="text-3xl font-bold opacity-50">{featured.name[0]}</span>
+              <span className="text-3xl font-bold opacity-50">{studio.name[0]}</span>
             )}
           </div>
-          <p className="relative text-[0.85rem] font-medium text-white/50 group-hover:text-white/75 text-center tracking-wide transition-colors duration-[280ms] pb-4">
-            {featured.name}
+          <p className="relative text-[0.8rem] font-medium text-white/50 group-hover:text-white/75 text-center tracking-wide transition-colors duration-[280ms] pb-3">
+            {studio.name}
           </p>
         </>
       )}
@@ -389,7 +443,7 @@ function FeaturedStudioCard({
 
   return (
     <m.div
-      variants={featuredCardVariants}
+      variants={cardVariants}
       whileHover={{
         y: -4,
         scale: 1.012,
@@ -401,22 +455,6 @@ function FeaturedStudioCard({
     >
       {card}
     </m.div>
-  );
-}
-
-// ── Placeholder card ──
-
-function PlaceholderCard() {
-  return (
-    <div
-      className="rounded-xl"
-      style={{
-        height: 'clamp(70px, 8vw, 95px)',
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.025), rgba(255,255,255,0.008))',
-        border: '1px solid rgba(255,255,255,0.04)',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-      }}
-    />
   );
 }
 
@@ -457,30 +495,33 @@ export default function StudiosPage() {
         }}
       />
 
-      {/* Featured 2x2 grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mb-8">
-        {FEATURED_STUDIOS.map((featured, i) => (
-          <FeaturedStudioCard key={featured.slug} featured={featured} />
+      {/* Tier 1: Iconic Studios */}
+      <SectionLabel>Iconic Studios</SectionLabel>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {TIER_1.map((s) => (
+          <StudioCard key={s.slug} studio={s} tier={1} />
         ))}
       </div>
 
-      {/* Placeholder cards — faint grid suggesting more content */}
-      {prefersReducedMotion ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 opacity-40">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <PlaceholderCard key={i} />
-          ))}
-        </div>
-      ) : (
-        <m.div
-          variants={placeholderVariants}
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 opacity-40"
-        >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <PlaceholderCard key={i} />
-          ))}
-        </m.div>
-      )}
+      <SectionDivider />
+
+      {/* Tier 2: Major Studios */}
+      <SectionLabel>Major Studios</SectionLabel>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        {TIER_2.map((s) => (
+          <StudioCard key={s.slug} studio={s} tier={2} />
+        ))}
+      </div>
+
+      <SectionDivider />
+
+      {/* Tier 3: Studios & Independents */}
+      <SectionLabel>Studios &amp; Independents</SectionLabel>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        {TIER_3.map((s) => (
+          <StudioCard key={s.slug} studio={s} tier={3} />
+        ))}
+      </div>
     </>
   );
 
