@@ -236,9 +236,9 @@ export default function TVPage() {
                 </h1>
                 <div className="flex items-center gap-3 text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">
                   {(hero.unified_rating ?? hero.vote_average) > 0 && (() => { const val = Number(hero.unified_rating ?? hero.vote_average); return (
-                    <span className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(val) }}>
+                    <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/20 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(val) }}>
                       <Star size={14} className="fill-current text-white" />{' '}
-                      <span className="text-white">{val.toFixed(1)}</span>
+                      <span className="text-white drop-shadow-sm">{val.toFixed(1)}</span>
                     </span>
                   ); })()}
                   <span>{hero.first_air_date?.slice(0, 4)}</span>
@@ -298,9 +298,9 @@ export default function TVPage() {
                       />
                     )}
                     {(item.unified_rating ?? item.vote_average) > 0 && (() => { const val = Number(item.unified_rating ?? item.vote_average); return (
-                      <div className="absolute top-1.5 right-1.5 z-20 backdrop-blur-md rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold" style={{ background: getRatingBg(val) }}>
+                      <div className="absolute top-1.5 right-1.5 z-20 backdrop-blur-md border border-white/20 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold" style={{ background: getRatingBg(val) }}>
                         <Star size={11} className="fill-current text-white" />
-                        <span className="text-white">{val.toFixed(1)}</span>
+                        <span className="text-white drop-shadow-sm">{val.toFixed(1)}</span>
                       </div>
                     ); })()}
                   </div>

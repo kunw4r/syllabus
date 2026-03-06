@@ -218,9 +218,9 @@ export default function BooksPage() {
                     </p>
                     <div className="flex items-center gap-3 text-xs text-white/40">
                       {hero.rating > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(Number(hero.rating)) }}>
-                          <Star size={14} className="text-white fill-white/90" />{' '}
-                          <span className="text-white">{hero.rating}</span>
+                        <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/20 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(Number(hero.rating)) }}>
+                          <Star size={14} className="text-white fill-white/80" />{' '}
+                          <span className="text-white drop-shadow-sm">{hero.rating}</span>
                         </span>
                       )}
                       {hero.first_publish_year && (

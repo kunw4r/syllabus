@@ -120,9 +120,9 @@ export default function HeroBanner({ items }: HeroBannerProps) {
               {(() => {
                 const displayScore = current.unified_rating ?? current.vote_average;
                 return displayScore != null && displayScore > 0 ? (
-                  <div className="inline-flex items-center gap-1 backdrop-blur-sm rounded-lg px-2 py-1 mb-3 shadow-lg" style={{ background: getRatingBg(displayScore) }}>
-                    <Star size={14} className="text-white fill-white/90" />
-                    <span className="text-sm font-bold text-white">
+                  <div className="inline-flex items-center gap-1 backdrop-blur-md border border-white/20 rounded-lg px-2 py-1 mb-3 shadow-lg" style={{ background: getRatingBg(displayScore) }}>
+                    <Star size={14} className="text-white fill-white/80" />
+                    <span className="text-sm font-bold text-white drop-shadow-sm">
                       {displayScore.toFixed(1)}
                     </span>
                   </div>

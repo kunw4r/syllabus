@@ -8,15 +8,13 @@ const config: Config = {
   ],
   safelist: [
     // Dynamic rating gradient classes used by getRatingGradient()
-    'from-purple-700', 'to-purple-500',
-    'from-red-600', 'to-red-500',
-    'from-orange-600', 'to-orange-400',
-    'from-yellow-600', 'to-yellow-400',
-    'from-lime-600', 'to-lime-400',
-    'from-green-600', 'to-green-500',
-    'from-green-800', 'to-green-700',
+    'from-purple-900', 'from-purple-600', 'to-purple-500',
+    'to-red-500', 'from-red-600', 'to-orange-400',
+    'from-orange-500', 'to-yellow-400',
+    'from-yellow-500', 'to-lime-400',
+    'from-lime-500', 'to-green-500', 'from-green-500',
+    'from-green-800', 'to-green-800', 'to-sky-500',
     'from-blue-600', 'to-blue-500',
-    'to-sky-500',
   ],
   theme: {
     extend: {

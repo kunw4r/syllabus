@@ -134,11 +134,11 @@ export default function MediaCard({
 
         {rating != null && (
           <div
-            className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg"
+            className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/20 shadow-lg"
             style={{ background: getRatingBg(Number(rating)) }}
           >
-            <Star size={10} className="text-white fill-white/90" />
-            <span className="text-xs font-bold text-white">
+            <Star size={10} className="text-white fill-white/80" />
+            <span className="text-xs font-bold text-white drop-shadow-sm">
               {typeof rating === 'number' ? rating.toFixed(1) : rating}
             </span>
           </div>
