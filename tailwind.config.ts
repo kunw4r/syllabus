@@ -7,9 +7,12 @@ const config: Config = {
     './lib/**/*.{ts,tsx}',
   ],
   safelist: [
-    // Dynamic rating colors used by lib/utils/rating-colors.ts
-    'text-red-500', 'text-amber-500', 'text-yellow-400', 'text-green-400', 'text-emerald-400',
-    'fill-red-500', 'fill-amber-500', 'fill-yellow-400', 'fill-green-400', 'fill-emerald-400',
+    // Dynamic rating gradient classes used by getRatingGradient()
+    'from-red-500', 'to-red-600',
+    'from-orange-500', 'to-orange-400',
+    'from-yellow-500', 'to-yellow-400',
+    'from-green-500', 'to-green-400',
+    'from-blue-500', 'to-blue-400',
   ],
   theme: {
     extend: {

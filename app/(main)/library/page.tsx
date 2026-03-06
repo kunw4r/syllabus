@@ -47,7 +47,7 @@ import {
 } from '@/lib/api/tmdb';
 import { TMDB_IMG } from '@/lib/constants';
 import { getRatingHex, getRatingGradient } from '@/lib/utils/rating-colors';
-import { loadStaticScoreDB, getSyllabusScore } from '@/lib/scoring';
+import { loadStaticScoreDB, getSyllabusScore, applyStoredScores } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 import DragDropShelf from '@/components/library/DragDropShelf';
@@ -469,6 +469,8 @@ function ForYouPanel({ items }: { items: any[] }) {
     if (items.length > 0) {
       setLoadingRecs(true);
       getSmartRecommendations(items).then((d) => {
+        applyStoredScores(d.filter((r: any) => r.media_type !== 'tv'), 'movie');
+        applyStoredScores(d.filter((r: any) => r.media_type === 'tv'), 'tv');
         setRecs(d);
         setLoadingRecs(false);
       });
@@ -480,9 +482,9 @@ function ForYouPanel({ items }: { items: any[] }) {
     setLoadingCurated(true);
     getCuratedPicks(curatedGenre).then((d) => {
       const libIds = new Set(items.map((i) => String(i.tmdb_id)));
-      setCuratedPicks(
-        d.filter((r: any) => !libIds.has(String(r.id))).slice(0, 20),
-      );
+      const filtered = d.filter((r: any) => !libIds.has(String(r.id))).slice(0, 20);
+      applyStoredScores(filtered, 'movie');
+      setCuratedPicks(filtered);
       setLoadingCurated(false);
     });
   }, [curatedGenre, items]);
@@ -499,9 +501,10 @@ function ForYouPanel({ items }: { items: any[] }) {
       ...tv.map((t: any) => ({ ...t, media_type: 'tv' })),
     ].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
     const libIds = new Set(items.map((i) => String(i.tmdb_id)));
-    setMoodPicks(
-      combined.filter((r) => !libIds.has(String(r.id))).slice(0, 20),
-    );
+    const filtered = combined.filter((r) => !libIds.has(String(r.id))).slice(0, 20);
+    applyStoredScores(filtered.filter((r: any) => r.media_type !== 'tv'), 'movie');
+    applyStoredScores(filtered.filter((r: any) => r.media_type === 'tv'), 'tv');
+    setMoodPicks(filtered);
     setLoadingMood(false);
   };
 
@@ -513,9 +516,10 @@ function ForYouPanel({ items }: { items: any[] }) {
     setSearchedFor(q);
     const results = await searchByScenario(q);
     const libIds = new Set(items.map((i) => String(i.tmdb_id)));
-    setScenarioResults(
-      results.filter((r: any) => !libIds.has(String(r.id))),
-    );
+    const filtered = results.filter((r: any) => !libIds.has(String(r.id)));
+    applyStoredScores(filtered.filter((r: any) => r.media_type !== 'tv'), 'movie');
+    applyStoredScores(filtered.filter((r: any) => r.media_type === 'tv'), 'tv');
+    setScenarioResults(filtered);
     setLoadingScenario(false);
   };
 
