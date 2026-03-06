@@ -14,7 +14,7 @@ import {
   applyStoredScores,
 } from '@/lib/scoring';
 import { MOVIE_GENRES, TV_GENRES, TMDB_IMG } from '@/lib/constants';
-import { getRatingBg } from '@/lib/utils/rating-colors';
+import { getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
 
 // ─── Genre lists ───
 
@@ -164,7 +164,7 @@ function RankedItem({
       {/* Rating */}
       {rating > 0 && (
         <div className="flex flex-col items-end flex-shrink-0">
-          <div className="flex items-center gap-1.5 backdrop-blur-md border border-white/20 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(rating)) }}>
+          <div className="flex items-center gap-1.5 backdrop-blur-md border border-white/20 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}>
             <Star size={14} className="text-white fill-white/80" />
             <span className="text-sm font-bold text-white drop-shadow-sm">
               {Number(rating).toFixed(1)}

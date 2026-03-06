@@ -21,8 +21,8 @@ export function getRatingHex(val: number): string {
   if (val <= 8.8) return '#34d399'; // emerald-green (gradient begins)
   if (val <= 9.2) return '#22d3ee'; // cyan (own color emerges)
   if (val <= 9.6) return '#38bdf8'; // sky blue (neon)
-  if (val < 10) return '#60a5fa';   // blue (almost there)
-  return '#007AFF';                  // apple blue — perfect 10
+  if (val < 10) return '#2563eb';   // electric blue
+  return '#00d4ff';                  // tron blue — electric glow
 }
 
 // Gradient badge backgrounds — neon vibrant, brighter at higher scores
@@ -38,9 +38,16 @@ export function getRatingBg(val: number): string {
   if (val <= 8.8) return 'linear-gradient(135deg, #4ade80f2, #34d399f2)';        // neon green → emerald (hint of shift)
   if (val <= 9.0) return 'linear-gradient(135deg, #34d399f4, #22d3eef4)';        // emerald → cyan (gradient visible)
   if (val <= 9.3) return 'linear-gradient(135deg, #22d3eef5, #38bdf8f5)';        // cyan → sky (neon glow)
-  if (val <= 9.6) return 'linear-gradient(135deg, #38bdf8f6, #60a5faf6)';        // sky → blue (intensifying)
-  if (val < 10) return 'linear-gradient(135deg, #60a5faf8, #3b82f6f8)';          // blue → rich blue (almost there)
-  return '#007AFFf0';                                                              // solid apple blue — perfect 10
+  if (val <= 9.6) return 'linear-gradient(135deg, #38bdf8f6, #2563ebf6)';        // sky → electric blue
+  if (val < 10) return 'linear-gradient(135deg, #2563ebf8, #1d4ed8f8)';          // electric blue → deep blue
+  return 'linear-gradient(135deg, #00d4ff, #0088ff, #0055ff)';                    // tron blue — electric glow
+}
+
+// Optional glow shadow for high scores — use with style={{ boxShadow }}
+export function getRatingGlow(val: number): string | undefined {
+  if (val >= 10) return '0 0 12px #00d4ff88, 0 0 4px #00d4ffaa';   // tron glow
+  if (val >= 9.3) return '0 0 8px #38bdf844';                       // subtle sky glow
+  return undefined;
 }
 
 // Tailwind gradient classes for progress bars / slider tracks

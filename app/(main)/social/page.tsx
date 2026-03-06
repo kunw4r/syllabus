@@ -24,7 +24,7 @@ import {
   unfollowUser,
 } from '@/lib/api/social';
 
-import { getRatingBg } from '@/lib/utils/rating-colors';
+import { getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
 
 // ─── Helpers ───
 
@@ -204,7 +204,7 @@ function ActivityFeed({
                 </div>
 
                 {a.rating && (
-                  <div className="inline-flex items-center gap-1 mt-1 backdrop-blur-md border border-white/20 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(a.rating)) }}>
+                  <div className="inline-flex items-center gap-1 mt-1 backdrop-blur-md border border-white/20 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(a.rating)), boxShadow: getRatingGlow(Number(a.rating)) }}>
                     <Star size={14} className="text-white fill-white/80" />
                     <span className="text-xs font-bold text-white drop-shadow-sm">
                       {a.rating}/10

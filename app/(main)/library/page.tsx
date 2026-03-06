@@ -46,7 +46,7 @@ import {
   getTVDetails,
 } from '@/lib/api/tmdb';
 import { TMDB_IMG } from '@/lib/constants';
-import { getRatingHex, getRatingGradient, getRatingBg } from '@/lib/utils/rating-colors';
+import { getRatingHex, getRatingGradient, getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
 import { loadStaticScoreDB, getSyllabusScore, applyStoredScores } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
@@ -341,7 +341,7 @@ function RecCard({
         </div>
       )}
       {(item.unified_rating || item.vote_average) > 0 && (
-        <div className="absolute top-2 right-2 backdrop-blur-md border border-white/20 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.unified_rating ?? item.vote_average)) }}>
+        <div className="absolute top-2 right-2 backdrop-blur-md border border-white/20 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.unified_rating ?? item.vote_average)), boxShadow: getRatingGlow(Number(item.unified_rating ?? item.vote_average)) }}>
           <Star size={12} className="fill-current text-white" />
           <span className="text-white drop-shadow-sm">{Number(item.unified_rating ?? item.vote_average).toFixed(1)}</span>
         </div>
@@ -1049,7 +1049,7 @@ export default function LibraryPage() {
                             {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 backdrop-blur-md border border-white/20 rounded-lg px-2 py-0.5 flex items-center gap-1" style={{ background: getRatingBg(Number(item.user_rating)) }}>
+                        <div className="absolute top-2 right-2 backdrop-blur-md border border-white/20 rounded-lg px-2 py-0.5 flex items-center gap-1" style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}>
                           <Star size={12} className="fill-current text-white" />
                           <span className="text-xs font-black text-white drop-shadow-sm">
                             {Number(item.user_rating) % 1 === 0 ? item.user_rating : Number(item.user_rating).toFixed(1)}
@@ -1165,7 +1165,7 @@ export default function LibraryPage() {
                     </div>
                   )}
                   {item.external_rating > 0 && (
-                    <div className="absolute top-2.5 right-2.5 backdrop-blur-md border border-white/20 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.external_rating)) }}>
+                    <div className="absolute top-2.5 right-2.5 backdrop-blur-md border border-white/20 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-xs font-semibold" style={{ background: getRatingBg(Number(item.external_rating)), boxShadow: getRatingGlow(Number(item.external_rating)) }}>
                       <Star size={12} className="fill-current text-white" />
                       <span className="text-white drop-shadow-sm">{Number(item.external_rating).toFixed(1)}</span>
                     </div>

@@ -6,7 +6,7 @@ import { Star, Plus, Check } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG } from '@/lib/constants';
-import { getRatingBg } from '@/lib/utils/rating-colors';
+import { getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
 
 interface MediaItem {
   id?: number | string;
@@ -135,7 +135,7 @@ export default function MediaCard({
         {rating != null && (
           <div
             className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/20 shadow-lg"
-            style={{ background: getRatingBg(Number(rating)) }}
+            style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
             <Star size={10} className="text-white fill-white/80" />
             <span className="text-xs font-bold text-white drop-shadow-sm">
