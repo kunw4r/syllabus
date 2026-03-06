@@ -13,6 +13,16 @@ import { SkeletonRow } from '@/components/ui/SkeletonCard';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 
+function useScrolled(threshold = 80) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > threshold);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [threshold]);
+  return scrolled;
+}
+
 const MOOD_GRADIENTS: Record<string, string> = {
   'feel good movies': 'from-yellow-500/20 to-orange-500/20',
   'mind bending sci-fi': 'from-purple-500/20 to-blue-500/20',
@@ -38,6 +48,8 @@ function SearchContent() {
   const cancelRef = useRef<(() => void) | null>(null);
   const didMountSearch = useRef(false);
   const enrichedRef = useRef(new Set<string>());
+  const hasContent = !!(results || loading);
+  const scrolled = useScrolled(80);
 
   const doSearch = useCallback((query: string) => {
     if (!query.trim()) return;
@@ -114,23 +126,36 @@ function SearchContent() {
     results.semantic.length > 0
   );
 
+  // Pill mode: shrinks when scrolled AND has content
+  const isPill = hasContent && scrolled;
+
   return (
     <div className="space-y-6">
-      {/* Search bar - centered hero when no results */}
-      {!results && !loading ? (
+      {/* Sticky search bar — always at top, shrinks to pill on scroll */}
+      <div className={`sticky top-16 lg:top-3 z-40 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        isPill ? 'mx-auto max-w-md' : 'max-w-full'
+      }`}>
+        <div className={`transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          isPill
+            ? 'bg-dark-800/85 backdrop-blur-2xl rounded-full border border-white/[0.08] shadow-2xl shadow-black/40 px-1 py-1'
+            : ''
+        }`}>
+          <SearchBar onSearch={handleSearch} autoFocus placeholder="Search with AI..." variant={isPill ? 'navbar' : 'inline'} />
+        </div>
+      </div>
+
+      {/* Hero content when no results */}
+      {!hasContent && (
         <FadeInView>
-          <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
             <Sparkles size={48} className="text-accent/30 mb-6" />
             <h1 className="font-serif text-3xl sm:text-4xl text-white mb-3">What are you looking for?</h1>
             <p className="text-sm text-white/30 max-w-md mb-8">
               Search naturally — try moods, scenarios, or describe what you&apos;re in the mood for
             </p>
-            <div className="w-full max-w-xl">
-              <SearchBar onSearch={handleSearch} autoFocus placeholder="Search with AI..." />
-            </div>
 
             {/* Mood discovery cards */}
-            <StaggerContainer className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-10 w-full max-w-2xl" staggerDelay={0.05}>
+            <StaggerContainer className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 w-full max-w-2xl" staggerDelay={0.05}>
               {SCENARIO_SUGGESTIONS.map((s) => (
                 <StaggerItem key={s.phrase}>
                   <button
@@ -145,8 +170,6 @@ function SearchContent() {
             </StaggerContainer>
           </div>
         </FadeInView>
-      ) : (
-        <SearchBar onSearch={handleSearch} autoFocus placeholder="Search with AI..." />
       )}
 
       {/* Thematic header for mood/scenario searches */}

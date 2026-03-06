@@ -1062,8 +1062,14 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       {/* Full-page transparent backdrop */}
       <HeroBackdrop backdropPath={data.backdrop_path} />
 
-      {/* Spacer for top navbar */}
+      {/* Back button + spacer */}
       <div className="h-4" />
+      <div className="px-4 sm:px-6 lg:px-8 mb-4">
+        <button onClick={() => router.back()}
+          className="inline-flex items-center gap-1 text-white/50 hover:text-white transition-colors text-sm">
+          <ChevronLeft size={18} strokeWidth={2.5} /> Back
+        </button>
+      </div>
 
       {/* ── Hero Image Container (full-bleed) ── */}
       <div className="px-2 sm:px-4 lg:px-6">
