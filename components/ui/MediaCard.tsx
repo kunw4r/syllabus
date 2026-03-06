@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Plus, Check } from 'lucide-react';
+import { Star, Plus, Check, Play, ChevronDown, ThumbsUp } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
@@ -138,72 +138,111 @@ export default function MediaCard({
       <div
         className="group/card relative cursor-pointer shrink-0 w-[240px] sm:w-[280px] min-w-0 z-0 hover:z-30"
       >
-        <div
-          className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/10 transition-all duration-300 ease-out group-hover/card:scale-[1.08] group-hover/card:ring-white/20 group-hover/card:shadow-2xl group-hover/card:shadow-black/60"
-          onClick={handleClick}
-        >
-          {displayImg ? (
-            <img
-              src={displayImg}
-              alt={title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-              {'\u{1F3AC}'}
-            </div>
-          )}
-
-          {/* Gradient — stronger on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover/card:from-black/80 group-hover/card:via-black/30 transition-all duration-300" />
-
-          {/* Rating badge */}
-          {rating != null && (
+        {/* Scaled wrapper — the whole card (image + panel) scales up */}
+        <div className="transition-transform duration-300 ease-out group-hover/card:scale-[1.35] group-hover/card:delay-300 origin-center">
+          {/* Shadow container */}
+          <div className="rounded-t-md group-hover/card:rounded-t-md group-hover/card:shadow-[0_8px_40px_rgba(0,0,0,0.85)]">
+            {/* Image */}
             <div
-              className="absolute top-2 right-2 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10"
-              style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+              className="relative aspect-[16/9] rounded-md group-hover/card:rounded-b-none overflow-hidden transition-[border-radius] duration-200"
+              onClick={handleClick}
             >
-              <Star size={10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-              <span className="text-xs font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
-                {typeof rating === 'number' ? rating.toFixed(1) : rating}
-              </span>
-            </div>
-          )}
+              {displayImg ? (
+                <img
+                  src={displayImg}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
+                  {'\u{1F3AC}'}
+                </div>
+              )}
 
-          {/* Title + year — always visible */}
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <p className="text-sm font-semibold text-white truncate drop-shadow-lg">
-              {title}
-            </p>
-            {year && <p className="text-[10px] text-white/40 mt-0.5">{year}</p>}
-          </div>
+              {/* Subtle bottom gradient for text readability in resting state */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent group-hover/card:from-black/70 transition-all duration-300" />
 
-          {/* Hover action buttons — small, top-left */}
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
-            {showAdd && user && !added ? (
-              <button
-                onClick={handleAdd}
-                className="w-7 h-7 rounded-full border border-white/50 bg-black/50 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/70 transition-all active:scale-90"
-                title="Add to Library"
-              >
-                <Plus size={14} className="text-white" />
-              </button>
-            ) : added ? (
-              <div className="w-7 h-7 rounded-full border border-green-500/60 bg-green-500/20 backdrop-blur-sm flex items-center justify-center">
-                <Check size={14} className="text-green-400" />
+              {/* Title + year — visible at rest, hidden when panel shows */}
+              <div className="absolute bottom-0 left-0 right-0 p-2.5 group-hover/card:opacity-0 transition-opacity duration-200">
+                <p className="text-[13px] font-semibold text-white truncate drop-shadow-lg">
+                  {title}
+                </p>
               </div>
-            ) : null}
-          </div>
-
-          {/* Genre tags — bottom, on hover */}
-          {genreNames.length > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
-              <p className="text-[10px] text-white/60 drop-shadow-lg truncate">
-                {genreNames.join(' · ')}
-              </p>
             </div>
-          )}
+
+            {/* Dropdown info panel — appears on hover */}
+            <div
+              className="max-h-0 overflow-hidden group-hover/card:max-h-40 transition-[max-height] duration-300 ease-out group-hover/card:delay-300 bg-[#181818] rounded-b-md"
+              onClick={handleClick}
+            >
+              <div className="p-3 pt-2.5">
+                {/* Action buttons row */}
+                <div className="flex items-center gap-2 mb-2">
+                  {/* Play button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleClick(); }}
+                    className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white/85 transition-colors"
+                  >
+                    <Play size={16} className="text-black fill-black ml-0.5" />
+                  </button>
+
+                  {/* Add / Check button */}
+                  {showAdd && user && !added ? (
+                    <button
+                      onClick={handleAdd}
+                      className="w-8 h-8 rounded-full border-2 border-white/40 bg-transparent flex items-center justify-center hover:border-white transition-colors"
+                      title="Add to Library"
+                    >
+                      <Plus size={16} className="text-white" />
+                    </button>
+                  ) : added ? (
+                    <div className="w-8 h-8 rounded-full border-2 border-green-500/60 bg-transparent flex items-center justify-center">
+                      <Check size={16} className="text-green-400" />
+                    </div>
+                  ) : null}
+
+                  {/* Like button */}
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-8 h-8 rounded-full border-2 border-white/40 bg-transparent flex items-center justify-center hover:border-white transition-colors"
+                  >
+                    <ThumbsUp size={14} className="text-white" />
+                  </button>
+
+                  {/* Expand / more info — pushed right */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleClick(); }}
+                    className="w-8 h-8 rounded-full border-2 border-white/40 bg-transparent flex items-center justify-center hover:border-white transition-colors ml-auto"
+                  >
+                    <ChevronDown size={16} className="text-white" />
+                  </button>
+                </div>
+
+                {/* Metadata row */}
+                <div className="flex items-center gap-2 text-[11px] mb-1.5">
+                  {rating != null && (
+                    <span className="font-bold" style={{ color: getRatingHex(Number(rating)) }}>
+                      {typeof rating === 'number' ? `${(rating * 10).toFixed(0)}% Match` : rating}
+                    </span>
+                  )}
+                  {year && <span className="text-white/50">{year}</span>}
+                </div>
+
+                {/* Genre tags */}
+                {genreNames.length > 0 && (
+                  <div className="flex items-center gap-1 text-[11px] text-white/70">
+                    {genreNames.map((g, i) => (
+                      <span key={g} className="flex items-center gap-1">
+                        {i > 0 && <span className="text-white/20">&#8226;</span>}
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
