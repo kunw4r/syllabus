@@ -269,45 +269,11 @@ export default function TVPage() {
           )}
 
           {/* Top 10 TV This Week */}
-          <div className="mb-10 min-w-0">
-            <h2 className="text-[15px] font-semibold text-white/80 mb-4 uppercase tracking-wide">
-              Top 10 TV This Week
-            </h2>
-            <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-              {trending.slice(0, 10).map((item, i) => (
-                <div
-                  key={item.id}
-                  className="flex-shrink-0 flex items-end cursor-pointer group/card"
-                  onClick={() => router.push(`/details/tv/${item.id}`)}
-                >
-                  <span
-                    className="text-[5rem] sm:text-[7rem] font-black leading-none -mr-3 sm:-mr-4 select-none text-transparent"
-                    style={{
-                      WebkitTextStroke: '2px rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="relative">
-                    {item.poster_path && (
-                      <img
-                        src={`${TMDB_IMG}${item.poster_path}`}
-                        alt={item.name}
-                        loading="lazy"
-                        className="h-32 sm:h-40 rounded-xl relative z-10 shadow-lg group-hover/card:scale-105 transition-transform duration-300 object-cover aspect-[2/3]"
-                      />
-                    )}
-                    {(item.unified_rating ?? item.vote_average) > 0 && (() => { const val = Number(item.unified_rating ?? item.vote_average); return (
-                      <div className="absolute top-1.5 right-1.5 z-20 backdrop-blur-md border border-white/10 rounded-lg px-1.5 py-0.5 flex items-center gap-1 text-[10px] font-semibold" style={{ background: getRatingBg(val), boxShadow: getRatingGlow(val) }}>
-                        <Star size={11} className="fill-current" style={{ color: getRatingHex(val) }} />
-                        <span className="drop-shadow-sm" style={{ color: getRatingHex(val) }}>{val.toFixed(1)}</span>
-                      </div>
-                    ); })()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ScrollRow title="Top 10 TV This Week">
+            {trending.slice(0, 10).map((item) => (
+              <MediaCard key={item.id} item={item} mediaType="tv" />
+            ))}
+          </ScrollRow>
 
           {/* Anime */}
           {anime.length > 0 && (
