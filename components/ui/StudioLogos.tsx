@@ -481,6 +481,26 @@ export function TohoLogo({ size = 48, className }: LogoProps) {
   );
 }
 
+// ── Netflix — stylized N ──
+export function NetflixLogo({ size = 48, className }: LogoProps) {
+  return (
+    <svg width={size} height={size * 0.5} viewBox="0 0 80 36" fill="white" className={className}>
+      <path d="M16 4h6.5l11 22V4H40v28h-6.5l-11-22v22H16V4z" opacity="0.9" />
+      <rect x="44" y="28" width="22" height="1.5" rx="0.75" opacity="0.25" />
+    </svg>
+  );
+}
+
+// ── Columbia Pictures — torch lady silhouette ──
+export function ColumbiaLogo({ size = 48, className }: LogoProps) {
+  return (
+    <svg width={size} height={size * 0.5} viewBox="0 0 80 36" fill="white" className={className}>
+      <text x="40" y="22" textAnchor="middle" fontSize="11" fontWeight="700" letterSpacing="3" fill="white" opacity="0.85" fontFamily="system-ui">COLUMBIA</text>
+      <text x="40" y="31" textAnchor="middle" fontSize="7" fontWeight="500" letterSpacing="2" fill="white" opacity="0.45" fontFamily="system-ui">PICTURES</text>
+    </svg>
+  );
+}
+
 // ── Export map ──
 export const STUDIO_LOGOS: Record<string, React.ComponentType<LogoProps>> = {
   disney: DisneyLogo,
@@ -518,4 +538,6 @@ export const STUDIO_LOGOS: Record<string, React.ComponentType<LogoProps>> = {
   toei: ToeiLogo,
   'apple-studios': AppleStudiosLogo,
   toho: TohoLogo,
+  netflix: NetflixLogo,
+  columbia: ColumbiaLogo,
 };

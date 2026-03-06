@@ -146,6 +146,8 @@ const TIER_2 = [
   {
     slug: 'illumination',
     name: 'Illumination',
+    image: '/studios/illumination-card.png',
+    imagePosition: 'center center',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(90,80,20,0.5) 0%, rgba(45,40,10,0.8) 50%, rgba(18,16,6,0.95) 100%)',
     border: 'rgba(220,200,50,0.20)',
     glow: '0 0 40px rgba(180,160,30,0.12), 0 0 80px rgba(140,120,20,0.06)',
@@ -242,6 +244,8 @@ const TIER_3 = [
   {
     slug: 'apple-studios',
     name: 'Apple Studios',
+    image: '/studios/apple-studios-card.png',
+    imagePosition: 'center center',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(50,50,50,0.5) 0%, rgba(25,25,25,0.8) 50%, rgba(10,10,10,0.95) 100%)',
     border: 'rgba(170,170,170,0.18)',
     glow: '0 0 40px rgba(120,120,120,0.08), 0 0 80px rgba(90,90,90,0.04)',
@@ -251,6 +255,8 @@ const TIER_3 = [
   {
     slug: 'toho',
     name: 'Toho',
+    image: '/studios/toho-card.png',
+    imagePosition: 'center center',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(100,20,20,0.5) 0%, rgba(50,10,10,0.8) 50%, rgba(20,6,6,0.95) 100%)',
     border: 'rgba(200,60,60,0.20)',
     glow: '0 0 40px rgba(160,40,40,0.12), 0 0 80px rgba(120,20,20,0.06)',
@@ -259,7 +265,7 @@ const TIER_3 = [
   },
 ];
 
-type StudioEntry = (typeof TIER_1)[number];
+type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof TIER_3)[number];
 
 // ── Tier heights ──
 
@@ -364,7 +370,8 @@ function StudioCard({
 }) {
   const Logo = STUDIO_LOGOS[studio.slug];
   const prefersReducedMotion = useReducedMotion();
-  const hasImage = 'image' in studio && studio.image;
+  const hasImage = 'image' in studio && (studio as any).image;
+  const imageUrl = hasImage ? (studio as any).image as string : null;
   const logoSize = tier === 1 ? 80 : tier === 2 ? 64 : 52;
 
   const card = (
@@ -374,7 +381,7 @@ function StudioCard({
       style={{
         height: TIER_HEIGHTS[tier],
         background: hasImage ? '#080c18' : studio.gradient,
-        border: hasImage ? 'none' : `1px solid ${studio.border}`,
+        border: `1px solid ${hasImage ? 'rgba(255,255,255,0.06)' : studio.border}`,
         boxShadow: studio.glow,
       }}
     >
@@ -388,11 +395,11 @@ function StudioCard({
             style={{ top: `-${ci}`, right: `-${ci}`, bottom: `-${cb}`, left: `-${ci}` }}
           >
             <Image
-              src={studio.image!}
+              src={imageUrl!}
               alt={studio.name}
               fill
               className="object-cover"
-              style={{ objectPosition: studio.imagePosition || 'center center' }}
+              style={{ objectPosition: ('imagePosition' in studio ? (studio as any).imagePosition : null) || 'center center' }}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 25vw"
               priority={tier === 1}
             />

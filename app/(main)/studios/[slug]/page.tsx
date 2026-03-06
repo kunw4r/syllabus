@@ -24,29 +24,7 @@ import {
 } from '@/lib/scoring';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 import { STUDIOS, TMDB_IMG_ORIGINAL, type Studio } from '@/lib/constants';
-import { STUDIO_LOGOS } from '@/components/ui/StudioLogos';
-import Image from 'next/image';
 
-// Map studio slugs to their card images
-const STUDIO_CARD_IMAGES: Record<string, string> = {
-  disney: '/studios/disney-card.png',
-  pixar: '/studios/pixar-card.png',
-  marvel: '/studios/marvel-card.png',
-  dc: '/studios/dc-card.png',
-  dreamworks: '/studios/dreamworks-card.png',
-  sony: '/studios/sony-card.png',
-  universal: '/studios/universal-card.png',
-  'warner-bros': '/studios/warner-bros-card.png',
-  paramount: '/studios/paramount-card.png',
-  lionsgate: '/studios/lionsgate-card.png',
-  netflix: '/studios/netflix-card.png',
-  mgm: '/studios/mgm-card.png',
-  '20th-century': '/studios/20th-century-card.png',
-  columbia: '/studios/columbia-card.png',
-  legendary: '/studios/legendary-card.png',
-  skydance: '/studios/skydance-card.png',
-  ghibli: '/studios/ghibli-card.png',
-};
 
 type Tab = 'movies' | 'tv';
 
@@ -225,120 +203,70 @@ export default function StudioPage() {
     );
   }
 
-  const Logo = STUDIO_LOGOS[studio.slug];
-
   return (
     <div className="min-w-0">
-      {/* Cinematic Header Banner */}
-      {(() => {
-        const cardImage = STUDIO_CARD_IMAGES[studio.slug];
-        return (
-          <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 mb-8">
-            {/* Banner background */}
-            <div className="relative h-[180px] sm:h-[220px] overflow-hidden">
-              {cardImage ? (
-                <>
-                  <Image
-                    src={cardImage}
-                    alt={studio.name}
-                    fill
-                    className="object-cover"
-                    style={{ objectPosition: 'center center', transform: 'scale(1.15)' }}
-                    sizes="100vw"
-                    priority
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0e1117] via-[#0e1117]/60 to-[#0e1117]/20" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0e1117]/80 via-transparent to-[#0e1117]/40" />
-                </>
-              ) : (
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: `linear-gradient(145deg, ${studio.tint}, #0b0f15)`,
-                  }}
-                />
-              )}
+      {/* Back button */}
+      <button
+        onClick={() => router.push('/studios')}
+        className="flex items-center gap-1.5 text-white/35 hover:text-white text-sm mb-5 transition-colors"
+      >
+        <ArrowLeft size={15} />
+        Studios
+      </button>
 
-              {/* Back button — over the banner */}
-              <button
-                onClick={() => router.push('/studios')}
-                className="absolute top-4 left-4 sm:left-6 lg:left-8 flex items-center gap-1.5 text-white/60 hover:text-white text-sm transition-colors z-10 backdrop-blur-sm bg-black/20 px-3 py-1.5 rounded-lg"
-              >
-                <ArrowLeft size={14} />
-                Studios
-              </button>
-            </div>
+      {/* Studio name + subtitle */}
+      <div className="mb-5">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-none">{studio.name}</h1>
+        <p className="text-white/35 text-sm mt-1">
+          {studio.tmdb_id ? 'Production Company' : studio.language === 'hi' ? 'Indian Film Industry' : studio.language === 'ko' ? 'South Korean Cinema' : 'Japanese Animation'}
+        </p>
+      </div>
 
-            {/* Studio info — overlapping the banner bottom */}
-            <div className="relative px-4 sm:px-6 lg:px-8 -mt-14">
-              <div className="flex items-end gap-4">
-                <div
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center shadow-2xl flex-shrink-0"
-                  style={{
-                    background: `linear-gradient(145deg, ${studio.tint}, #0b0f15)`,
-                    border: '2px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                  }}
-                >
-                  {Logo ? <Logo size={40} /> : <span className="text-3xl sm:text-4xl font-bold text-white/60">{studio.icon || studio.name[0]}</span>}
-                </div>
-                <div className="pb-1">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">{studio.name}</h1>
-                  <p className="text-white/40 text-sm mt-0.5">
-                    {studio.tmdb_id ? 'Production Company' : studio.language === 'hi' ? 'Indian Film Industry' : studio.language === 'ko' ? 'South Korean Cinema' : 'Japanese Animation'}
-                  </p>
-                </div>
-              </div>
+      {/* Search + Tabs row */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={`Search in ${studio.name}...`}
+            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-white/20 outline-none focus:border-white/12 focus:bg-white/[0.06] transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
+          {(['movies', 'tv'] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                tab === t
+                  ? 'bg-white/10 text-white shadow-sm'
+                  : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              {t === 'movies' ? 'Movies' : 'TV Shows'}
+            </button>
+          ))}
+        </div>
+      </div>
 
-              {/* Search + Tabs row */}
-              <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="relative flex-1">
-                  <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`Search in ${studio.name}...`}
-                    className="w-full pl-10 pr-10 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder-white/25 outline-none focus:border-white/15 focus:bg-white/[0.07] transition-all"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
-                  {(['movies', 'tv'] as Tab[]).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setTab(t)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                        tab === t
-                          ? 'bg-white/10 text-white shadow-sm'
-                          : 'text-white/40 hover:text-white/70'
-                      }`}
-                    >
-                      {t === 'movies' ? 'Movies' : 'TV Shows'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom fade line */}
-            <div
-              className="mt-5 mx-4 sm:mx-6 lg:mx-8"
-              style={{
-                height: '1px',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent)',
-              }}
-            />
-          </div>
-        );
-      })()}
+      {/* Divider */}
+      <div
+        className="mb-6"
+        style={{
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent)',
+        }}
+      />
 
       {tab === 'movies' ? (
         loading ? (
