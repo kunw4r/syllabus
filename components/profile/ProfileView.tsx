@@ -275,34 +275,67 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
 
       {/* Discover Weekly */}
       {isOwnProfile && discoverWeekly.length > 0 && (
-        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden">
-          <div className="absolute -top-16 -left-16 w-40 h-40 bg-purple-500/[0.08] rounded-full blur-3xl pointer-events-none" />
-          <h3 className="text-sm font-semibold text-white/40 mb-1 flex items-center gap-2 relative">
-            <Sparkles size={14} className="text-purple-400" /> Discover Weekly
-          </h3>
-          <p className="text-[11px] text-white/20 mb-4 relative">Personalized picks based on your library</p>
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide relative">
-            {discoverWeekly.map((item: any) => (
-              <button
-                key={item.id}
-                onClick={() => router.push(`/details/${item.media_type}/${item.id}`)}
-                className="shrink-0 w-36 group text-left"
-              >
-                <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/[0.08] group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300 relative">
-                  {item.poster_path ? (
-                    <img src={`${TMDB_IMG}${item.poster_path}`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  ) : (
-                    <div className="w-full h-full bg-dark-700 flex items-center justify-center">
-                      <Film size={24} className="text-white/10" />
-                    </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
-                  <p className="absolute bottom-2.5 left-3 right-3 text-xs text-white/80 font-medium truncate drop-shadow-lg group-hover:text-accent transition-colors">
-                    {item.title || item.name}
-                  </p>
+        <div className="relative rounded-3xl overflow-hidden">
+          {/* Full-width gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/[0.15] via-accent/[0.08] to-indigo-600/[0.12]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(168,85,247,0.15),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.1),transparent_60%)]" />
+          <div className="absolute inset-0 border border-white/[0.08] rounded-3xl pointer-events-none" />
+
+          <div className="relative p-6 sm:p-8">
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <div className="flex items-center gap-2.5 mb-1">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/20 flex items-center justify-center">
+                    <Sparkles size={16} className="text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Discover Weekly</h3>
                 </div>
-              </button>
-            ))}
+                <p className="text-xs text-white/30 ml-[42px]">Personalized picks refreshed every week</p>
+              </div>
+              <span className="text-[10px] uppercase tracking-widest text-purple-400/60 font-semibold hidden sm:block">
+                {discoverWeekly.length} picks
+              </span>
+            </div>
+
+            {/* Cards grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
+              {discoverWeekly.slice(0, 12).map((item: any, idx: number) => (
+                <button
+                  key={item.id}
+                  onClick={() => router.push(`/details/${item.media_type}/${item.id}`)}
+                  className="group text-left"
+                >
+                  <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/[0.1] group-hover:ring-purple-400/50 group-hover:scale-[1.04] group-hover:shadow-2xl group-hover:shadow-purple-500/20 transition-all duration-300 relative">
+                    {item.poster_path ? (
+                      <img src={`${TMDB_IMG}${item.poster_path}`} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full bg-dark-700 flex items-center justify-center">
+                        <Film size={24} className="text-white/10" />
+                      </div>
+                    )}
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+                    {/* Pick number badge */}
+                    <div className="absolute top-2 left-2">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-purple-500/30 backdrop-blur-sm border border-purple-400/20 text-[10px] font-bold text-purple-300">
+                        {idx + 1}
+                      </span>
+                    </div>
+                    {/* Title + media type */}
+                    <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                      <p className="text-[11px] font-semibold text-white truncate drop-shadow-lg group-hover:text-purple-300 transition-colors">
+                        {item.title || item.name}
+                      </p>
+                      <p className="text-[9px] text-white/30 uppercase tracking-wide mt-0.5">
+                        {item.media_type === 'tv' ? 'TV Show' : 'Movie'}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
