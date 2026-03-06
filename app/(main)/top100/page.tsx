@@ -80,6 +80,36 @@ function RankedCard({
 }) {
   const router = useRouter();
   const [imgBroken, setImgBroken] = useState(false);
+  const [isBright, setIsBright] = useState(false);
+
+  // Sample bottom-left brightness of the image to adapt rank number color
+  const checkBrightness = useCallback((img: HTMLImageElement) => {
+    try {
+      const canvas = document.createElement('canvas');
+      const size = 40;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      // Sample the bottom-left corner
+      const sx = 0;
+      const sy = img.naturalHeight - Math.min(img.naturalHeight * 0.35, img.naturalHeight);
+      const sw = Math.min(img.naturalWidth * 0.3, img.naturalWidth);
+      const sh = img.naturalHeight - sy;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+      const data = ctx.getImageData(0, 0, size, size).data;
+      let totalLum = 0;
+      const pixels = size * size;
+      for (let i = 0; i < data.length; i += 4) {
+        // Perceived luminance
+        totalLum += (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+      }
+      const avgLum = totalLum / pixels;
+      setIsBright(avgLum > 160);
+    } catch {
+      // CORS or other error — keep default
+    }
+  }, []);
 
   const isBook = mediaType === 'book';
   const rating = isBook
@@ -102,10 +132,10 @@ function RankedCard({
     : 'ring-white/[0.06]';
 
   const rankColor =
-    rank === 1 ? 'text-yellow-400'
-    : rank === 2 ? 'text-gray-300'
-    : rank === 3 ? 'text-amber-500'
-    : 'text-white/60';
+    rank === 1 ? (isBright ? 'text-yellow-600' : 'text-yellow-400')
+    : rank === 2 ? (isBright ? 'text-gray-500' : 'text-gray-300')
+    : rank === 3 ? (isBright ? 'text-amber-700' : 'text-amber-500')
+    : isBright ? 'text-black/50' : 'text-white/60';
 
   const isLandscape = layout === 'landscape';
   const hasBackdrop = !isBook && backdrop && !imgBroken;
@@ -151,6 +181,8 @@ function RankedCard({
             src={displayImg}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            crossOrigin="anonymous"
+            onLoad={(e) => checkBrightness(e.currentTarget)}
             onError={() => setImgBroken(true)}
             loading="lazy"
           />
@@ -179,11 +211,13 @@ function RankedCard({
         {/* Rank number */}
         <div className={`absolute ${isLandscape ? 'bottom-3 left-4' : 'bottom-2 left-2.5'}`}>
           <span
-            className={`${isLandscape ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'} font-black ${rankColor} leading-none`}
+            className={`${isLandscape ? 'text-5xl sm:text-6xl' : 'text-4xl sm:text-5xl'} font-black ${rankColor} leading-none transition-colors duration-300`}
             style={{
-              textShadow: '0 0 16px rgba(0,0,0,1), 0 2px 10px rgba(0,0,0,0.9), 0 0 0 3px rgba(0,0,0,0.7)',
+              textShadow: isBright
+                ? '0 0 12px rgba(255,255,255,0.6), 0 2px 8px rgba(255,255,255,0.4)'
+                : '0 0 16px rgba(0,0,0,1), 0 2px 10px rgba(0,0,0,0.9), 0 0 0 3px rgba(0,0,0,0.7)',
               paintOrder: 'stroke fill',
-              WebkitTextStroke: rank <= 3 ? 'none' : '1px rgba(255,255,255,0.15)',
+              WebkitTextStroke: rank <= 3 ? 'none' : isBright ? '1px rgba(0,0,0,0.15)' : '1px rgba(255,255,255,0.15)',
             }}
           >
             {rank}
