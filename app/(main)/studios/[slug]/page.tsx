@@ -20,6 +20,7 @@ import {
   enrichItemsWithRatings,
 } from '@/lib/scoring';
 import { STUDIOS, type Studio } from '@/lib/constants';
+import { STUDIO_LOGOS } from '@/components/ui/StudioLogos';
 
 type Tab = 'movies' | 'tv';
 
@@ -117,8 +118,8 @@ export default function StudioPage() {
         </button>
 
         <div className="flex items-center gap-4">
-          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${studio.color} flex items-center justify-center text-2xl sm:text-3xl shadow-lg`}>
-            {studio.icon}
+          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${studio.color} flex items-center justify-center shadow-lg`}>
+            {(() => { const Logo = STUDIO_LOGOS[studio.slug]; return Logo ? <Logo size={32} /> : <span className="text-2xl sm:text-3xl">{studio.icon}</span>; })()}
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-black">{studio.name}</h1>
@@ -175,17 +176,22 @@ export default function StudioPage() {
               </ScrollRow>
             )}
 
-            {/* More movies as grid */}
-            {(page2.length > 0 || page3.length > 0) && (
-              <div className="mt-8">
-                <h2 className="text-lg sm:text-xl font-bold text-white mb-4">More from {studio.name}</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-                  {[...page2, ...page3].map((m: any) => (
-                    <MediaCard key={m.id} item={m} mediaType="movie" />
-                  ))}
+            {/* More movies as grid — deduplicated against rows above */}
+            {(() => {
+              const shownIds = new Set([...popular, ...topRated].map((m: any) => m.id));
+              const moreItems = [...page2, ...page3].filter((m: any) => !shownIds.has(m.id));
+              if (moreItems.length === 0) return null;
+              return (
+                <div className="mt-8">
+                  <h2 className="text-lg sm:text-xl font-bold text-white mb-4">More from {studio.name}</h2>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                    {moreItems.map((m: any) => (
+                      <MediaCard key={m.id} item={m} mediaType="movie" />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </>
         )
       ) : (
