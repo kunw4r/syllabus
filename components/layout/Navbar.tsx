@@ -27,7 +27,7 @@ function isActive(pathname: string, to: string): boolean {
 }
 
 export default function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -126,26 +126,37 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Auth button — only in expanded mode */}
-          {!scrolled && (
-            <div className="ml-auto flex items-center gap-3">
-              {user ? (
-                <button
-                  onClick={signOut}
-                  className="text-sm text-white/40 hover:text-white transition-colors"
-                >
-                  Sign Out
-                </button>
-              ) : (
-                <button
-                  onClick={() => router.push('/login')}
-                  className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
-                >
-                  Sign In
-                </button>
-              )}
-            </div>
-          )}
+          {/* Auth — profile pic or sign in */}
+          <div className={`ml-auto flex items-center transition-all duration-500 ${scrolled ? 'gap-1' : 'gap-3'}`}>
+            {user ? (
+              <Link
+                href="/profile"
+                className={`shrink-0 rounded-full overflow-hidden ring-2 transition-all duration-300 hover:ring-accent/60 ${
+                  isActive(pathname, '/profile') ? 'ring-accent' : 'ring-white/10 hover:ring-white/30'
+                } ${scrolled ? 'w-7 h-7' : 'w-9 h-9'}`}
+              >
+                {user.user_metadata?.avatar_url ? (
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">
+                    {(user.user_metadata?.username || user.email || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </Link>
+            ) : !scrolled ? (
+              <button
+                onClick={() => router.push('/login')}
+                className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+              >
+                Sign In
+              </button>
+            ) : null}
+          </div>
         </nav>
       </div>
 
