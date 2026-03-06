@@ -47,7 +47,7 @@ import {
   getMovieDetails,
   getTVDetails,
 } from '@/lib/api/tmdb';
-import { TMDB_IMG } from '@/lib/constants';
+import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { getRatingHex, getRatingBg, getRatingGlow, getUserRatingRed, getUserRatingGlow, getUserRatingBg, sampleImageBrightness } from '@/lib/utils/rating-colors';
 import { loadStaticScoreDB, getSyllabusScore, applyStoredScores } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
@@ -811,6 +811,7 @@ function AnimatedRatingNumber({ value }: { value: number }) {
 function LibraryGridCard({
   item,
   layout = 'landscape',
+  backdropUrl,
   onCardClick,
   onStatusChange,
   onRemove,
@@ -818,6 +819,7 @@ function LibraryGridCard({
 }: {
   item: any;
   layout?: 'landscape' | 'poster';
+  backdropUrl?: string;
   onCardClick: (item: any) => void;
   onStatusChange: (id: string, status: string) => void;
   onRemove: (id: string) => void;
@@ -837,6 +839,7 @@ function LibraryGridCard({
 
   const isLandscape = layout === 'landscape';
   const aspectClass = isLandscape ? 'aspect-[16/9]' : 'aspect-[2/3]';
+  const displayImg = isLandscape && backdropUrl ? backdropUrl : item.poster_url;
 
   return (
     <div
@@ -844,9 +847,9 @@ function LibraryGridCard({
       onClick={() => onCardClick(item)}
     >
       <div className="relative">
-        {item.poster_url ? (
+        {displayImg ? (
           <img
-            src={item.poster_url}
+            src={displayImg}
             alt={item.title}
             loading="lazy"
             crossOrigin="anonymous"
@@ -969,6 +972,9 @@ export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState('shelf');
   const [viewMode, setViewMode] = useState<'grid' | 'shelf' | 'kanban'>('grid');
   const [cardLayout, setCardLayout] = useState<'landscape' | 'poster'>('landscape');
+  const [backdropMap, setBackdropMap] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem('lib_backdrops') || '{}'); } catch { return {}; }
+  });
   const toast = useToast();
   const router = useRouter();
 
@@ -987,30 +993,49 @@ export default function LibraryPage() {
 
       setAllItems(data);
 
-      // Background: fix items missing poster_url
-      const needsPoster = data.filter(
-        (i: any) => !i.poster_url && i.tmdb_id && i.media_type !== 'book',
+      // Background: fix items missing poster_url & fetch backdrops
+      const needsEnrich = data.filter(
+        (i: any) => i.tmdb_id && i.media_type !== 'book',
       );
-      if (needsPoster.length > 0) {
-        const updated: any[] = [];
-        for (const item of needsPoster) {
-          try {
-            const details =
-              item.media_type === 'tv'
-                ? await getTVDetails(item.tmdb_id)
-                : await getMovieDetails(item.tmdb_id);
-            if (details?.poster_path) {
-              const url = `${TMDB_IMG}${details.poster_path}`;
-              item.poster_url = url;
-              updated.push(item);
-              // Persist to DB
-              updateLibraryItem(item.id, { poster_url: url }).catch(() => {});
-            }
-          } catch {
-            /* best-effort */
-          }
+      if (needsEnrich.length > 0) {
+        const newBackdrops: Record<string, string> = {};
+        // Load cached backdrops from localStorage
+        try {
+          const cached = JSON.parse(localStorage.getItem('lib_backdrops') || '{}');
+          Object.assign(newBackdrops, cached);
+        } catch { /* ignore */ }
+
+        const needsFetch = needsEnrich.filter(
+          (i: any) => !i.poster_url || !newBackdrops[String(i.tmdb_id)],
+        );
+        let updated = false;
+
+        // Fetch in batches of 3 to avoid rate limits
+        for (let i = 0; i < needsFetch.length; i += 3) {
+          const batch = needsFetch.slice(i, i + 3);
+          await Promise.all(batch.map(async (item: any) => {
+            try {
+              const details =
+                item.media_type === 'tv'
+                  ? await getTVDetails(item.tmdb_id)
+                  : await getMovieDetails(item.tmdb_id);
+              if (!item.poster_url && details?.poster_path) {
+                const url = `${TMDB_IMG}${details.poster_path}`;
+                item.poster_url = url;
+                updated = true;
+                updateLibraryItem(item.id, { poster_url: url }).catch(() => {});
+              }
+              if (details?.backdrop_path) {
+                newBackdrops[String(item.tmdb_id)] = `${TMDB_IMG_ORIGINAL}${details.backdrop_path}`;
+              }
+            } catch { /* best-effort */ }
+          }));
         }
-        if (updated.length > 0) setAllItems([...data]);
+
+        // Cache backdrops in localStorage
+        try { localStorage.setItem('lib_backdrops', JSON.stringify(newBackdrops)); } catch { /* quota */ }
+        setBackdropMap(newBackdrops);
+        if (updated) setAllItems([...data]);
       }
     } catch (err) {
       console.error('Failed to load library:', err);
@@ -1376,6 +1401,7 @@ export default function LibraryPage() {
                   key={item.id}
                   item={item}
                   layout={cardLayout}
+                  backdropUrl={backdropMap[String(item.tmdb_id)]}
                   onCardClick={handleCardClick}
                   onStatusChange={handleStatusChange}
                   onRemove={handleRemove}
