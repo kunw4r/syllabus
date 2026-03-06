@@ -169,8 +169,18 @@ export default function MediaCard({
               </div>
             )}
 
+            {/* Resting state — title + year at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/70 via-black/30 to-transparent group-hover/card:opacity-0 transition-opacity duration-200 pointer-events-none">
+              <p className="text-[13px] font-semibold text-white truncate drop-shadow-lg">
+                {title}
+              </p>
+              {year && (
+                <p className="text-[11px] text-white/45 mt-0.5">{year}</p>
+              )}
+            </div>
+
             {/* Hover overlay — dark gradient with controls */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
 
             {/* Action buttons — overlay on hover */}
             <div className="absolute inset-0 flex flex-col justify-between p-3 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
@@ -212,10 +222,18 @@ export default function MediaCard({
                   {title}
                 </p>
 
-                {/* Year + Genres */}
-                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-white/70">
-                  {year && <span>{year}</span>}
-                  {year && genreNames.length > 0 && <span className="text-white/30">&#8226;</span>}
+                {/* Year + Content Rating + Genres — single row, no overlap */}
+                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-white/70 flex-wrap">
+                  {year && <span className="font-medium">{year}</span>}
+                  {(item as any).certification && (
+                    <>
+                      {year && <span className="text-white/30">&#8226;</span>}
+                      <span className="px-1.5 py-0.5 rounded border border-white/25 text-[10px] font-bold text-white/80 leading-none">
+                        {(item as any).certification}
+                      </span>
+                    </>
+                  )}
+                  {genreNames.length > 0 && (year || (item as any).certification) && <span className="text-white/30">&#8226;</span>}
                   {genreNames.map((g, i) => (
                     <span key={g} className="flex items-center gap-1.5">
                       {i > 0 && <span className="text-white/30">&#8226;</span>}
@@ -224,13 +242,6 @@ export default function MediaCard({
                   ))}
                 </div>
               </div>
-            </div>
-
-            {/* Resting state — title at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/60 to-transparent group-hover/card:opacity-0 transition-opacity duration-200">
-              <p className="text-[13px] font-semibold text-white truncate drop-shadow-lg">
-                {title}
-              </p>
             </div>
           </div>
         </div>
@@ -301,7 +312,17 @@ export default function MediaCard({
         <p className="text-[13px] font-medium text-white/80 truncate group-hover:text-white transition-colors leading-tight">
           {title}
         </p>
-        {year && <p className="text-[11px] text-white/30 mt-0.5">{year}</p>}
+        <div className="flex items-center gap-1.5 mt-0.5">
+          {year && <span className="text-[11px] text-white/30">{year}</span>}
+          {(item as any).certification && (
+            <>
+              {year && <span className="text-white/15 text-[11px]">&#8226;</span>}
+              <span className="text-[10px] font-bold text-white/40 border border-white/15 rounded px-1 py-px leading-none">
+                {(item as any).certification}
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

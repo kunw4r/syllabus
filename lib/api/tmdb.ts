@@ -67,6 +67,28 @@ export async function getTVContentRating(id: number | string): Promise<string | 
   return us?.rating || null;
 }
 
+/** Batch-enrich items with US certification (mutates items in-place, returns same array) */
+export async function enrichWithCertifications(
+  items: any[],
+  mediaType: 'movie' | 'tv' = 'movie',
+): Promise<any[]> {
+  const BATCH = 8;
+  for (let i = 0; i < items.length; i += BATCH) {
+    const batch = items.slice(i, i + BATCH);
+    const certs = await Promise.all(
+      batch.map((item) =>
+        mediaType === 'movie'
+          ? getMovieContentRating(item.id)
+          : getTVContentRating(item.id)
+      )
+    );
+    batch.forEach((item, idx) => {
+      if (certs[idx]) item.certification = certs[idx];
+    });
+  }
+  return items;
+}
+
 /** Fetch YouTube trailer key for a TV show (returns null if none found) */
 export async function getTVTrailer(id: number | string): Promise<string | null> {
   const data = await tmdbCached(`/tv/${id}/videos`);

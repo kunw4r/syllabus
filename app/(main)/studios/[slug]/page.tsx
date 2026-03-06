@@ -16,6 +16,7 @@ import {
   getTopRatedByLanguage,
   getNewReleasesByCompany,
   getNewReleasesByLanguage,
+  enrichWithCertifications,
 } from '@/lib/api/tmdb';
 import {
   applyStoredScores,
@@ -147,6 +148,11 @@ export default function StudioPage() {
     enrichItemsWithRatings(p1, 'movie').then(setPopular);
     enrichItemsWithRatings(top, 'movie').then(setTopRated);
     enrichItemsWithRatings(recent, 'movie').then(setNewReleases);
+
+    // Enrich visible items with content ratings (PG, R, etc.)
+    enrichWithCertifications(p1, 'movie').then(() => setPopular([...p1]));
+    enrichWithCertifications(top, 'movie').then(() => setTopRated([...top]));
+    enrichWithCertifications(recent, 'movie').then(() => setNewReleases([...recent]));
   }, []);
 
   const fetchTV = useCallback(async (s: Studio) => {
@@ -161,6 +167,7 @@ export default function StudioPage() {
     setTvLoaded(true);
 
     enrichItemsWithRatings(data, 'tv').then(setTvPopular);
+    enrichWithCertifications(data, 'tv').then(() => setTvPopular([...data]));
   }, [tvLoaded]);
 
   useEffect(() => {
