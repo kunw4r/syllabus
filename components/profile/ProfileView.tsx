@@ -131,10 +131,10 @@ function StatCard({ icon: Icon, label, value, color = 'text-white' }: {
   color?: string;
 }) {
   return (
-    <div className="glass rounded-2xl p-4 flex flex-col items-center gap-1">
+    <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-4 flex flex-col items-center gap-1.5 hover:bg-white/[0.05] transition-colors">
       <Icon size={18} className={color} />
       <span className="text-2xl font-black text-white">{value}</span>
-      <span className="text-[10px] uppercase tracking-wider text-white/30">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-white/25">{label}</span>
     </div>
   );
 }
@@ -167,7 +167,7 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Rating stats */}
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-3 flex items-center gap-2">
             <Star size={14} className="text-gold" /> Rating Stats
           </h3>
@@ -183,7 +183,7 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
         </div>
 
         {/* Top genres */}
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-3 flex items-center gap-2">
             <TrendingUp size={14} className="text-accent" /> Top Genres
           </h3>
@@ -210,7 +210,7 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
 
       {/* Recent activity */}
       {activity.length > 0 && (
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
             <Activity size={14} className="text-accent" /> Recent Activity
           </h3>
@@ -242,7 +242,7 @@ function OverviewTab({ stats, activity, isOwnProfile, discoverWeekly }: {
 
       {/* Discover Weekly */}
       {isOwnProfile && discoverWeekly.length > 0 && (
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
             <Sparkles size={14} className="text-purple-400" /> Discover Weekly
           </h3>
@@ -303,9 +303,9 @@ function LibraryTab({ library }: { library: LibraryItem[] }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="glass rounded-2xl p-8 text-center">
-          <Library size={32} className="mx-auto mb-2 text-white/10" />
-          <p className="text-white/30 text-sm">No items yet</p>
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-10 text-center">
+          <Library size={36} className="mx-auto mb-3 text-white/[0.06]" />
+          <p className="text-white/25 text-sm">No items yet</p>
         </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
@@ -363,9 +363,9 @@ function PeopleList({ people, title, onBlend }: {
 
   if (people.length === 0) {
     return (
-      <div className="glass rounded-2xl p-8 text-center">
-        <Users size={32} className="mx-auto mb-2 text-white/10" />
-        <p className="text-white/30 text-sm">No {title.toLowerCase()} yet</p>
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-10 text-center">
+        <Users size={36} className="mx-auto mb-3 text-white/[0.06]" />
+        <p className="text-white/25 text-sm">No {title.toLowerCase()} yet</p>
       </div>
     );
   }
@@ -373,7 +373,7 @@ function PeopleList({ people, title, onBlend }: {
   return (
     <div className="space-y-2">
       {people.map(p => (
-        <div key={p.id} className="glass rounded-2xl p-4 flex items-center gap-4 hover:bg-white/5 transition-colors">
+        <div key={p.id} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 flex items-center gap-4 hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-200">
           <button onClick={() => router.push(`/profile/${p.id}`)} className="flex items-center gap-4 flex-1 min-w-0">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-dark-700 ring-2 ring-white/10 shrink-0 flex items-center justify-center">
               {p.avatar_url ? (
@@ -432,7 +432,7 @@ function BlendTab({ blend, following, onSelectFriend }: {
       </div>
 
       {/* Compatibility score */}
-      <div className="glass rounded-3xl p-6 text-center bg-gradient-to-br from-purple-500/10 via-transparent to-accent/10">
+      <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.06] rounded-3xl p-8 text-center bg-gradient-to-br from-purple-500/[0.08] via-transparent to-accent/[0.06] relative overflow-hidden">
         <div className="text-6xl font-black bg-gradient-to-r from-purple-400 to-accent bg-clip-text text-transparent mb-2">
           {blend.compatibility}%
         </div>
@@ -446,7 +446,7 @@ function BlendTab({ blend, following, onSelectFriend }: {
 
       {/* Shared genres */}
       {blend.sharedGenres.length > 0 && (
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-3">Shared Genres</h3>
           <div className="flex flex-wrap gap-2">
             {blend.sharedGenres.map(g => (
@@ -460,7 +460,7 @@ function BlendTab({ blend, following, onSelectFriend }: {
 
       {/* Blend recommendations */}
       {blend.blendRecs.length > 0 && (
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
             <Sparkles size={14} className="text-purple-400" /> Watch Together
           </h3>
@@ -487,7 +487,7 @@ function BlendTab({ blend, following, onSelectFriend }: {
 
       {/* Shared titles */}
       {blend.shared.length > 0 && (
-        <div className="glass rounded-2xl p-5">
+        <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white/40 mb-4">Shared Titles</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {blend.shared.slice(0, 12).map((item: any) => (
@@ -708,14 +708,16 @@ export default function ProfileView({ userId }: { userId?: string }) {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* ═══ PROFILE HEADER ═══ */}
-      <div className="relative glass rounded-3xl p-6 sm:p-8 overflow-hidden">
+      <div className="relative bg-white/[0.02] backdrop-blur-sm border border-white/[0.06] rounded-3xl p-6 sm:p-8 overflow-hidden">
         {/* Decorative gradient bg */}
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-purple-500/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.08] via-transparent to-purple-500/[0.06] pointer-events-none" />
+        {/* Ambient glow */}
+        <div className="absolute -top-20 -left-20 w-60 h-60 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative flex flex-col sm:flex-row items-center gap-6">
+        <div className="relative flex flex-col sm:flex-row items-center gap-7">
           {/* Avatar */}
           <div className="relative group">
-            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-accent/30 bg-dark-700 flex items-center justify-center">
+            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden ring-[3px] ring-accent/25 bg-dark-700 flex items-center justify-center shadow-xl shadow-black/30">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -731,13 +733,13 @@ export default function ProfileView({ userId }: { userId?: string }) {
                   }}
                 />
               ) : (
-                <User size={48} className="text-white/20" />
+                <User size={52} className="text-white/15" />
               )}
             </div>
             {isOwnProfile && (
               <button
                 onClick={() => { setShowAvatarPicker(!showAvatarPicker); setEditing(true); setEditForm({ ...profile }); }}
-                className="absolute bottom-0 right-0 bg-accent rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                className="absolute bottom-1 right-1 bg-accent hover:bg-accent/80 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all shadow-lg"
               >
                 <Edit3 size={14} />
               </button>
@@ -749,14 +751,14 @@ export default function ProfileView({ userId }: { userId?: string }) {
             {editing ? (
               <div className="space-y-3">
                 <input
-                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-lg font-bold w-full max-w-xs focus:outline-none focus:border-accent"
+                  className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-lg font-bold w-full max-w-xs outline-none focus:border-accent/40 transition-colors"
                   placeholder="Display name"
                   value={editForm.display_name || ''}
                   onChange={e => setEditForm(f => ({ ...f, display_name: e.target.value }))}
                   maxLength={50}
                 />
                 <textarea
-                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white/70 text-sm w-full max-w-md resize-none focus:outline-none focus:border-accent"
+                  className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white/70 text-sm w-full max-w-md resize-none outline-none focus:border-accent/40 transition-colors"
                   placeholder="Bio -- tell people about your taste..."
                   rows={2}
                   value={editForm.bio || ''}
@@ -764,34 +766,34 @@ export default function ProfileView({ userId }: { userId?: string }) {
                   maxLength={500}
                 />
                 <div className="flex gap-2">
-                  <button onClick={handleSaveProfile} className="bg-accent hover:bg-accent/80 text-white px-4 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors">
+                  <button onClick={handleSaveProfile} className="bg-accent hover:bg-accent/80 text-white px-5 py-2 rounded-xl text-sm font-medium flex items-center gap-1.5 transition-colors">
                     <Check size={14} /> Save
                   </button>
-                  <button onClick={() => { setEditing(false); setShowAvatarPicker(false); }} className="bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-lg text-sm flex items-center gap-1.5 transition-colors">
+                  <button onClick={() => { setEditing(false); setShowAvatarPicker(false); }} className="bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.06] text-white px-5 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-colors">
                     <X size={14} /> Cancel
                   </button>
                 </div>
               </div>
             ) : (
               <>
-                <h1 className="text-2xl sm:text-3xl font-black text-white">
+                <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight">
                   {profile.display_name || profile.username}
                 </h1>
                 {profile.display_name && (
-                  <p className="text-sm text-white/40 mt-0.5">@{profile.username}</p>
+                  <p className="text-sm text-white/30 mt-1">@{profile.username}</p>
                 )}
                 {profile.bio && (
-                  <p className="text-sm text-white/50 mt-2 max-w-md">{profile.bio}</p>
+                  <p className="text-sm text-white/45 mt-2.5 max-w-md leading-relaxed">{profile.bio}</p>
                 )}
-                <div className="flex items-center gap-4 mt-3 justify-center sm:justify-start text-sm">
-                  <button onClick={() => setTab('followers')} className="text-white/50 hover:text-white transition-colors">
-                    <strong className="text-white">{followers.length}</strong> followers
+                <div className="flex items-center gap-5 mt-4 justify-center sm:justify-start text-sm">
+                  <button onClick={() => setTab('followers')} className="text-white/40 hover:text-white transition-colors">
+                    <strong className="text-white font-black">{followers.length}</strong> followers
                   </button>
-                  <button onClick={() => setTab('following')} className="text-white/50 hover:text-white transition-colors">
-                    <strong className="text-white">{following.length}</strong> following
+                  <button onClick={() => setTab('following')} className="text-white/40 hover:text-white transition-colors">
+                    <strong className="text-white font-black">{following.length}</strong> following
                   </button>
-                  <span className="text-white/50">
-                    <strong className="text-white">{stats.total}</strong> in library
+                  <span className="text-white/40">
+                    <strong className="text-white font-black">{stats.total}</strong> in library
                   </span>
                 </div>
               </>
@@ -799,36 +801,36 @@ export default function ProfileView({ userId }: { userId?: string }) {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap shrink-0">
             {isOwnProfile ? (
               <>
                 <button
                   onClick={() => { setEditing(true); setEditForm({ ...profile }); }}
-                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                  className="bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                 >
-                  <Settings size={16} /> Edit Profile
+                  <Settings size={15} /> Edit Profile
                 </button>
                 <button
                   onClick={signOut}
-                  className="bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-white/40 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                  className="bg-white/[0.03] hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-white/35 border border-white/[0.06] px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                 >
-                  <LogOut size={16} /> Sign Out
+                  <LogOut size={15} /> Sign Out
                 </button>
               </>
             ) : user ? (
               iFollow ? (
                 <button
                   onClick={handleUnfollow}
-                  className="bg-white/10 hover:bg-red-500/20 hover:text-red-400 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                  className="bg-white/[0.06] hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-white border border-white/[0.06] px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all"
                 >
-                  <UserMinus size={16} /> Unfollow
+                  <UserMinus size={15} /> Unfollow
                 </button>
               ) : (
                 <button
                   onClick={handleFollow}
-                  className="bg-accent hover:bg-accent/80 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                  className="bg-accent hover:bg-accent/80 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
                 >
-                  <UserPlus size={16} /> Follow
+                  <UserPlus size={15} /> Follow
                 </button>
               )
             ) : null}
@@ -846,7 +848,7 @@ export default function ProfileView({ userId }: { userId?: string }) {
       </div>
 
       {/* ═══ TABS ═══ */}
-      <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
         {([
           { key: 'overview', label: 'Overview', icon: BarChart },
           { key: 'library', label: 'Library', icon: Library },
@@ -857,8 +859,10 @@ export default function ProfileView({ userId }: { userId?: string }) {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              tab === t.key ? 'bg-accent text-white' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+              tab === t.key
+                ? 'bg-accent text-white'
+                : 'bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white border border-white/[0.06]'
             }`}
           >
             <t.icon size={16} /> {t.label}

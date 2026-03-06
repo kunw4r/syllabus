@@ -59,12 +59,12 @@ function UserRow({
   onBlend?: () => void;
 }) {
   return (
-    <div className="glass rounded-2xl p-4 flex items-center gap-4 hover:bg-white/5 transition-colors">
+    <div className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 flex items-center gap-4 hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-200">
       <button
         onClick={onClick}
-        className="flex items-center gap-3 flex-1 min-w-0"
+        className="flex items-center gap-3.5 flex-1 min-w-0"
       >
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-dark-700 ring-2 ring-white/10 shrink-0 flex items-center justify-center">
+        <div className="w-11 h-11 rounded-full overflow-hidden bg-dark-700 ring-2 ring-white/[0.08] shrink-0 flex items-center justify-center">
           {u.avatar_url ? (
             <img
               src={u.avatar_url}
@@ -80,11 +80,11 @@ function UserRow({
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white truncate">
+          <p className="text-sm font-bold text-white truncate">
             {u.display_name || u.username}
           </p>
           {u.display_name && (
-            <p className="text-xs text-white/30 truncate">@{u.username}</p>
+            <p className="text-xs text-white/25 truncate">@{u.username}</p>
           )}
         </div>
       </button>
@@ -92,24 +92,24 @@ function UserRow({
         {showBlend && (
           <button
             onClick={onBlend}
-            className="bg-gradient-to-r from-purple-500/20 to-accent/20 hover:from-purple-500/30 hover:to-accent/30 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all"
+            className="bg-gradient-to-r from-purple-500/20 to-accent/20 hover:from-purple-500/30 hover:to-accent/30 border border-purple-500/20 text-white px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all"
           >
-            <Shuffle size={14} /> Blend
+            <Shuffle size={13} /> Blend
           </button>
         )}
         {isFollowed ? (
           <button
             onClick={onUnfollow}
-            className="bg-white/10 hover:bg-red-500/20 hover:text-red-400 text-white/50 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
+            className="bg-white/[0.06] hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-white/50 border border-white/[0.06] px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all"
           >
-            <UserMinus size={14} /> Unfollow
+            <UserMinus size={13} /> Unfollow
           </button>
         ) : onFollow ? (
           <button
             onClick={onFollow}
-            className="bg-accent hover:bg-accent/80 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
+            className="bg-accent hover:bg-accent/80 text-white px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors"
           >
-            <UserPlus size={14} /> Follow
+            <UserPlus size={13} /> Follow
           </button>
         ) : null}
       </div>
@@ -142,15 +142,15 @@ function ActivityFeed({
         return (
           <div
             key={a.id}
-            className="glass rounded-2xl p-4 hover:bg-white/5 transition-colors"
+            className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-200"
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3.5">
               {/* Avatar */}
               <button
                 onClick={() => router.push(`/profile/${a.user_id}`)}
                 className="shrink-0"
               >
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-dark-700 ring-2 ring-white/10 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-full overflow-hidden bg-dark-700 ring-2 ring-white/[0.08] flex items-center justify-center">
                   {profile?.avatar_url ? (
                     <img
                       src={profile.avatar_url}
@@ -172,11 +172,11 @@ function ActivityFeed({
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => router.push(`/profile/${a.user_id}`)}
-                    className="text-sm font-semibold text-white hover:text-accent transition-colors"
+                    className="text-sm font-bold text-white hover:text-accent transition-colors"
                   >
                     {profile?.username || 'Someone'}
                   </button>
-                  <span className="text-sm text-white/40">
+                  <span className="text-sm text-white/35">
                     {a.action === 'added' && 'added'}
                     {a.action === 'rated' && 'rated'}
                     {a.action === 'reviewed' && 'reviewed'}
@@ -204,26 +204,26 @@ function ActivityFeed({
                 </div>
 
                 {a.rating && (
-                  <div className="inline-flex items-center gap-1 mt-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 shadow-lg" style={{ background: getRatingBg(Number(a.rating)), boxShadow: getRatingGlow(Number(a.rating)) }}>
-                    <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(a.rating)) }} />
-                    <span className="text-xs font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(a.rating)) }}>
+                  <div className="inline-flex items-center gap-1 mt-1.5 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1" style={{ background: getRatingBg(Number(a.rating)), boxShadow: getRatingGlow(Number(a.rating)) }}>
+                    <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(a.rating)) }} />
+                    <span className="text-xs font-bold" style={{ color: getRatingHex(Number(a.rating)) }}>
                       {a.rating}/10
                     </span>
                   </div>
                 )}
 
                 {a.review && (
-                  <p className="text-xs text-white/40 mt-1 line-clamp-2">
+                  <p className="text-xs text-white/35 mt-1.5 line-clamp-2 italic">
                     &ldquo;{a.review}&rdquo;
                   </p>
                 )}
 
-                <span className="text-[10px] text-white/20 mt-1 block">
+                <span className="text-[10px] text-white/15 mt-1.5 block">
                   {timeAgo(a.created_at)}
                 </span>
               </div>
 
-              {/* Poster thumbnail */}
+              {/* Poster thumbnail — bigger */}
               {a.poster_url && (
                 <button
                   onClick={() => {
@@ -232,12 +232,12 @@ function ActivityFeed({
                         `/details/${a.media_type}/${a.media_id}`,
                       );
                   }}
-                  className="shrink-0"
+                  className="shrink-0 group"
                 >
                   <img
                     src={a.poster_url}
                     alt=""
-                    className="w-10 h-14 rounded-lg object-cover ring-1 ring-white/10"
+                    className="w-12 h-[4.5rem] rounded-xl object-cover ring-1 ring-white/[0.08] group-hover:ring-accent/40 transition-all"
                   />
                 </button>
               )}
@@ -259,9 +259,9 @@ function EmptyState({
   text: string;
 }) {
   return (
-    <div className="glass rounded-2xl p-8 text-center">
-      <Icon size={32} className="mx-auto mb-2 text-white/10" />
-      <p className="text-white/30 text-sm">{text}</p>
+    <div className="bg-white/[0.02] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-10 text-center">
+      <Icon size={36} className="mx-auto mb-3 text-white/[0.06]" />
+      <p className="text-white/25 text-sm">{text}</p>
     </div>
   );
 }
@@ -383,45 +383,51 @@ export default function SocialPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-          <Users size={28} className="text-accent" /> Social
-        </h1>
-        <p className="text-sm text-white/40 mt-1">
+      <div className="mb-2">
+        <div className="flex items-center gap-3 mb-2">
+          <Users size={28} className="text-accent" />
+          <h1 className="text-3xl font-black">Social</h1>
+        </div>
+        <p className="text-white/40 text-sm">
           Find friends, see what they&apos;re watching
         </p>
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <form onSubmit={handleSearch} className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search
             size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
           />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search users by username..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-2.5 text-white text-sm placeholder:text-white/25 outline-none focus:border-accent/40 transition-colors"
           />
         </div>
         <button
           type="submit"
           disabled={searching}
-          className="bg-accent hover:bg-accent/80 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+          className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors flex items-center gap-2"
         >
-          {searching ? '...' : 'Search'}
+          {searching ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Search size={14} />
+          )}
+          Search
         </button>
       </form>
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="glass rounded-2xl p-4 space-y-2">
-          <h3 className="text-sm font-semibold text-white/40 mb-2">
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 space-y-2">
+          <h3 className="text-sm font-semibold text-white/30 mb-3 uppercase tracking-wider">
             Search Results
           </h3>
           {searchResults.map((u: any) => (
@@ -438,7 +444,7 @@ export default function SocialPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1">
+      <div className="flex gap-2">
         {[
           { key: 'feed', label: 'Activity Feed', icon: Activity },
           {
@@ -455,10 +461,10 @@ export default function SocialPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
               tab === t.key
                 ? 'bg-accent text-white'
-                : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                : 'bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white border border-white/[0.06]'
             }`}
           >
             <t.icon size={16} /> {t.label}
