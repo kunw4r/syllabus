@@ -136,7 +136,7 @@ export default function MediaCard({
   if (mode === 'landscape') {
     return (
       <div
-        className="group/card relative cursor-pointer shrink-0 w-[280px] sm:w-[320px] min-w-0 z-0 hover:z-50"
+        className="group/card relative cursor-pointer shrink-0 w-[320px] sm:w-[380px] min-w-0 z-0 hover:z-50"
         style={{ perspective: '800px' }}
         onClick={handleClick}
       >
