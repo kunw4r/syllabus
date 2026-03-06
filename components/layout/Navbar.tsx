@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import SearchBar from '@/components/ui/SearchBar';
 import {
   HomeIcon, CompassIcon, LibraryIcon, SocialIcon, ProfileIcon,
   TrophyIcon, FilmIcon, TvIcon, BookIcon, ActorsIcon, AwardsIcon,
@@ -124,8 +125,13 @@ export default function Navbar() {
             })}
           </div>
 
+          {/* Search */}
+          <div className={`ml-auto transition-all duration-500 ${scrolled ? 'w-44' : 'w-52'}`}>
+            <SearchBar variant="navbar" />
+          </div>
+
           {/* Auth — profile pic or sign in */}
-          <div className={`ml-auto flex items-center transition-all duration-500 ${scrolled ? 'gap-1' : 'gap-3'}`}>
+          <div className={`flex items-center transition-all duration-500 ${scrolled ? 'gap-1 ml-2' : 'gap-3 ml-3'}`}>
             {user ? (
               <Link
                 href="/profile"
@@ -170,6 +176,9 @@ export default function Navbar() {
           <Link href="/" className="shrink-0">
             <Image src="/logo.png" alt="Syllabus" width={112} height={28} className="h-7 w-auto" priority />
           </Link>
+          <div className="flex-1 ml-3">
+            <SearchBar variant="navbar" />
+          </div>
         </div>
       </header>
 
