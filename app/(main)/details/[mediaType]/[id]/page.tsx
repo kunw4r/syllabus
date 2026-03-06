@@ -1117,10 +1117,10 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
 
-            {/* Title + Play/Add overlaid at bottom-left */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-10">
+            {/* Title overlaid at bottom-left */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-10 z-10">
               <h1 className="font-serif text-3xl sm:text-4xl lg:text-6xl text-white drop-shadow-lg mb-4">{title}</h1>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {trailer && (
                   <button
                     onClick={() => setShowTrailer(!showTrailer)}
@@ -1131,11 +1131,11 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                 )}
                 <button
                   onClick={handleQuickAdd}
-                  disabled={quickAdded || quickAdding}
+                  disabled={quickAdding}
                   className={`w-11 h-11 rounded-full border-2 flex items-center justify-center transition-all duration-300 backdrop-blur-sm ${
                     quickAdded
-                      ? 'border-accent/60 bg-accent/10'
-                      : 'border-white/40 bg-white/10 hover:border-white/70'
+                      ? 'border-accent/60 bg-accent/20'
+                      : 'border-white/40 bg-white/10 hover:border-white/70 hover:bg-white/20'
                   }`}
                   title={quickAdded ? 'In your watchlist' : 'Add to watchlist'}
                 >
@@ -1147,27 +1147,25 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                     <Plus size={20} className="text-white" />
                   )}
                 </button>
+
+                {/* Ratings inline next to Play/Add */}
+                <RatingCluster
+                  avgScore={avgScore}
+                  tmdbScore={data.vote_average}
+                  mediaType={mediaType}
+                  dataId={data.id}
+                  extRatings={extRatings}
+                  ratingsLoaded={ratingsLoaded}
+                  imdbId={imdbId}
+                  isAnime={isAnime}
+                  malData={malData}
+                  title={title}
+                  getSyllabusScore={getSyllabusScore}
+                />
               </div>
             </div>
           </div>
         </FadeInView>
-      </div>
-
-      {/* ── Ratings Row ── */}
-      <div className="px-4 sm:px-6 lg:px-10 mt-6 max-w-7xl mx-auto">
-        <RatingCluster
-          avgScore={avgScore}
-          tmdbScore={data.vote_average}
-          mediaType={mediaType}
-          dataId={data.id}
-          extRatings={extRatings}
-          ratingsLoaded={ratingsLoaded}
-          imdbId={imdbId}
-          isAnime={isAnime}
-          malData={malData}
-          title={title}
-          getSyllabusScore={getSyllabusScore}
-        />
       </div>
 
       {/* ── Inline Trailer Player ── */}
