@@ -26,15 +26,18 @@ export function getRatingHex(val: number): string {
   return '#00e5ff';                  // neon cyan — peak electric
 }
 
-// Badge background — dark frosted glass with subtle color tint
-// Parses the neon hex and mixes it into the dark bg at low opacity
+// Badge background — dark glass with subtle color tint
 export function getRatingBg(val?: number): string {
-  if (val == null) return 'rgba(0, 0, 0, 0.55)';
+  if (val == null) return 'rgba(0, 0, 0, 0.6)';
   const hex = getRatingHex(val);
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  return `linear-gradient(135deg, rgba(${r},${g},${b},0.12), rgba(0,0,0,0.55))`;
+  // Mix ~8% of the neon color into a dark base
+  const mr = Math.round(r * 0.08);
+  const mg = Math.round(g * 0.08);
+  const mb = Math.round(b * 0.08);
+  return `rgba(${mr}, ${mg}, ${mb}, 0.65)`;
 }
 
 // Neon glow around the badge — same cyan, glow intensifies with score
