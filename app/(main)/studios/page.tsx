@@ -137,6 +137,8 @@ const TIER_2 = [
   {
     slug: 'lucasfilm',
     name: 'Lucasfilm',
+    image: '/studios/lucasfilm-card.png',
+    imagePosition: 'center center',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(70,55,20,0.5) 0%, rgba(35,28,10,0.8) 50%, rgba(14,12,6,0.95) 100%)',
     border: 'rgba(200,160,60,0.20)',
     glow: '0 0 40px rgba(160,120,40,0.12), 0 0 80px rgba(120,90,30,0.06)',
@@ -169,6 +171,8 @@ const TIER_3 = [
   {
     slug: 'blumhouse',
     name: 'Blumhouse',
+    image: '/studios/blumhouse-card.png',
+    imagePosition: 'center center',
     gradient: 'radial-gradient(ellipse at 50% 40%, rgba(100,15,15,0.5) 0%, rgba(50,8,8,0.8) 50%, rgba(18,5,5,0.95) 100%)',
     border: 'rgba(180,40,40,0.22)',
     glow: '0 0 40px rgba(150,25,25,0.15), 0 0 80px rgba(120,15,15,0.08)',
