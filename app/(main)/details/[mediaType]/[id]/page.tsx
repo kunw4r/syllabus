@@ -980,18 +980,20 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   const title = data.title || data.name;
   const year = (data.release_date || data.first_air_date || '').slice(0, 4);
   const genres = data.genres?.map((g: any) => g.name).join(', ');
-  const recommendations = data.recommendations?.results?.slice(0, 10) || [];
+  const recommendations = data.recommendations?.results?.slice(0, 20) || [];
   const imdbId = extRatings?.imdb_id || data.external_ids?.imdb_id;
 
-  // Trailer
-  const trailer = (() => {
-    const vids = (data.videos?.results || []).filter((v: any) => v.site === 'YouTube');
-    return vids.find((v: any) => v.type === 'Trailer' && v.name.toLowerCase().includes('official'))
-      || vids.find((v: any) => v.type === 'Trailer')
-      || vids.find((v: any) => v.type === 'Teaser')
-      || vids[0]
-      || null;
-  })();
+  // Trailers & videos
+  const allVideos = (data.videos?.results || []).filter((v: any) => v.site === 'YouTube');
+  const trailer = allVideos.find((v: any) => v.type === 'Trailer' && v.name.toLowerCase().includes('official'))
+    || allVideos.find((v: any) => v.type === 'Trailer')
+    || allVideos.find((v: any) => v.type === 'Teaser')
+    || allVideos[0]
+    || null;
+  // Deduplicated list: featured trailer first, then others (up to 6 total)
+  const videoList = trailer
+    ? [trailer, ...allVideos.filter((v: any) => v.key !== trailer.key)].slice(0, 6)
+    : allVideos.slice(0, 6);
 
   // Streaming providers
   const wpData = data['watch/providers']?.results;
@@ -1085,7 +1087,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 
           {/* Overview */}
           <FadeInView delay={0.2}>
-            <p className="text-white/60 leading-relaxed mb-6 max-w-2xl">{data.overview}</p>
+            <p className="text-white/60 leading-relaxed mb-6 max-w-3xl text-[15px]">{data.overview}</p>
           </FadeInView>
 
           {/* Quick Facts card (mobile only) */}
@@ -1093,23 +1095,44 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             <QuickFactsCard data={data} extRatings={extRatings} ratingsLoaded={ratingsLoaded} />
           </div>
 
-          {/* Trailer */}
-          {trailer && (
+          {/* Trailers & More */}
+          {videoList.length > 0 && (
             <FadeInView>
-              <div className="mb-8">
-                <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider flex items-center gap-2">
-                  <Play size={14} /> Trailer
-                </h3>
-                <div className="relative w-full max-w-4xl aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${trailer.key}?rel=0&modestbranding=1`}
-                    title={trailer.name}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full"
-                  />
+              <div className="mb-10">
+                <h3 className="text-lg font-bold text-white mb-4">Trailers & More</h3>
+                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
+                  {videoList.map((vid: any) => (
+                    <a
+                      key={vid.key}
+                      href={`https://www.youtube.com/watch?v=${vid.key}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 group/vid"
+                    >
+                      <div className="relative w-[320px] sm:w-[380px] aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
+                        <img
+                          src={`https://img.youtube.com/vi/${vid.key}/hqdefault.jpg`}
+                          alt={vid.name}
+                          className="w-full h-full object-cover group-hover/vid:scale-105 transition-transform duration-500"
+                        />
+                        {/* Dark overlay */}
+                        <div className="absolute inset-0 bg-black/30 group-hover/vid:bg-black/10 transition-colors duration-300" />
+                        {/* Play icon */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover/vid:bg-white/30 group-hover/vid:scale-110 transition-all duration-300">
+                            <Play size={20} className="text-white ml-0.5" fill="white" />
+                          </div>
+                        </div>
+                        {/* Type badge */}
+                        <div className="absolute top-3 left-3 flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">{vid.type}</span>
+                          {vid.official && <span className="text-[9px] font-medium bg-white/10 text-white/60 px-1.5 py-0.5 rounded">Official</span>}
+                        </div>
+                      </div>
+                      <p className="text-xs text-white/50 mt-2 max-w-[320px] sm:max-w-[380px] truncate group-hover/vid:text-white/70 transition-colors">{vid.name}</p>
+                    </a>
+                  ))}
                 </div>
-                <p className="text-[10px] text-white/20 mt-2">{trailer.name}</p>
               </div>
             </FadeInView>
           )}
@@ -1153,12 +1176,13 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       {recommendations.length > 0 && (
         <FadeInView>
           <div className="mt-16">
-            <h2 className="font-serif text-xl font-bold mb-6">You Might Also Like</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            <ScrollRow title="You Might Also Like">
               {recommendations.map((r: any) => (
-                <MediaCard key={r.id} item={r} mediaType={mediaType as 'movie' | 'tv'} />
+                <div key={r.id} className="flex-shrink-0 w-[150px]">
+                  <MediaCard item={r} mediaType={mediaType as 'movie' | 'tv'} />
+                </div>
               ))}
-            </div>
+            </ScrollRow>
           </div>
         </FadeInView>
       )}
