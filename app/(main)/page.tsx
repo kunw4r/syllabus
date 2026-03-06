@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Library, Eye, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { getLibrary } from '@/lib/api/library';
-import { getTrendingMovies, getTrendingTV } from '@/lib/api/tmdb';
+import {
+  getTrendingMovies, getTrendingTV,
+  getUpcomingMovies, getNowPlayingMovies, getPopularMovies, getTopRatedMovies,
+  getPopularTV, getTopRatedTV,
+} from '@/lib/api/tmdb';
 import { getTrendingBooks } from '@/lib/api/books';
 import { enrichItemsWithRatings, loadStaticScoreDB, applyStoredScores } from '@/lib/scoring';
 import { getAllRecommendations, type RecommendationRow as RecRowType } from '@/lib/services/recommendations';
@@ -40,6 +44,12 @@ export default function Home() {
   const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
   const [trendingTV, setTrendingTV] = useState<any[]>([]);
   const [trendingBooks, setTrendingBooks] = useState<any[]>([]);
+  const [nowPlaying, setNowPlaying] = useState<any[]>([]);
+  const [upcoming, setUpcoming] = useState<any[]>([]);
+  const [popularMovies, setPopularMovies] = useState<any[]>([]);
+  const [topRatedMovies, setTopRatedMovies] = useState<any[]>([]);
+  const [popularTV, setPopularTV] = useState<any[]>([]);
+  const [topRatedTV, setTopRatedTV] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recommendations, setRecommendations] = useState<RecRowType[]>([]);
@@ -48,19 +58,36 @@ export default function Home() {
     setLoading(true);
     await loadStaticScoreDB();
 
-    const [movies, tv, books] = await Promise.all([
+    const [movies, tv, books, nowPlayingArr, upcomingArr, popularMoviesArr, topRatedMoviesArr, popularTVArr, topRatedTVArr] = await Promise.all([
       getTrendingMovies(),
       getTrendingTV(),
       getTrendingBooks(),
+      getNowPlayingMovies().catch(() => []),
+      getUpcomingMovies().catch(() => []),
+      getPopularMovies().catch(() => []),
+      getTopRatedMovies().catch(() => []),
+      getPopularTV().catch(() => []),
+      getTopRatedTV().catch(() => []),
     ]);
 
     setTrendingMovies(applyStoredScores(movies, 'movie'));
     setTrendingTV(applyStoredScores(tv, 'tv'));
     setTrendingBooks(books);
+    setNowPlaying(applyStoredScores(nowPlayingArr, 'movie'));
+    setUpcoming(applyStoredScores(upcomingArr, 'movie'));
+    setPopularMovies(applyStoredScores(popularMoviesArr, 'movie'));
+    setTopRatedMovies(applyStoredScores(topRatedMoviesArr, 'movie'));
+    setPopularTV(applyStoredScores(popularTVArr, 'tv'));
+    setTopRatedTV(applyStoredScores(topRatedTVArr, 'tv'));
     setLoading(false);
 
     enrichItemsWithRatings(movies, 'movie').then(setTrendingMovies);
     enrichItemsWithRatings(tv, 'tv').then(setTrendingTV);
+    enrichItemsWithRatings(nowPlayingArr, 'movie').then(setNowPlaying);
+    enrichItemsWithRatings(popularMoviesArr, 'movie').then(setPopularMovies);
+    enrichItemsWithRatings(topRatedMoviesArr, 'movie').then(setTopRatedMovies);
+    enrichItemsWithRatings(popularTVArr, 'tv').then(setPopularTV);
+    enrichItemsWithRatings(topRatedTVArr, 'tv').then(setTopRatedTV);
 
     if (user) {
       try {
@@ -277,10 +304,40 @@ export default function Home() {
             <FadeInView>
               <EditorialRow title="Trending Movies" items={trendingMovies} mediaType="movie" />
             </FadeInView>
-            <FadeInView delay={0.1}>
+            <FadeInView delay={0.05}>
               <EditorialRow title="Trending TV Shows" items={trendingTV} mediaType="tv" />
             </FadeInView>
-            <FadeInView delay={0.2}>
+            {nowPlaying.length > 0 && (
+              <FadeInView delay={0.1}>
+                <EditorialRow title="Now Playing in Theaters" items={nowPlaying} mediaType="movie" />
+              </FadeInView>
+            )}
+            {upcoming.length > 0 && (
+              <FadeInView delay={0.12}>
+                <EditorialRow title="Coming Soon" items={upcoming} mediaType="movie" />
+              </FadeInView>
+            )}
+            {popularMovies.length > 0 && (
+              <FadeInView delay={0.14}>
+                <EditorialRow title="Popular Movies" items={popularMovies} mediaType="movie" />
+              </FadeInView>
+            )}
+            {topRatedMovies.length > 0 && (
+              <FadeInView delay={0.16}>
+                <EditorialRow title="Top Rated Movies" items={topRatedMovies} mediaType="movie" />
+              </FadeInView>
+            )}
+            {popularTV.length > 0 && (
+              <FadeInView delay={0.18}>
+                <EditorialRow title="Popular TV Shows" items={popularTV} mediaType="tv" />
+              </FadeInView>
+            )}
+            {topRatedTV.length > 0 && (
+              <FadeInView delay={0.2}>
+                <EditorialRow title="Top Rated TV Shows" items={topRatedTV} mediaType="tv" />
+              </FadeInView>
+            )}
+            <FadeInView delay={0.22}>
               <ScrollRow title="Trending Books">
                 {trendingBooks.map((b: any) => (
                   <MediaCard key={b.key || b.google_books_id} item={b} mediaType="book" />
