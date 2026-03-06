@@ -44,10 +44,6 @@ export default function Home() {
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recommendations, setRecommendations] = useState<RecRowType[]>([]);
 
-  const greetName = user?.user_metadata?.username || user?.email?.split('@')[0];
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-
   const load = useCallback(async () => {
     setLoading(true);
     await loadStaticScoreDB();
@@ -74,7 +70,6 @@ export default function Home() {
         if (lib.length >= 3) {
           getAllRecommendations(lib).then((rows) => {
             rows.forEach((row) => {
-              // Items can be mixed media types, apply scores per-type
               const movies = row.items.filter((i: any) => i.media_type !== 'tv');
               const tvShows = row.items.filter((i: any) => i.media_type === 'tv');
               if (movies.length) applyStoredScores(movies, 'movie');
@@ -117,87 +112,128 @@ export default function Home() {
     .map((m) => ({ ...m, media_type: 'movie' }));
 
   return (
-    <div className="space-y-8">
-      {/* Hero Banner */}
+    <div>
+      {/* Hero Banner — full bleed */}
       {!loading && heroItems.length > 0 && (
-        <HeroBanner items={heroItems} />
-      )}
-
-      {/* Greeting */}
-      <FadeInView>
-        <div>
-          <h1 className={`font-black text-white ${heroItems.length > 0 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}`}>
-            {greeting}{greetName ? `, ${greetName}` : ''}
-          </h1>
-          <p className="text-sm text-white/40 mt-1">Discover something new today</p>
+        <div className="-mt-8 mb-10">
+          <HeroBanner items={heroItems} />
         </div>
-      </FadeInView>
-
-      {/* Stats */}
-      {user && library.length > 0 && (
-        <StaggerContainer className="grid grid-cols-3 gap-3">
-          <StaggerItem>
-            <div
-              className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
-              onClick={() => router.push('/library')}
-            >
-              <Library size={20} className="text-accent" />
-              <div>
-                <p className="text-xl font-black">{library.length}</p>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">In Library</p>
-              </div>
-            </div>
-          </StaggerItem>
-          <StaggerItem>
-            <div
-              className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
-              onClick={() => router.push('/library')}
-            >
-              <Eye size={20} className="text-blue-400" />
-              <div>
-                <p className="text-xl font-black">{continueWatching.length}</p>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">In Progress</p>
-              </div>
-            </div>
-          </StaggerItem>
-          <StaggerItem>
-            <div
-              className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
-              onClick={() => router.push('/library')}
-            >
-              <CheckCircle2 size={20} className="text-green-400" />
-              <div>
-                <p className="text-xl font-black">{finishedCount}</p>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">Finished</p>
-              </div>
-            </div>
-          </StaggerItem>
-        </StaggerContainer>
       )}
 
-      {/* Search */}
-      <FadeInView delay={0.1}>
-        <SearchBar onSearch={handleSearch} placeholder="Search movies, TV shows & books..." />
-      </FadeInView>
-
-      {/* Continue Watching — Spotlight shelf */}
-      {continueWatching.length > 0 && (
+      <div className="space-y-10">
+        {/* Search */}
         <FadeInView>
-          <section className="glass-premium rounded-2xl p-5 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-bold text-white">Continue Watching</h2>
-              <button
-                onClick={() => router.push('/library?tab=watching')}
-                className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
+          <SearchBar onSearch={handleSearch} placeholder="Search movies, TV shows & books..." />
+        </FadeInView>
+
+        {/* Stats row */}
+        {user && library.length > 0 && (
+          <StaggerContainer className="grid grid-cols-3 gap-3">
+            <StaggerItem>
+              <div
+                className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
+                onClick={() => router.push('/library')}
               >
-                See all <ChevronRight size={14} />
-              </button>
-            </div>
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-              {continueWatching.map((item) => (
+                <Library size={20} className="text-accent" />
+                <div>
+                  <p className="text-xl font-black">{library.length}</p>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">In Library</p>
+                </div>
+              </div>
+            </StaggerItem>
+            <StaggerItem>
+              <div
+                className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
+                onClick={() => router.push('/library')}
+              >
+                <Eye size={20} className="text-blue-400" />
+                <div>
+                  <p className="text-xl font-black">{continueWatching.length}</p>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">In Progress</p>
+                </div>
+              </div>
+            </StaggerItem>
+            <StaggerItem>
+              <div
+                className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
+                onClick={() => router.push('/library')}
+              >
+                <CheckCircle2 size={20} className="text-green-400" />
+                <div>
+                  <p className="text-xl font-black">{finishedCount}</p>
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Finished</p>
+                </div>
+              </div>
+            </StaggerItem>
+          </StaggerContainer>
+        )}
+
+        {/* Continue Watching */}
+        {continueWatching.length > 0 && (
+          <FadeInView>
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg sm:text-xl font-bold text-white">Continue Watching</h2>
+                <button
+                  onClick={() => router.push('/library?tab=watching')}
+                  className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
+                >
+                  See all <ChevronRight size={14} />
+                </button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+                {continueWatching.map((item) => (
+                  <div
+                    key={item.id}
+                    className="shrink-0 w-[150px] cursor-pointer group"
+                    onClick={() => navigateToItem(item)}
+                  >
+                    <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
+                      {item.poster_url ? (
+                        <img
+                          src={item.poster_url}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
+                          {(item.media_type || 'movie') === 'book' ? '\u{1F4D6}' : '\u{1F3AC}'}
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm text-white/70 truncate group-hover:text-accent transition-colors">
+                      {item.title}
+                    </p>
+                    {item.updated_at && (
+                      <p className="text-[10px] text-white/25">
+                        {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </FadeInView>
+        )}
+
+        {/* Recommendation rows */}
+        {recommendations.length > 0 && (
+          recommendations.map((row, i) => (
+            <FadeInView key={`${row.strategy}-${i}`} delay={i * 0.05}>
+              <RecommendationRow row={row} />
+            </FadeInView>
+          ))
+        )}
+
+        {/* Watchlist */}
+        {watchlist.length > 0 && (
+          <FadeInView>
+            <ScrollRow title="Your Watchlist">
+              {watchlist.map((item) => (
                 <div
                   key={item.id}
-                  className="shrink-0 w-[160px] sm:w-[180px] cursor-pointer group"
+                  className="shrink-0 w-[140px] sm:w-[150px] cursor-pointer group"
                   onClick={() => navigateToItem(item)}
                 >
                   <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
@@ -217,84 +253,37 @@ export default function Home() {
                   <p className="mt-2 text-sm text-white/70 truncate group-hover:text-accent transition-colors">
                     {item.title}
                   </p>
-                  {item.updated_at && (
-                    <p className="text-[10px] text-white/25">
-                      {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </p>
-                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-        </FadeInView>
-      )}
-
-      {/* Recommendation rows */}
-      {recommendations.length > 0 && (
-        recommendations.map((row, i) => (
-          <FadeInView key={`${row.strategy}-${i}`} delay={i * 0.05}>
-            <RecommendationRow row={row} />
-          </FadeInView>
-        ))
-      )}
-
-      {/* Watchlist */}
-      {watchlist.length > 0 && (
-        <FadeInView>
-          <ScrollRow title="Your Watchlist">
-            {watchlist.map((item) => (
-              <div
-                key={item.id}
-                className="shrink-0 w-[140px] sm:w-[160px] cursor-pointer group"
-                onClick={() => navigateToItem(item)}
-              >
-                <div className="aspect-[2/3] rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-accent/50 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/30 transition-all duration-300">
-                  {item.poster_url ? (
-                    <img
-                      src={item.poster_url}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-                      {(item.media_type || 'movie') === 'book' ? '\u{1F4D6}' : '\u{1F3AC}'}
-                    </div>
-                  )}
-                </div>
-                <p className="mt-2 text-sm text-white/70 truncate group-hover:text-accent transition-colors">
-                  {item.title}
-                </p>
-              </div>
-            ))}
-          </ScrollRow>
-        </FadeInView>
-      )}
-
-      {/* Trending */}
-      {loading ? (
-        <>
-          <SkeletonRow />
-          <SkeletonRow />
-          <SkeletonRow />
-        </>
-      ) : (
-        <>
-          <FadeInView>
-            <EditorialRow title="Trending Movies" items={trendingMovies} mediaType="movie" />
-          </FadeInView>
-          <FadeInView delay={0.1}>
-            <EditorialRow title="Trending TV Shows" items={trendingTV} mediaType="tv" />
-          </FadeInView>
-          <FadeInView delay={0.2}>
-            <ScrollRow title="Trending Books">
-              {trendingBooks.map((b: any) => (
-                <MediaCard key={b.key || b.google_books_id} item={b} mediaType="book" />
               ))}
             </ScrollRow>
           </FadeInView>
-        </>
-      )}
+        )}
+
+        {/* Trending */}
+        {loading ? (
+          <>
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+          </>
+        ) : (
+          <>
+            <FadeInView>
+              <EditorialRow title="Trending Movies" items={trendingMovies} mediaType="movie" />
+            </FadeInView>
+            <FadeInView delay={0.1}>
+              <EditorialRow title="Trending TV Shows" items={trendingTV} mediaType="tv" />
+            </FadeInView>
+            <FadeInView delay={0.2}>
+              <ScrollRow title="Trending Books">
+                {trendingBooks.map((b: any) => (
+                  <MediaCard key={b.key || b.google_books_id} item={b} mediaType="book" />
+                ))}
+              </ScrollRow>
+            </FadeInView>
+          </>
+        )}
+      </div>
     </div>
   );
 }
