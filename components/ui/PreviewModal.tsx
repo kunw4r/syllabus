@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Play, Plus, Check, Maximize2 } from 'lucide-react';
+import { X, Play, Plus, Check, Maximize2, ChevronDown, Star } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL, TMDB_IMG, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
@@ -13,6 +13,7 @@ import {
   getTVDetails,
   getMovieContentRating,
   getTVContentRating,
+  getTVSeasonDetails,
 } from '@/lib/api/tmdb';
 
 interface PreviewItem {
@@ -37,6 +38,15 @@ interface PreviewModalProps {
   onClose: () => void;
 }
 
+function getTrailerKey(details: any): string | null {
+  const videos = details?.videos?.results || [];
+  const trailer =
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer' && v.official) ||
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer') ||
+    videos.find((v: any) => v.site === 'YouTube' && v.type === 'Teaser');
+  return trailer?.key || null;
+}
+
 export default function PreviewModal({ item, mediaType, onClose }: PreviewModalProps) {
   const router = useRouter();
   const { user } = useAuth();
@@ -44,6 +54,10 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
   const [added, setAdded] = useState(false);
   const [details, setDetails] = useState<any>(null);
   const [certification, setCertification] = useState<string | null>(null);
+  const [playingTrailer, setPlayingTrailer] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const [seasonData, setSeasonData] = useState<any>(null);
+  const [seasonDropdownOpen, setSeasonDropdownOpen] = useState(false);
 
   const title = item?.title || item?.name || '';
   const rating = item?.unified_rating || item?.vote_average;
@@ -60,7 +74,19 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
     []
   ).slice(0, 4);
 
-  // Fetch extra details (cast, runtime, certification) when modal opens
+  const trailerKey = getTrailerKey(details);
+
+  // Reset state when item changes
+  useEffect(() => {
+    setAdded(false);
+    setPlayingTrailer(false);
+    setDetails(null);
+    setCertification(null);
+    setSeasonData(null);
+    setSelectedSeason(1);
+  }, [item?.id]);
+
+  // Fetch details
   useEffect(() => {
     if (!item?.id) return;
     let cancelled = false;
@@ -80,17 +106,37 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
     return () => { cancelled = true; };
   }, [item?.id, mediaType]);
 
-  const cast = (details?.credits?.cast || []).slice(0, 5).map((c: any) => c.name);
+  // Fetch season episodes for TV
+  useEffect(() => {
+    if (mediaType !== 'tv' || !item?.id || !details) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await getTVSeasonDetails(item.id!, selectedSeason);
+        if (!cancelled) setSeasonData(data);
+      } catch { /* best-effort */ }
+    })();
+
+    return () => { cancelled = true; };
+  }, [item?.id, mediaType, selectedSeason, details]);
+
+  const cast = (details?.credits?.cast || details?.aggregate_credits?.cast || [])
+    .slice(0, 5)
+    .map((c: any) => c.name);
   const directors = (details?.credits?.crew || [])
     .filter((c: any) => c.job === 'Director')
     .slice(0, 2)
     .map((c: any) => c.name);
+  const creators = (details?.created_by || []).slice(0, 2).map((c: any) => c.name);
   const runtime = details?.runtime
     ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`
     : details?.episode_run_time?.[0]
       ? `${details.episode_run_time[0]}m`
       : null;
   const seasons = details?.number_of_seasons;
+  const seasonsList = (details?.seasons || []).filter((s: any) => s.season_number > 0);
+  const episodes = seasonData?.episodes || [];
 
   // Close on Escape
   useEffect(() => {
@@ -134,6 +180,14 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
     }
   };
 
+  const handlePlayTrailer = () => {
+    if (trailerKey) {
+      setPlayingTrailer(true);
+    } else {
+      handleGoToDetail();
+    }
+  };
+
   return (
     <AnimatePresence>
       {item && (
@@ -144,7 +198,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={handleOverlayClick}
-          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto pt-[5vh] pb-10"
+          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto pt-[3vh] sm:pt-[5vh] pb-10"
         >
           <m.div
             initial={{ opacity: 0, scale: 0.92, y: 40 }}
@@ -153,9 +207,16 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             transition={{ type: 'spring', stiffness: 350, damping: 30 }}
             className="relative w-full max-w-3xl rounded-xl overflow-hidden bg-[#181818] shadow-[0_20px_80px_rgba(0,0,0,0.8)] mx-4"
           >
-            {/* ── Backdrop hero ── */}
+            {/* ── Hero: Backdrop or Trailer ── */}
             <div className="relative aspect-[16/9] overflow-hidden">
-              {backdrop ? (
+              {playingTrailer && trailerKey ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              ) : backdrop ? (
                 <img
                   src={backdrop}
                   alt={title}
@@ -165,12 +226,15 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 <div className="w-full h-full bg-dark-700" />
               )}
 
-              {/* Gradient: bottom fade into body */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-transparent via-[55%] to-transparent" />
-              {/* Extra bottom gradient for smooth blend */}
-              <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#181818] to-transparent" />
+              {/* Gradients (hidden during trailer) */}
+              {!playingTrailer && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-transparent via-[55%] to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#181818] to-transparent" />
+                </>
+              )}
 
-              {/* Top-right buttons: expand + close */}
+              {/* Top-right buttons */}
               <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
                 <button
                   onClick={handleGoToDetail}
@@ -187,62 +251,59 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 </button>
               </div>
 
-              {/* Title + action buttons overlaid at bottom of backdrop */}
-              <div className="absolute bottom-0 left-0 right-0 px-8 pb-6 z-10">
-                <h2
-                  className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4"
-                  style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)' }}
-                >
-                  {title}
-                </h2>
-
-                <div className="flex items-center gap-3">
-                  {/* Play button */}
-                  <button
-                    onClick={handleGoToDetail}
-                    className="flex items-center gap-2 bg-white text-black font-bold px-7 py-2.5 rounded-md hover:bg-white/85 transition-all active:scale-[0.97]"
+              {/* Title + action buttons overlaid at bottom */}
+              {!playingTrailer && (
+                <div className="absolute bottom-0 left-0 right-0 px-8 pb-6 z-10">
+                  <h2
+                    className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4"
+                    style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)' }}
                   >
-                    <Play size={20} className="fill-black" />
-                    Play
-                  </button>
+                    {title}
+                  </h2>
 
-                  {/* Add button */}
-                  {user && !added ? (
+                  <div className="flex items-center gap-3">
                     <button
-                      onClick={handleAdd}
-                      className="w-10 h-10 rounded-full border-2 border-white/40 bg-black/30 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/50 transition-all active:scale-90"
-                      title="Add to Watchlist"
+                      onClick={handlePlayTrailer}
+                      className="flex items-center gap-2 bg-white text-black font-bold px-7 py-2.5 rounded-md hover:bg-white/85 transition-all active:scale-[0.97]"
                     >
-                      <Plus size={20} className="text-white" />
+                      <Play size={20} className="fill-black" />
+                      {trailerKey ? 'Trailer' : 'Play'}
                     </button>
-                  ) : added ? (
-                    <div className="w-10 h-10 rounded-full border-2 border-green-500/50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                      <Check size={20} className="text-green-400" />
-                    </div>
-                  ) : null}
 
-                  {/* Rating badge */}
-                  {rating != null && rating > 0 && (
-                    <div
-                      className="ml-2 rounded-md px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-md border border-white/10"
-                      style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
-                    >
-                      <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
-                        {Number(rating).toFixed(1)}
-                      </span>
-                      <span className="text-[11px] text-white/30">/10</span>
-                    </div>
-                  )}
+                    {user && !added ? (
+                      <button
+                        onClick={handleAdd}
+                        className="w-10 h-10 rounded-full border-2 border-white/40 bg-black/30 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/50 transition-all active:scale-90"
+                        title="Add to Watchlist"
+                      >
+                        <Plus size={20} className="text-white" />
+                      </button>
+                    ) : added ? (
+                      <div className="w-10 h-10 rounded-full border-2 border-green-500/50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+                        <Check size={20} className="text-green-400" />
+                      </div>
+                    ) : null}
+
+                    {rating != null && rating > 0 && (
+                      <div
+                        className="ml-2 rounded-md px-2.5 py-1 flex items-center gap-1.5 backdrop-blur-md border border-white/10"
+                        style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+                      >
+                        <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
+                          {Number(rating).toFixed(1)}
+                        </span>
+                        <span className="text-[11px] text-white/30">/10</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* ── Details body ── */}
             <div className="px-8 pb-8 pt-2">
               <div className="flex gap-8">
-                {/* Left column: metadata + overview */}
                 <div className="flex-1 min-w-0">
-                  {/* Meta row: year, HD, runtime, certification */}
                   <div className="flex items-center gap-2.5 mb-4 flex-wrap">
                     {year && (
                       <span className="text-sm text-white/60 font-medium">{year}</span>
@@ -265,7 +326,6 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                     )}
                   </div>
 
-                  {/* Overview */}
                   {overview && (
                     <p className="text-sm text-white/60 leading-relaxed">
                       {overview}
@@ -273,7 +333,6 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                   )}
                 </div>
 
-                {/* Right column: cast + genres */}
                 <div className="w-48 shrink-0 hidden sm:block">
                   {cast.length > 0 && (
                     <div className="mb-3">
@@ -281,12 +340,14 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                       <span className="text-xs text-white/60">{cast.join(', ')}</span>
                     </div>
                   )}
-                  {directors.length > 0 && (
+                  {(directors.length > 0 || creators.length > 0) && (
                     <div className="mb-3">
                       <span className="text-xs text-white/30">
                         {mediaType === 'tv' ? 'Creator: ' : 'Director: '}
                       </span>
-                      <span className="text-xs text-white/60">{directors.join(', ')}</span>
+                      <span className="text-xs text-white/60">
+                        {(mediaType === 'tv' ? creators : directors).join(', ')}
+                      </span>
                     </div>
                   )}
                   {genreNames.length > 0 && (
@@ -298,7 +359,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 </div>
               </div>
 
-              {/* Mobile: cast + genres below overview */}
+              {/* Mobile meta */}
               <div className="sm:hidden mt-4 pt-3 border-t border-white/[0.06]">
                 {cast.length > 0 && (
                   <p className="text-xs text-white/40 mb-1">
@@ -314,6 +375,160 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 )}
               </div>
             </div>
+
+            {/* ── Episodes section (TV only) ── */}
+            {mediaType === 'tv' && seasonsList.length > 0 && (
+              <div className="px-8 pb-8">
+                <div className="border-t border-white/[0.06] pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white">Episodes</h3>
+
+                    {/* Season selector */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setSeasonDropdownOpen(!seasonDropdownOpen)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-md border border-white/20 bg-[#242424] text-sm text-white hover:border-white/40 transition-colors"
+                      >
+                        Season {selectedSeason}
+                        <ChevronDown size={14} className={`text-white/50 transition-transform ${seasonDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {seasonDropdownOpen && (
+                        <div className="absolute right-0 top-full mt-1 bg-[#242424] border border-white/10 rounded-md shadow-2xl z-20 max-h-60 overflow-y-auto min-w-[160px]">
+                          {seasonsList.map((s: any) => (
+                            <button
+                              key={s.season_number}
+                              onClick={() => { setSelectedSeason(s.season_number); setSeasonDropdownOpen(false); }}
+                              className={`w-full text-left px-4 py-2.5 text-sm hover:bg-white/10 transition-colors ${
+                                selectedSeason === s.season_number ? 'text-white bg-white/5' : 'text-white/60'
+                              }`}
+                            >
+                              Season {s.season_number}
+                              {s.episode_count ? <span className="text-white/30 ml-2">({s.episode_count} eps)</span> : null}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Season info */}
+                  {seasonData && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-sm font-semibold text-white">
+                        Season {selectedSeason}
+                      </span>
+                      {seasonData.air_date && (
+                        <span className="text-sm text-white/40">{seasonData.air_date.slice(0, 4)}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Episode list */}
+                  {episodes.length > 0 ? (
+                    <div className="space-y-0">
+                      {episodes.map((ep: any, i: number) => (
+                        <div
+                          key={ep.id}
+                          className={`flex gap-4 py-5 ${i > 0 ? 'border-t border-white/[0.06]' : ''} hover:bg-white/[0.03] transition-colors rounded-lg px-2 -mx-2`}
+                        >
+                          {/* Episode number */}
+                          <div className="shrink-0 w-8 flex items-center justify-center">
+                            <span className="text-2xl font-bold text-white/20">{ep.episode_number}</span>
+                          </div>
+
+                          {/* Episode still */}
+                          <div className="shrink-0 w-[140px] sm:w-[180px] aspect-[16/9] rounded-md overflow-hidden bg-[#242424]">
+                            {ep.still_path ? (
+                              <img
+                                src={`${TMDB_IMG}${ep.still_path}`}
+                                alt={ep.name}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white/10">
+                                <Play size={24} />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Episode info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="text-sm font-semibold text-white truncate">
+                                {ep.name}
+                              </h4>
+                              <span className="text-xs text-white/30 shrink-0">
+                                {ep.runtime ? `${ep.runtime} min` : ''}
+                              </span>
+                            </div>
+                            {ep.overview && (
+                              <p className="text-xs text-white/40 mt-1.5 leading-relaxed line-clamp-2">
+                                {ep.overview}
+                              </p>
+                            )}
+                            {ep.vote_average > 0 && (
+                              <div className="flex items-center gap-1 mt-2">
+                                <Star size={10} className="fill-current text-yellow-500" />
+                                <span className="text-xs text-white/40">{ep.vote_average.toFixed(1)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : seasonData === null && details ? (
+                    <div className="flex justify-center py-8">
+                      <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
+
+            {/* ── Similar / Recommendations (Movies) ── */}
+            {mediaType === 'movie' && details?.recommendations?.results?.length > 0 && (
+              <div className="px-8 pb-8">
+                <div className="border-t border-white/[0.06] pt-6">
+                  <h3 className="text-xl font-bold text-white mb-4">More Like This</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {details.recommendations.results.slice(0, 9).map((rec: any) => (
+                      <button
+                        key={rec.id}
+                        onClick={() => {
+                          onClose();
+                          router.push(`/details/movie/${rec.id}`);
+                        }}
+                        className="text-left rounded-lg overflow-hidden bg-[#242424] hover:bg-[#2a2a2a] transition-colors"
+                      >
+                        <div className="aspect-[16/9] overflow-hidden">
+                          {rec.backdrop_path ? (
+                            <img
+                              src={`${TMDB_IMG}${rec.backdrop_path}`}
+                              alt={rec.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-[#2a2a2a]" />
+                          )}
+                        </div>
+                        <div className="p-2.5">
+                          <p className="text-xs font-medium text-white/70 truncate">{rec.title}</p>
+                          {rec.vote_average > 0 && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star size={9} className="fill-current text-yellow-500" />
+                              <span className="text-[10px] text-white/40">{rec.vote_average.toFixed(1)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </m.div>
         </m.div>
       )}
