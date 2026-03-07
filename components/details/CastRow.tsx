@@ -10,7 +10,6 @@ interface CastMember {
   character?: string;
   profile_path?: string;
   known_for_department?: string;
-  // aggregate_credits fields (TV)
   roles?: { character: string; episode_count: number }[];
   total_episode_count?: number;
 }
@@ -24,15 +23,13 @@ export default function CastRow({ cast }: CastRowProps) {
 
   if (!cast || cast.length === 0) return null;
 
-  // Sort by total_episode_count descending (TV aggregate_credits), fall back to original order
   const sorted = [...cast].sort((a, b) => (b.total_episode_count || 0) - (a.total_episode_count || 0));
 
   return (
     <div className="mb-8">
-      <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider">Cast</h3>
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <h3 className="text-sm font-semibold text-white/60 mb-4 uppercase tracking-wider">Cast</h3>
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {sorted.slice(0, 30).map((actor) => {
-          // For aggregate_credits, character comes from roles array
           const character = actor.character || actor.roles?.map(r => r.character).filter(Boolean).join(', ') || '';
           const episodeCount = actor.total_episode_count;
 
@@ -40,26 +37,30 @@ export default function CastRow({ cast }: CastRowProps) {
             <div
               key={actor.id}
               onClick={() => router.push(`/actors/${actor.id}`)}
-              className="flex-shrink-0 w-[90px] group/actor text-center cursor-pointer"
+              className="flex-shrink-0 group/actor cursor-pointer"
             >
-              <div className="relative">
+              <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2.5 hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200 w-[200px]">
                 {actor.profile_path ? (
                   <img
                     src={`${TMDB_PROFILE}${actor.profile_path}`}
                     alt={actor.name}
-                    className="w-[90px] h-[90px] rounded-full object-cover border-2 border-white/[0.06] group-hover/actor:border-accent/40 transition-all duration-300 group-hover/actor:scale-105"
+                    className="w-11 h-11 rounded-full object-cover ring-2 ring-white/[0.08] group-hover/actor:ring-accent/40 transition-all shrink-0"
                   />
                 ) : (
-                  <div className="w-[90px] h-[90px] rounded-full bg-dark-600 flex items-center justify-center text-white/20 text-lg font-bold border-2 border-white/[0.06] group-hover/actor:border-accent/40 transition-all duration-300">
+                  <div className="w-11 h-11 rounded-full bg-white/[0.06] flex items-center justify-center text-white/25 text-sm font-bold ring-2 ring-white/[0.08] group-hover/actor:ring-accent/40 transition-all shrink-0">
                     {actor.name?.charAt(0)}
                   </div>
                 )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-white/90 truncate group-hover/actor:text-accent transition-colors">{actor.name}</p>
+                  {character && (
+                    <p className="text-[11px] text-white/35 truncate leading-tight mt-0.5">{character}</p>
+                  )}
+                  {episodeCount != null && episodeCount > 0 && (
+                    <p className="text-[10px] text-white/20 mt-0.5">{episodeCount} ep{episodeCount !== 1 ? 's' : ''}</p>
+                  )}
+                </div>
               </div>
-              <p className="text-xs font-medium mt-2 truncate group-hover/actor:text-accent transition-colors">{actor.name}</p>
-              <p className="text-[10px] text-white/30 truncate">{character}</p>
-              {episodeCount != null && episodeCount > 0 && (
-                <p className="text-[9px] text-white/20">{episodeCount} ep{episodeCount !== 1 ? 's' : ''}</p>
-              )}
             </div>
           );
         })}
