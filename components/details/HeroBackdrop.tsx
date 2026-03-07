@@ -11,7 +11,7 @@ interface HeroBackdropProps {
 
 export default function HeroBackdrop({ backdropPath }: HeroBackdropProps) {
   const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, 1200], [0.35, 0.08]);
+  const opacity = useTransform(scrollY, [0, 1200], [0.5, 0.12]);
 
   if (!backdropPath) return null;
 
@@ -25,7 +25,7 @@ export default function HeroBackdrop({ backdropPath }: HeroBackdropProps) {
         loading="eager"
       />
       {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-dark-900/50" />
+      <div className="absolute inset-0 bg-dark-900/40" />
       {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-dark-900 to-transparent" />
       {/* Vignette */}

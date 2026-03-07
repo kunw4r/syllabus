@@ -237,7 +237,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             {backdrop && !playingTrailer && (
               <div className="absolute inset-0 z-0 pointer-events-none">
                 <img src={backdrop} alt="" className="w-full h-[70%] object-cover object-[center_20%]" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/95 via-[55%] to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/80 via-[55%] to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-[30%] to-[#0c0c0c]" />
               </div>
             )}
@@ -480,7 +480,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 recScrollRef.current?.scrollBy({ left: dir * 400, behavior: 'smooth' });
               };
               return (
-                <div className="px-10 pb-4">
+                <div className="relative z-[1] px-10 pb-4">
                   <div className="border-t border-white/[0.05] pt-8">
                     <h3 className="text-2xl font-bold text-white mb-5">More Like This</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
