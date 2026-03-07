@@ -157,7 +157,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   const trailerPlaying = showTrailer && trailerReady;
 
   return (
-    <div className="relative w-full overflow-hidden pb-16 sm:pb-20 lg:pb-24">
+    <div className="relative w-full overflow-hidden">
       {/* Ambient glow */}
       <div
         className="absolute -inset-12 -z-10 opacity-25 blur-3xl transition-colors duration-[1200ms]"
@@ -211,9 +211,9 @@ export default function HeroBanner({ items }: HeroBannerProps) {
           </div>
         )}
 
-        {/* Gradient overlays — extended bottom for seamless bleed */}
+        {/* Gradient overlays */}
         <div className="absolute inset-0 z-[2] bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />
-        <div className="absolute -bottom-px left-0 right-0 h-[70%] z-[2] bg-gradient-to-t from-dark-900 via-dark-900/95 via-[30%] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-[55%] z-[2] bg-gradient-to-t from-dark-900 via-dark-900/80 to-transparent" />
         <div className="absolute inset-0 z-[2] bg-gradient-to-r from-dark-900/70 via-transparent to-transparent" />
         <div className="absolute inset-0 z-[2]" style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(14,17,23,0.3) 100%)' }} />
         <div
