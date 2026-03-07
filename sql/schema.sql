@@ -41,6 +41,9 @@ ALTER TABLE library ADD COLUMN IF NOT EXISTS external_rating numeric;
 ALTER TABLE library ADD COLUMN IF NOT EXISTS user_rating numeric;
 ALTER TABLE library ADD COLUMN IF NOT EXISTS review text;
 ALTER TABLE library ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+ALTER TABLE library ADD COLUMN IF NOT EXISTS progress_season int;
+ALTER TABLE library ADD COLUMN IF NOT EXISTS progress_episode int;
+ALTER TABLE library ADD COLUMN IF NOT EXISTS progress_timestamp int;  -- seconds into movie/episode
 
 
 -- ───────────────────────────────────────────────────────────

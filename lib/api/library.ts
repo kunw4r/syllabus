@@ -47,6 +47,7 @@ const LIBRARY_COLUMNS = new Set([
   'status', 'media_type', 'title', 'poster_url', 'genres',
   'external_rating', 'user_rating', 'review',
   'tmdb_id', 'openlibrary_key',
+  'progress_season', 'progress_episode', 'progress_timestamp',
 ]);
 
 function pickLibraryFields(item: Record<string, unknown>) {

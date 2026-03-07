@@ -36,6 +36,9 @@ interface LibraryItem {
   genres?: string;
   added_at?: string;
   updated_at?: string;
+  progress_season?: number;
+  progress_episode?: number;
+  progress_timestamp?: number;
 }
 
 // Session cache for instant back-navigation
@@ -237,22 +240,30 @@ export default function Home() {
                 </div>
               }
             >
-              {continueWatching.map((item) => (
-                <MediaCard
-                  key={item.id}
-                  item={{
-                    id: item.tmdb_id,
-                    title: item.title,
-                    backdrop_path: undefined,
-                    poster_path: item.poster_url || undefined,
-                    vote_average: item.external_rating,
-                    media_type: item.media_type || 'movie',
-                  }}
-                  mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
-                  showAdd={false}
-                  size="small"
-                />
-              ))}
+              {continueWatching.map((item) => {
+                const pLabel = item.media_type === 'tv' && item.progress_season && item.progress_episode
+                  ? `S${item.progress_season} E${item.progress_episode}`
+                  : item.media_type === 'movie' && item.progress_timestamp
+                    ? `${Math.floor(item.progress_timestamp / 3600)}h ${Math.floor((item.progress_timestamp % 3600) / 60)}m`
+                    : undefined;
+                return (
+                  <MediaCard
+                    key={item.id}
+                    item={{
+                      id: item.tmdb_id,
+                      title: item.title,
+                      backdrop_path: undefined,
+                      poster_path: item.poster_url || undefined,
+                      vote_average: item.external_rating,
+                      media_type: item.media_type || 'movie',
+                    }}
+                    mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
+                    showAdd={false}
+                    size="small"
+                    progressLabel={pLabel}
+                  />
+                );
+              })}
             </ScrollRow>
           </FadeInView>
         )}

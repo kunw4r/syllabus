@@ -40,6 +40,7 @@ interface MediaCardProps {
   variant?: 'landscape' | 'poster';
   size?: 'default' | 'small';
   onRemove?: () => void;
+  progressLabel?: string; // e.g. "S2 E5" or "1h 23m"
 }
 
 export default function MediaCard({
@@ -49,6 +50,7 @@ export default function MediaCard({
   variant,
   size = 'default',
   onRemove,
+  progressLabel,
 }: MediaCardProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -188,14 +190,21 @@ export default function MediaCard({
               </div>
             )}
 
-            {/* Resting state — title + year at bottom */}
+            {/* Resting state — title + year + progress at bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black via-black/70 via-[40%] to-transparent group-hover/card:opacity-0 transition-opacity duration-200 pointer-events-none">
               <p className="text-[13px] font-semibold text-white truncate" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6)' }}>
                 {title}
               </p>
-              {year && (
-                <p className="text-[11px] text-white/50 mt-0.5" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{year}</p>
-              )}
+              <div className="flex items-center gap-2 mt-0.5">
+                {year && (
+                  <p className="text-[11px] text-white/50" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{year}</p>
+                )}
+                {progressLabel && (
+                  <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/20 border border-blue-500/30 rounded px-1.5 py-px leading-tight">
+                    {progressLabel}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Hover overlay — gradient */}

@@ -90,9 +90,13 @@ const GENRE_TO_VIBES: Record<string, string[]> = {
 interface LibraryPanelProps {
   mediaId: { tmdb_id?: number | string; openlibrary_key?: string };
   addPayload: Record<string, unknown>;
+  mediaType?: string;
+  totalSeasons?: number;
+  totalEpisodes?: number;
+  runtime?: number; // movie runtime in minutes
 }
 
-function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
+function LibraryPanel({ mediaId, addPayload, mediaType: mType, totalSeasons, totalEpisodes, runtime }: LibraryPanelProps) {
   const [libItem, setLibItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,6 +105,9 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
   const [review, setReview] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [progressSeason, setProgressSeason] = useState<number>(1);
+  const [progressEpisode, setProgressEpisode] = useState<number>(1);
+  const [progressTimestamp, setProgressTimestamp] = useState<number>(0);
   const toast = useToast();
   const { user } = useAuth();
 
@@ -118,6 +125,9 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
           setStatus(item.status || 'watching');
           setRating(item.user_rating || 0);
           setReview(item.review || '');
+          setProgressSeason(item.progress_season || 1);
+          setProgressEpisode(item.progress_episode || 1);
+          setProgressTimestamp(item.progress_timestamp || 0);
           setExpanded(true);
         }
       } catch (err) {
@@ -166,6 +176,9 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
         user_rating: rating || null,
         review: review || null,
         status,
+        progress_season: mType === 'tv' ? progressSeason : null,
+        progress_episode: mType === 'tv' ? progressEpisode : null,
+        progress_timestamp: progressTimestamp || null,
       });
       setLibItem(updated);
       toast('Saved!', 'success');
@@ -266,6 +279,76 @@ function LibraryPanel({ mediaId, addPayload }: LibraryPanelProps) {
           </button>
         ))}
       </div>
+
+      {/* Progress tracking — visible when watching */}
+      {expanded && status === 'watching' && (mType === 'tv' || mType === 'movie') && (
+        <div className="px-4 pt-1 pb-2">
+          <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-2">Where Are You?</label>
+          {mType === 'tv' ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-white/40">S</span>
+                <select
+                  value={progressSeason}
+                  onChange={(e) => { setProgressSeason(Number(e.target.value)); setProgressEpisode(1); }}
+                  className="bg-dark-700/50 border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white/80 focus:outline-none focus:border-accent/40 transition-colors appearance-none cursor-pointer"
+                >
+                  {Array.from({ length: totalSeasons || 1 }, (_, i) => i + 1).map((s) => (
+                    <option key={s} value={s}>Season {s}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-white/40">E</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={999}
+                  value={progressEpisode}
+                  onChange={(e) => setProgressEpisode(Math.max(1, Number(e.target.value)))}
+                  className="bg-dark-700/50 border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white/80 w-16 focus:outline-none focus:border-accent/40 transition-colors"
+                />
+              </div>
+              <span className="text-xs text-white/20 ml-auto">
+                S{progressSeason} E{progressEpisode}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-white/40 shrink-0">Timestamp</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={Math.floor(progressTimestamp / 3600)}
+                  onChange={(e) => {
+                    const h = Math.max(0, Number(e.target.value));
+                    setProgressTimestamp(h * 3600 + (progressTimestamp % 3600));
+                  }}
+                  className="bg-dark-700/50 border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white/80 w-14 focus:outline-none focus:border-accent/40 transition-colors"
+                />
+                <span className="text-white/30 text-sm">h</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={Math.floor((progressTimestamp % 3600) / 60)}
+                  onChange={(e) => {
+                    const m = Math.min(59, Math.max(0, Number(e.target.value)));
+                    setProgressTimestamp(Math.floor(progressTimestamp / 3600) * 3600 + m * 60);
+                  }}
+                  className="bg-dark-700/50 border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white/80 w-14 focus:outline-none focus:border-accent/40 transition-colors"
+                />
+                <span className="text-white/30 text-sm">m</span>
+              </div>
+              {runtime && runtime > 0 && (
+                <span className="text-xs text-white/20 ml-auto">of {Math.floor(runtime / 60)}h {runtime % 60}m</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Expanded: rating + review */}
       {expanded && (
@@ -1556,6 +1639,10 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
             genres: data.genres?.map((g: any) => g.name).join(', '),
           }}
+          mediaType={mediaType}
+          totalSeasons={data.number_of_seasons}
+          totalEpisodes={data.number_of_episodes}
+          runtime={data.runtime}
         />
       </div>
 
