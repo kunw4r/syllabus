@@ -92,31 +92,31 @@ export default function Navbar() {
           }`}
         >
           {/* Logo */}
-          <Link href="/" className={`shrink-0 transition-all duration-500 ${scrolled ? 'mr-2' : 'mr-8'}`}>
+          <Link href="/" className={`shrink-0 transition-all duration-500 ${scrolled ? 'mr-2' : 'mr-6'}`}>
             <Image
               src="/logo.png"
               alt="Syllabus"
               width={140}
               height={32}
-              className={`transition-all duration-500 ${scrolled ? 'h-5 w-auto' : 'h-8 w-auto'}`}
+              className={`transition-all duration-500 ${scrolled ? 'h-5 w-auto' : 'h-7 w-auto'}`}
               priority
             />
           </Link>
 
           {scrolled && <div className="w-px h-5 bg-white/10 mx-1" />}
 
-          {/* Nav links */}
-          <div className="flex items-center gap-0.5">
+          {/* Nav links — hide overflow on smaller desktop screens */}
+          <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide">
             {allLinks.map(({ to, label }) => {
               const active = isActive(pathname, to);
               return (
                 <Link
                   key={to}
                   href={to}
-                  className={`transition-all duration-300 rounded-full font-medium ${
+                  className={`transition-all duration-300 rounded-full font-medium whitespace-nowrap shrink-0 ${
                     scrolled
-                      ? `text-xs px-2.5 py-1 ${active ? 'text-white bg-white/10' : 'text-white/55 hover:text-white hover:bg-white/[0.06]'}`
-                      : `text-sm px-3 py-1.5 ${active ? 'text-white font-semibold' : 'text-white/60 hover:text-white/90'}`
+                      ? `text-xs px-2 py-1 ${active ? 'text-white bg-white/10' : 'text-white/55 hover:text-white hover:bg-white/[0.06]'}`
+                      : `text-[13px] px-2.5 py-1.5 ${active ? 'text-white font-semibold' : 'text-white/60 hover:text-white/90'}`
                   }`}
                 >
                   {label}
@@ -126,18 +126,18 @@ export default function Navbar() {
           </div>
 
           {/* Search */}
-          <div className={`ml-auto flex-1 transition-all duration-500 ${scrolled ? 'max-w-sm mx-2' : 'max-w-xl mx-4'}`}>
+          <div className={`ml-auto flex-1 transition-all duration-500 ${scrolled ? 'max-w-xs mx-2' : 'max-w-md mx-3'}`}>
             <SearchBar variant="navbar" />
           </div>
 
           {/* Auth — profile pic or sign in */}
-          <div className={`flex items-center transition-all duration-500 ${scrolled ? 'gap-1 ml-2' : 'gap-3 ml-3'}`}>
+          <div className={`flex items-center transition-all duration-500 ${scrolled ? 'gap-1 ml-1' : 'gap-2 ml-2'}`}>
             {user ? (
               <Link
                 href="/profile"
                 className={`shrink-0 rounded-full overflow-hidden ring-2 transition-all duration-300 hover:ring-accent/60 ${
                   isActive(pathname, '/profile') ? 'ring-accent' : 'ring-white/10 hover:ring-white/30'
-                } ${scrolled ? 'w-7 h-7' : 'w-9 h-9'}`}
+                } ${scrolled ? 'w-7 h-7' : 'w-8 h-8'}`}
               >
                 {user.user_metadata?.avatar_url ? (
                   <img

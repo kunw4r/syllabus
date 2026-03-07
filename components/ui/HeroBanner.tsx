@@ -277,11 +277,17 @@ export default function HeroBanner({ items }: HeroBannerProps) {
                 {/* Action buttons */}
                 <div className="flex items-center gap-3 mt-6">
                   <button
-                    onClick={() => router.push(`/details/${mt}/${current.id}`)}
+                    onClick={() => {
+                      if (trailerKey && !showTrailer) {
+                        setShowTrailer(true);
+                      } else if (!trailerKey) {
+                        router.push(`/details/${mt}/${current.id}`);
+                      }
+                    }}
                     className="inline-flex items-center gap-2.5 bg-white hover:bg-white/90 text-black rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95 shadow-lg shadow-black/20"
                   >
                     <Play size={18} fill="black" />
-                    Play
+                    {trailerKey ? 'Trailer' : 'Play'}
                   </button>
                   <button
                     onClick={() => router.push(`/details/${mt}/${current.id}`)}
