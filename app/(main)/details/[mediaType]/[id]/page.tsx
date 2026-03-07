@@ -715,13 +715,21 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
     async function loadAll() {
       const results: Record<number, any[]> = {};
       let count = 0;
-      for (const num of seasonNumbers) {
+
+      // Load in parallel batches of 4 for speed
+      const BATCH = 4;
+      for (let i = 0; i < seasonNumbers.length; i += BATCH) {
         if (cancelled) return;
-        try {
-          const episodes = await getOMDbSeasonEpisodes(imdbId!, num);
-          if (episodes && episodes.length > 0) results[num] = episodes;
-        } catch { /* skip */ }
-        count++;
+        const batch = seasonNumbers.slice(i, i + BATCH);
+        const settled = await Promise.allSettled(
+          batch.map((num) => getOMDbSeasonEpisodes(imdbId!, num).then((eps) => ({ num, eps })))
+        );
+        for (const r of settled) {
+          if (r.status === 'fulfilled' && r.value.eps?.length > 0) {
+            results[r.value.num] = r.value.eps;
+          }
+        }
+        count += batch.length;
         if (!cancelled) {
           setLoadedCount(count);
           setEpisodesBySeason({ ...results });

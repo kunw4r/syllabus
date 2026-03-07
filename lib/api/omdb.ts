@@ -1,7 +1,7 @@
 // OMDb API — calls our proxy at /api/omdb which handles key rotation
 
 const cache = new Map<string, { data: any; ts: number }>();
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 30 * 60 * 1000; // 30min in-memory
 
 function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   const entry = cache.get(key);
