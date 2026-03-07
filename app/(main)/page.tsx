@@ -57,6 +57,17 @@ function setHomeCache(data: Record<string, any>) {
   try { sessionStorage.setItem(HOME_CACHE_KEY, JSON.stringify(data)); } catch { /* quota */ }
 }
 
+/** Extract the TMDB path portion from a stored URL, or return undefined */
+function extractTmdbPath(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  // Full TMDB URL → strip prefix to get /path.jpg
+  const match = url.match(/\/t\/p\/[^/]+(\/.*)/);
+  if (match) return match[1];
+  // Already a bare path like /abc.jpg
+  if (url.startsWith('/')) return url;
+  return undefined;
+}
+
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
@@ -179,7 +190,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className={`space-y-0 ${heroItems.length > 0 ? 'relative z-10' : ''}`}>
+      <div className={`space-y-0 ${heroItems.length > 0 ? 'pt-2 relative z-10' : ''}`}>
         {/* Search — only show standalone when hero isn't visible */}
         {heroItems.length === 0 && (
           <FadeInView>
@@ -257,8 +268,8 @@ export default function Home() {
                     item={{
                       id: item.tmdb_id,
                       title: item.title,
-                      backdrop_path: item.backdrop_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
-                      poster_path: item.poster_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
+                      backdrop_path: extractTmdbPath(item.backdrop_url),
+                      poster_path: extractTmdbPath(item.poster_url),
                       vote_average: item.external_rating,
                       media_type: item.media_type || 'movie',
                     }}
@@ -292,8 +303,8 @@ export default function Home() {
                   item={{
                     id: item.tmdb_id,
                     title: item.title,
-                    backdrop_path: item.backdrop_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
-                    poster_path: item.poster_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
+                    backdrop_path: extractTmdbPath(item.backdrop_url),
+                    poster_path: extractTmdbPath(item.poster_url),
                     vote_average: item.external_rating,
                     media_type: item.media_type || 'movie',
                   }}
