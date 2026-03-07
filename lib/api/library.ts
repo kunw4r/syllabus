@@ -47,7 +47,7 @@ const LIBRARY_COLUMNS = new Set([
   'status', 'media_type', 'title', 'poster_url', 'backdrop_url', 'genres',
   'external_rating', 'user_rating', 'review',
   'tmdb_id', 'openlibrary_key',
-  'progress_season', 'progress_episode', 'progress_timestamp',
+  // Note: progress_season, progress_episode, progress_timestamp are NOT in the DB yet
 ]);
 
 function pickLibraryFields(item: Record<string, unknown>) {
@@ -100,7 +100,7 @@ export async function updateLibraryItem(
 
   const { data, error } = await supabase
     .from('library')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...pickLibraryFields(updates), updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', user.id)
     .select()
