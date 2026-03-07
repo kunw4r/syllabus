@@ -294,7 +294,7 @@ function StatsPanel({ items }: { items: any[] }) {
                   <p className="text-sm font-semibold truncate max-w-[120px]">
                     {item.title}
                   </p>
-                  <p className="text-xs font-bold" style={{ color: getUserRatingRed(Number(item.user_rating)), textShadow: `0 0 6px ${getUserRatingRed(Number(item.user_rating))}66` }}>
+                  <p className="text-xs font-bold" style={{ color: getRatingHex(Number(item.user_rating)), textShadow: `0 0 6px ${getRatingHex(Number(item.user_rating))}66` }}>
                     {item.user_rating}/10
                   </p>
                 </div>
