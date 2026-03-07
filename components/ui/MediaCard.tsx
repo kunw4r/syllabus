@@ -122,6 +122,7 @@ export default function MediaCard({
         media_type: mediaType,
         title,
         poster_url: poster,
+        backdrop_url: backdrop,
         genres: (
           item.genre_ids?.map(String) ||
           item.genres?.map((g) => g.name) ||

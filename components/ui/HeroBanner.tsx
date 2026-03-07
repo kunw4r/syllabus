@@ -165,7 +165,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
       />
 
       {/* Backdrop images + trailer */}
-      <div className="relative h-[75vh] min-h-[450px] max-h-[800px]">
+      <div className="relative h-[55vh] sm:h-[65vh] lg:h-[75vh] min-h-[340px] max-h-[800px]">
         <AnimatePresence mode="sync">
           <m.div
             key={current.id}
@@ -195,7 +195,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
               trailerReady ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <div className="absolute inset-0" style={{ transform: 'scale(1.2)' }}>
+            <div className="absolute inset-0" style={{ transform: 'scale(1.35)' }}>
               <iframe
                 ref={iframeRef}
                 src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&loop=1&playlist=${trailerKey}&playsinline=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
@@ -225,9 +225,9 @@ export default function HeroBanner({ items }: HeroBannerProps) {
       {/* Search removed — now in navbar */}
 
       {/* Content overlay */}
-      <div className="absolute bottom-0 left-0 right-0 z-[3] pb-16 sm:pb-20 px-[clamp(36px,6vw,80px)]">
-        <div className="flex items-end justify-between gap-6">
-          <div className="max-w-2xl">
+      <div className="absolute bottom-0 left-0 right-0 z-[3] pb-14 sm:pb-16 lg:pb-20 px-4 sm:px-[clamp(36px,6vw,80px)]">
+        <div className="flex items-end justify-between gap-4 sm:gap-6">
+          <div className="max-w-2xl min-w-0">
             <AnimatePresence mode="wait">
               <m.div
                 key={current.id}
@@ -237,17 +237,17 @@ export default function HeroBanner({ items }: HeroBannerProps) {
                 transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
                 {/* Meta info */}
-                <div className="flex items-center gap-2 mb-3 text-sm text-white/50">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 text-xs sm:text-sm text-white/50 flex-wrap">
                   {contentRating && (
-                    <span className="inline-block border border-white/30 rounded px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-white/70 leading-none">
+                    <span className="inline-block border border-white/30 rounded px-1 sm:px-1.5 py-0.5 text-[10px] sm:text-[11px] font-semibold tracking-wide text-white/70 leading-none">
                       {contentRating}
                     </span>
                   )}
                   {year && <span>{year}</span>}
                   {genres.length > 0 && (
                     <>
-                      <span className="text-white/20">|</span>
-                      <span>{genres.join(' \u00B7 ')}</span>
+                      <span className="text-white/20 hidden sm:inline">|</span>
+                      <span className="hidden sm:inline">{genres.join(' \u00B7 ')}</span>
                     </>
                   )}
                   {displayScore != null && displayScore > 0 && (
@@ -257,25 +257,25 @@ export default function HeroBanner({ items }: HeroBannerProps) {
                         className="inline-flex items-center gap-1 font-bold"
                         style={{ color: getRatingHex(displayScore) }}
                       >
-                        <Star size={12} className="fill-current" />
+                        <Star size={11} className="fill-current" />
                         {displayScore.toFixed(1)}
                       </span>
                     </>
                   )}
                 </div>
 
-                <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-white leading-[1.1] mb-3 drop-shadow-lg">
+                <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl xl:text-6xl text-white leading-[1.1] mb-2 sm:mb-3 drop-shadow-lg">
                   {title}
                 </h2>
 
                 {!trailerPlaying && current.overview && (
-                  <p className="text-[15px] text-white/55 line-clamp-3 mb-6 max-w-xl leading-relaxed">
+                  <p className="hidden sm:block text-[14px] lg:text-[15px] text-white/55 line-clamp-2 lg:line-clamp-3 mb-4 lg:mb-6 max-w-xl leading-relaxed">
                     {current.overview}
                   </p>
                 )}
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-3 mt-6">
+                <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-6">
                   <button
                     onClick={() => {
                       if (trailerKey && !showTrailer) {
@@ -284,16 +284,16 @@ export default function HeroBanner({ items }: HeroBannerProps) {
                         router.push(`/details/${mt}/${current.id}`);
                       }
                     }}
-                    className="inline-flex items-center gap-2.5 bg-white hover:bg-white/90 text-black rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95 shadow-lg shadow-black/20"
+                    className="inline-flex items-center gap-2 bg-white hover:bg-white/90 text-black rounded-lg sm:rounded-xl px-5 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-all active:scale-95 shadow-lg shadow-black/20"
                   >
-                    <Play size={18} fill="black" />
+                    <Play size={16} fill="black" />
                     {trailerKey ? 'Trailer' : 'Play'}
                   </button>
                   <button
                     onClick={() => router.push(`/details/${mt}/${current.id}`)}
-                    className="inline-flex items-center gap-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-xl px-7 py-3 text-sm font-bold transition-all active:scale-95"
+                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-lg sm:rounded-xl px-5 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-all active:scale-95"
                   >
-                    <Info size={18} />
+                    <Info size={16} />
                     More Info
                   </button>
                 </div>
@@ -307,21 +307,21 @@ export default function HeroBanner({ items }: HeroBannerProps) {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex items-center gap-2 shrink-0 mb-2"
+              className="flex items-center gap-1.5 sm:gap-2 shrink-0 mb-1 sm:mb-2"
             >
               <button
                 onClick={togglePause}
-                className="w-11 h-11 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/15 transition-colors"
+                className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/15 transition-colors"
                 title={paused ? 'Play trailer' : 'Pause trailer'}
               >
-                {paused ? <Play size={18} fill="white" className="ml-0.5" /> : <Pause size={18} />}
+                {paused ? <Play size={16} fill="white" className="ml-0.5" /> : <Pause size={16} />}
               </button>
               <button
                 onClick={toggleMute}
-                className="w-11 h-11 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/15 transition-colors"
+                className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-white/20 bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-white/15 transition-colors"
                 title={muted ? 'Unmute' : 'Mute'}
               >
-                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
             </m.div>
           )}
@@ -330,7 +330,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
 
       {/* Progress indicators */}
       {heroItems.length > 1 && (
-        <div className="absolute bottom-6 right-0 z-[3] flex gap-2 items-center pr-[clamp(36px,6vw,80px)]">
+        <div className="absolute bottom-5 sm:bottom-6 right-0 z-[3] flex gap-1.5 sm:gap-2 items-center pr-4 sm:pr-[clamp(36px,6vw,80px)]">
           {heroItems.map((_, i) => (
             <button
               key={i}

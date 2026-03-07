@@ -44,7 +44,7 @@ export async function getLibrary(filters: LibraryFilters = {}) {
 
 // Only pass columns that exist in the library table
 const LIBRARY_COLUMNS = new Set([
-  'status', 'media_type', 'title', 'poster_url', 'genres',
+  'status', 'media_type', 'title', 'poster_url', 'backdrop_url', 'genres',
   'external_rating', 'user_rating', 'review',
   'tmdb_id', 'openlibrary_key',
   'progress_season', 'progress_episode', 'progress_timestamp',

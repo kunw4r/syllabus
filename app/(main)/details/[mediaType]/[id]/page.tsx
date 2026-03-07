@@ -1636,6 +1636,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             media_type: mediaType,
             title: data.title || data.name,
             poster_url: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
+            backdrop_url: data.backdrop_path ? `${TMDB_IMG_ORIGINAL}${data.backdrop_path}` : null,
             external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
             genres: data.genres?.map((g: any) => g.name).join(', '),
           }}

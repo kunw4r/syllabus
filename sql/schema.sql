@@ -36,6 +36,7 @@ CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (
 -- ───────────────────────────────────────────────────────────
 
 ALTER TABLE library ADD COLUMN IF NOT EXISTS poster_url text;
+ALTER TABLE library ADD COLUMN IF NOT EXISTS backdrop_url text;
 ALTER TABLE library ADD COLUMN IF NOT EXISTS genres text;
 ALTER TABLE library ADD COLUMN IF NOT EXISTS external_rating numeric;
 ALTER TABLE library ADD COLUMN IF NOT EXISTS user_rating numeric;
