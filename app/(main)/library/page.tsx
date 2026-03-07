@@ -226,22 +226,28 @@ function StatsPanel({ items, onFilterByStatus }: { items: any[]; onFilterByStatu
                   </div>
                 </div>
                 {/* Rating distribution histogram */}
-                <div className="flex items-end gap-[3px] h-16">
-                  {stats.ratingDist.map((count, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                      <m.div
-                        initial={{ height: 0 }}
-                        animate={{ height: count > 0 ? `${Math.max((count / maxRatingCount) * 100, 8)}%` : '3%' }}
-                        transition={{ duration: 0.6, delay: 0.1 * i, ease: 'easeOut' }}
-                        className="w-full rounded-sm"
-                        style={{
-                          backgroundColor: count > 0 ? getRatingHex((i + 1)) : 'rgba(255,255,255,0.04)',
-                          opacity: count > 0 ? 0.8 : 1,
-                        }}
-                      />
-                      <span className="text-[8px] text-white/20">{i + 1}</span>
-                    </div>
-                  ))}
+                <div className="flex items-end gap-1 sm:gap-1.5" style={{ height: 72 }}>
+                  {stats.ratingDist.map((count, i) => {
+                    const barH = count > 0 ? Math.max(Math.round((count / maxRatingCount) * 60), 6) : 2;
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
+                        {count > 0 && (
+                          <span className="text-[9px] font-bold text-white/40">{count}</span>
+                        )}
+                        <m.div
+                          initial={{ height: 0 }}
+                          animate={{ height: barH }}
+                          transition={{ duration: 0.5, delay: 0.05 * i, ease: 'easeOut' }}
+                          className="w-full rounded-sm"
+                          style={{
+                            backgroundColor: count > 0 ? getRatingHex(i + 1) : 'rgba(255,255,255,0.06)',
+                            opacity: count > 0 ? 0.85 : 1,
+                          }}
+                        />
+                        <span className="text-[9px] text-white/25 font-medium">{i + 1}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
