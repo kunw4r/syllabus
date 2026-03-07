@@ -8,6 +8,7 @@ import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex, sampleImageBrightness } from '@/lib/utils/rating-colors';
 import { usePreviewModal } from '@/components/providers/PreviewModalProvider';
+import { getStaticRatings } from '@/lib/scoring';
 
 interface MediaItem {
   id?: number | string;
@@ -149,6 +150,9 @@ export default function MediaCard({
     []
   ).slice(0, 3);
 
+  // Individual IMDb/RT scores from static DB
+  const staticRatings = !isBook && item.id ? getStaticRatings(mediaType, item.id) : null;
+
   // ── Landscape card (16:9 backdrop) — Netflix-style hover ──
   if (mode === 'landscape') {
     return (
@@ -211,6 +215,16 @@ export default function MediaCard({
               <div className="flex items-center gap-2 mt-0.5">
                 {year && (
                   <p className="text-[11px] text-white/50" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{year}</p>
+                )}
+                {staticRatings?.imdb && (
+                  <span className="text-[10px] font-bold text-[#f5c518]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>
+                    IMDb {staticRatings.imdb}
+                  </span>
+                )}
+                {staticRatings?.rt && (
+                  <span className="text-[10px] font-bold text-[#FA320A]" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>
+                    RT {staticRatings.rt}%
+                  </span>
                 )}
                 {progressLabel && (
                   <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/20 border border-blue-500/30 rounded px-1.5 py-px leading-tight">
@@ -287,9 +301,21 @@ export default function MediaCard({
                 <p className="text-sm font-bold text-white truncate drop-shadow-lg leading-tight">
                   {title}
                 </p>
-                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-white/70">
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-white/70 flex-wrap">
                   {year && <span className="font-medium">{year}</span>}
-                  {genreNames.length > 0 && year && <span className="text-white/30">&#8226;</span>}
+                  {staticRatings?.imdb && (
+                    <>
+                      <span className="text-white/30">&#8226;</span>
+                      <span className="font-bold text-[#f5c518]">IMDb {staticRatings.imdb}</span>
+                    </>
+                  )}
+                  {staticRatings?.rt && (
+                    <>
+                      <span className="text-white/30">&#8226;</span>
+                      <span className="font-bold text-[#FA320A]">RT {staticRatings.rt}%</span>
+                    </>
+                  )}
+                  {genreNames.length > 0 && (year || staticRatings) && <span className="text-white/30">&#8226;</span>}
                   {genreNames.map((g, i) => (
                     <span key={g} className="flex items-center gap-1.5">
                       {i > 0 && <span className="text-white/30">&#8226;</span>}
@@ -370,11 +396,23 @@ export default function MediaCard({
         <p className="text-[13px] font-medium text-white/80 truncate group-hover:text-white transition-colors leading-tight">
           {title}
         </p>
-        <div className="flex items-center gap-1.5 mt-0.5">
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           {year && <span className="text-[11px] text-white/30">{year}</span>}
-          {(item as any).certification && (
+          {staticRatings?.imdb && (
             <>
               {year && <span className="text-white/15 text-[11px]">&#8226;</span>}
+              <span className="text-[10px] font-bold text-[#f5c518]/70">{staticRatings.imdb}</span>
+            </>
+          )}
+          {staticRatings?.rt && (
+            <>
+              <span className="text-white/15 text-[11px]">&#8226;</span>
+              <span className="text-[10px] font-bold text-[#FA320A]/70">{staticRatings.rt}%</span>
+            </>
+          )}
+          {(item as any).certification && (
+            <>
+              {(year || staticRatings) && <span className="text-white/15 text-[11px]">&#8226;</span>}
               <span className="text-[10px] font-bold text-white/40 border border-white/15 rounded px-1 py-px leading-none">
                 {(item as any).certification}
               </span>

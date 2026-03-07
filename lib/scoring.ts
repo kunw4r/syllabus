@@ -77,10 +77,50 @@ interface ChartStore {
   [chartKey: string]: ChartEntry | number; // _v is number, rest are ChartEntry
 }
 
+interface StaticScoreEntry {
+  s?: number;
+  i?: number;  // IMDb score
+  r?: number;  // Rotten Tomatoes %
+  ii?: string; // IMDb ID
+  m?: number;  // MAL score (anime)
+}
+
 interface StaticScoreDB {
   [mediaType: string]: {
-    [id: string]: { s?: number };
+    [id: string]: StaticScoreEntry;
   };
+}
+
+// ---------------------------------------------------------------------------
+// Detailed ratings store  (IMDb, RT, IMDb ID per title from scores.json)
+// ---------------------------------------------------------------------------
+
+const DETAIL_STORE_KEY = 'syllabus_detail_ratings';
+
+let _detailCache: Record<string, { imdb?: number; rt?: number; imdb_id?: string; mal?: number }> | null = null;
+
+function getDetailStore() {
+  if (!_detailCache) {
+    try {
+      _detailCache = JSON.parse(localStorage.getItem(DETAIL_STORE_KEY) || '{}');
+    } catch {
+      _detailCache = {};
+    }
+  }
+  return _detailCache!;
+}
+
+function _saveDetailStore(): void {
+  try {
+    localStorage.setItem(DETAIL_STORE_KEY, JSON.stringify(_detailCache));
+  } catch { /* quota */ }
+}
+
+export function getStaticRatings(
+  mediaType: string,
+  id: number | string,
+): { imdb?: number; rt?: number; imdb_id?: string; mal?: number } | null {
+  return getDetailStore()[`${mediaType}:${id}`] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,7 +254,9 @@ export async function loadStaticScoreDB(): Promise<void> {
     if (!res.ok) return;
     const db: StaticScoreDB = await res.json();
     const scoreStore = getScoreStore();
+    const detailStore = getDetailStore();
     let merged = 0;
+    let detailsMerged = 0;
 
     for (const type of ['movie', 'tv'] as const) {
       const bucket = db[type];
@@ -225,11 +267,23 @@ export async function loadStaticScoreDB(): Promise<void> {
           scoreStore[key] = entry.s;
           merged++;
         }
+        // Store individual IMDb/RT/MAL scores
+        if ((entry.i || entry.r || entry.m) && !detailStore[key]) {
+          detailStore[key] = {};
+          if (entry.i) detailStore[key].imdb = entry.i;
+          if (entry.r) detailStore[key].rt = entry.r;
+          if (entry.ii) detailStore[key].imdb_id = entry.ii;
+          if (entry.m) detailStore[key].mal = entry.m;
+          detailsMerged++;
+        }
       }
     }
 
     if (merged > 0) {
       _saveScoreStore();
+    }
+    if (detailsMerged > 0) {
+      _saveDetailStore();
     }
     localStorage.setItem(STATIC_DB_KEY, String(Date.now()));
   } catch {

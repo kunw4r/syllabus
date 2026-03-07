@@ -8,6 +8,7 @@ import { TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { extractDominantColor } from '@/lib/utils/color-extract';
 import { getRatingHex } from '@/lib/utils/rating-colors';
 import { getMovieTrailer, getTVTrailer, getMovieContentRating, getTVContentRating } from '@/lib/api/tmdb';
+import { getStaticRatings } from '@/lib/scoring';
 
 interface HeroItem {
   id: number;
@@ -162,6 +163,7 @@ export default function HeroBanner({ items, stats, onStatsClick }: HeroBannerPro
   const year = (current.release_date || current.first_air_date || '').slice(0, 4);
   const genres = (current.genre_ids || []).slice(0, 3).map((id) => GENRE_MAP[id]).filter(Boolean);
   const displayScore = current.unified_rating ?? current.vote_average;
+  const staticRatings = getStaticRatings(mt, current.id);
   const trailerPlaying = showTrailer && trailerReady;
 
   return (
@@ -267,6 +269,22 @@ export default function HeroBanner({ items, stats, onStatsClick }: HeroBannerPro
                       >
                         <Star size={11} className="fill-current" />
                         {displayScore.toFixed(1)}
+                      </span>
+                    </>
+                  )}
+                  {staticRatings?.imdb && (
+                    <>
+                      <span className="text-white/20 hidden sm:inline">|</span>
+                      <span className="hidden sm:inline-flex items-center gap-1 font-bold text-[#f5c518]">
+                        IMDb {staticRatings.imdb}
+                      </span>
+                    </>
+                  )}
+                  {staticRatings?.rt && (
+                    <>
+                      <span className="text-white/20 hidden sm:inline">|</span>
+                      <span className="hidden sm:inline-flex items-center gap-1 font-bold text-[#FA320A]">
+                        RT {staticRatings.rt}%
                       </span>
                     </>
                   )}

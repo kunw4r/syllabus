@@ -6,6 +6,7 @@ import { X, Play, Plus, Check, Maximize2, ChevronDown, ChevronLeft, ChevronRight
 import { m, AnimatePresence } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL, TMDB_IMG, TMDB_BACKDROP, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
+import { getStaticRatings } from '@/lib/scoring';
 
 /** Sample the bottom third of an image to detect if it's bright (for text contrast) */
 function sampleBottomBrightness(img: HTMLImageElement): boolean {
@@ -143,6 +144,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
   const title = item?.title || item?.name || '';
   const rating = item?.unified_rating || item?.vote_average;
   const year = (item?.release_date || item?.first_air_date || '').slice(0, 4);
+  const staticRatings = item?.id ? getStaticRatings(mediaType, item.id) : null;
   const overview = (item as any)?.overview || details?.overview || '';
   const backdrop = item?.backdrop_path
     ? `${TMDB_IMG_ORIGINAL}${item.backdrop_path}`
@@ -383,6 +385,18 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                     ) : null}
 
                     {rating != null && rating > 0 && <RatingBadge value={Number(rating)} />}
+                    {staticRatings?.imdb && (
+                      <div className="rounded-md px-2 py-1 flex items-center gap-1.5 backdrop-blur-md border border-white/10 bg-black/40">
+                        <span className="text-[10px] font-black text-[#f5c518] tracking-tight">IMDb</span>
+                        <span className="text-sm font-bold text-[#f5c518]">{staticRatings.imdb}</span>
+                      </div>
+                    )}
+                    {staticRatings?.rt && (
+                      <div className="rounded-md px-2 py-1 flex items-center gap-1.5 backdrop-blur-md border border-white/10 bg-black/40">
+                        <span className="text-[10px] font-black text-[#FA320A] tracking-tight">RT</span>
+                        <span className="text-sm font-bold text-[#FA320A]">{staticRatings.rt}%</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
