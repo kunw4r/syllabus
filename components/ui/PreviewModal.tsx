@@ -160,12 +160,14 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
   // Pick an alternative backdrop for the body background (avoid duplicating the hero image)
   const altBackdrop = (() => {
     const backdrops = details?.images?.backdrops || [];
-    // Find a different backdrop than the hero (prefer wider/landscape ones)
     const heroPath = item?.backdrop_path;
-    const alt = backdrops.find((b: any) => b.file_path !== heroPath && b.aspect_ratio >= 1.5);
-    if (alt) return `${TMDB_BACKDROP}${alt.file_path}`;
+    // Sort by resolution (highest first), pick a different one from the hero
+    const sorted = [...backdrops]
+      .filter((b: any) => b.file_path !== heroPath && b.aspect_ratio >= 1.5)
+      .sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
+    if (sorted.length > 0) return `${TMDB_IMG_ORIGINAL}${sorted[0].file_path}`;
     // If no alternative, use poster as body bg instead
-    if (item?.poster_path) return `${TMDB_IMG}${item.poster_path}`;
+    if (item?.poster_path) return `${TMDB_IMG_ORIGINAL}${item.poster_path}`;
     return null;
   })();
 
@@ -276,12 +278,16 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             className="relative w-full max-w-6xl rounded-2xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.95)] mx-4"
             style={{ background: BG }}
           >
-            {/* ── Extended backdrop behind entire modal (uses alt image to avoid doubling the hero) ── */}
+            {/* ── Extended backdrop behind entire modal (uses alt image, scaled not cropped) ── */}
             {(altBackdrop || backdrop) && !playingTrailer && (
-              <div className="absolute inset-0 z-0 pointer-events-none">
-                <img src={altBackdrop || backdrop!} alt="" className="w-full h-[70%] object-cover object-[center_20%] blur-[2px] opacity-40" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/90 via-[50%] to-[#0c0c0c]/60" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-[30%] to-[#0c0c0c]" />
+              <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden" style={{ background: BG }}>
+                <img
+                  src={altBackdrop || backdrop!}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover object-center blur-sm opacity-30"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/90 via-[45%] to-[#0c0c0c]/50" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-[25%] to-[#0c0c0c]" />
               </div>
             )}
 
