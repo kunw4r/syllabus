@@ -686,17 +686,27 @@ function toRTSlug(title) {
     .replace(/^_|_$/g, '');
 }
 
-async function fetchRTScore(title, type) {
-  const slug = toRTSlug(title);
-  const prefix = type === 'tv' ? '/tv/' : '/m/';
-  const url = `${RT_BASE}${prefix}${slug}`;
+// Generate multiple slug variants for better hit rate
+function rtSlugVariants(title, year) {
+  const base = toRTSlug(title);
+  const slugs = [base];
+
+  // Try without "the_" prefix (RT often drops it)
+  if (base.startsWith('the_')) slugs.push(base.slice(4));
+
+  // Try with year suffix (RT uses this for remakes/duplicates)
+  if (year) slugs.push(`${base}_${year}`);
+
+  // Try with "a_" prefix dropped
+  if (base.startsWith('a_')) slugs.push(base.slice(2));
+
+  return slugs;
+}
+
+const RT_HEADERS = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
+
+function parseRTScore(html) {
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-    });
-    rtCalls++;
-    if (!res.ok) return null;
-    const html = await res.text();
     const ldMatch = html.match(/application\/ld\+json">([^<]+)/);
     if (!ldMatch) return null;
     const ld = JSON.parse(ldMatch[1]);
@@ -705,6 +715,27 @@ async function fetchRTScore(title, type) {
   } catch {
     return null;
   }
+}
+
+async function fetchRTScore(title, type, year) {
+  const prefix = type === 'tv' ? '/tv/' : '/m/';
+  const slugs = rtSlugVariants(title, year);
+
+  for (const slug of slugs) {
+    const url = `${RT_BASE}${prefix}${slug}`;
+    try {
+      const res = await fetch(url, { headers: RT_HEADERS, redirect: 'follow' });
+      rtCalls++;
+      if (!res.ok) continue;
+      const html = await res.text();
+      const score = parseRTScore(html);
+      if (score != null) return score;
+    } catch {
+      continue;
+    }
+    await sleep(300);
+  }
+  return null;
 }
 
 async function backfillRT(db) {
@@ -726,7 +757,7 @@ async function backfillRT(db) {
 
   for (let i = 0; i < limit; i++) {
     const { id, type, entry } = missing[i];
-    const score = await fetchRTScore(entry.t, type);
+    const score = await fetchRTScore(entry.t, type, entry.y);
 
     if (score != null) {
       entry.r = score;
