@@ -218,6 +218,20 @@ export function StudiosIcon({ size = 24, active }: IconProps) {
   );
 }
 
+export function StreamIcon({ size = 24, active }: IconProps) {
+  return active ? (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={s}>
+      <path d="M2 4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4Zm6 2.5v7a.5.5 0 0 0 .77.42l5.5-3.5a.5.5 0 0 0 0-.84l-5.5-3.5A.5.5 0 0 0 8 6.5ZM7 20a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H7Z"/>
+    </svg>
+  ) : (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={s}>
+      <rect x="2" y="2" width="20" height="14" rx="2"/>
+      <polygon points="9.5,6 9.5,13 15.5,9.5"/>
+      <line x1="7" y1="21" x2="17" y2="21"/>
+    </svg>
+  );
+}
+
 export function XIcon({ size = 24, active }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={s}>
