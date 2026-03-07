@@ -7,6 +7,7 @@ import { ArrowLeft, Search, Star, X, Play, Pause, Volume2, VolumeX, Info } from 
 import { AnimatePresence, m } from 'framer-motion';
 import MediaCard from '@/components/ui/MediaCard';
 import ScrollRow from '@/components/ui/ScrollRow';
+import EditorialRow from '@/components/ui/EditorialRow';
 import { SkeletonRow } from '@/components/ui/SkeletonCard';
 import {
   getMoviesByCompany,
@@ -581,20 +582,12 @@ export default function StudioPage() {
 
             {/* Top Rated */}
             {filterBySearch(topRated).length > 0 && (
-              <ScrollRow title="Top Rated">
-                {filterBySearch(topRated).map((m: any) => (
-                  <MediaCard key={m.id} item={m} mediaType="movie" />
-                ))}
-              </ScrollRow>
+              <EditorialRow title="Top 10 of All Time" items={filterBySearch(topRated).slice(0, 10)} mediaType="movie" showRank />
             )}
 
             {/* Popular */}
             {filterBySearch(popular).length > 0 && (
-              <ScrollRow title="Popular">
-                {filterBySearch(popular).map((m: any) => (
-                  <MediaCard key={m.id} item={m} mediaType="movie" />
-                ))}
-              </ScrollRow>
+              <EditorialRow title="Top 10 Right Now" items={filterBySearch(popular).slice(0, 10)} mediaType="movie" showRank />
             )}
 
             {/* More movies — deduplicated */}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Star, Search, X, Play } from 'lucide-react';
 import MediaCard from '@/components/ui/MediaCard';
 import ScrollRow from '@/components/ui/ScrollRow';
+import EditorialRow from '@/components/ui/EditorialRow';
 import { SkeletonRow, SkeletonHero } from '@/components/ui/SkeletonCard';
 import {
   getTrendingTV,
@@ -248,11 +249,7 @@ export default function TVPage() {
           )}
 
           {/* Top 10 TV This Week */}
-          <ScrollRow title="Top 10 TV This Week">
-            {trending.slice(0, 10).map((item) => (
-              <MediaCard key={item.id} item={item} mediaType="tv" />
-            ))}
-          </ScrollRow>
+          <EditorialRow title="Top 10 TV This Week" items={trending.slice(0, 10)} mediaType="tv" showRank />
 
           {/* Anime */}
           {anime.length > 0 && (
@@ -301,11 +298,7 @@ export default function TVPage() {
           })}
 
           {/* Top Rated */}
-          <ScrollRow title="Top Rated of All Time">
-            {topRated.map((t) => (
-              <MediaCard key={t.id} item={t} mediaType="tv" />
-            ))}
-          </ScrollRow>
+          <EditorialRow title="Top 10 of All Time" items={topRated.slice(0, 10)} mediaType="tv" showRank />
         </>
       )}
     </div>

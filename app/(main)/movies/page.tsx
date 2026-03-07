@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Star, Search, X, Play } from 'lucide-react';
 import MediaCard from '@/components/ui/MediaCard';
 import ScrollRow from '@/components/ui/ScrollRow';
+import EditorialRow from '@/components/ui/EditorialRow';
 import { SkeletonRow, SkeletonHero } from '@/components/ui/SkeletonCard';
 import {
   getTrendingMovies,
@@ -246,11 +247,7 @@ export default function MoviesPage() {
           )}
 
           {/* Top 10 Movies This Week */}
-          <ScrollRow title="Top 10 Movies This Week">
-            {trending.slice(0, 10).map((item) => (
-              <MediaCard key={item.id} item={item} mediaType="movie" />
-            ))}
-          </ScrollRow>
+          <EditorialRow title="Top 10 Movies This Week" items={trending.slice(0, 10)} mediaType="movie" showRank />
 
           {/* Now Playing */}
           <ScrollRow title="Now Playing in Cinemas">
@@ -288,11 +285,7 @@ export default function MoviesPage() {
           })}
 
           {/* Top Rated */}
-          <ScrollRow title="Top Rated of All Time">
-            {topRated.map((m) => (
-              <MediaCard key={m.id} item={m} mediaType="movie" />
-            ))}
-          </ScrollRow>
+          <EditorialRow title="Top 10 of All Time" items={topRated.slice(0, 10)} mediaType="movie" showRank />
         </>
       )}
     </div>
