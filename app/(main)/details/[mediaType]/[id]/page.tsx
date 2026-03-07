@@ -471,227 +471,251 @@ function BookDetailView({ workKey }: { workKey: string }) {
 
   return (
     <div>
-      {/* Gradient backdrop */}
-      <div className="absolute top-0 left-0 w-full h-80 -z-10 overflow-hidden">
-        <div className="w-full h-full bg-gradient-to-br from-amber-warm/15 via-dark-800 to-dark-900" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-900" />
-      </div>
+      {/* Full-bleed gradient hero area */}
+      <div className="-mx-5 sm:-mx-8 lg:-mx-14 xl:-mx-20 2xl:-mx-28 -mt-6 lg:-mt-4 mb-6">
+        <div className="relative min-h-[280px] sm:min-h-[340px] overflow-hidden">
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-dark-900 to-dark-900" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_40%,rgba(217,119,6,0.06),transparent_60%)]" />
+          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#0e1117] via-[#0e1117]/80 to-transparent" />
 
-      <button
-        onClick={() => router.back()}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-medium mb-8"
-      >
-        <ChevronLeft size={16} strokeWidth={2.5} /> Back
-      </button>
-
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Cover with 3D tilt */}
-        <FadeInView yOffset={30}>
-          <div className="perspective-1000 flex-shrink-0">
-            <div className="transition-transform duration-500 hover:rotate-y-[-5deg] hover:rotate-x-[3deg]">
-              <BookCover
-                coverUrls={data.cover_urls || (data.poster_path ? [data.poster_path] : [])}
-                alt={data.title}
-                className="w-48 sm:w-56 md:w-64 max-h-[400px] rounded-2xl shadow-2xl shadow-black/50 bg-dark-700 object-contain book-shadow"
-              />
-            </div>
-          </div>
-        </FadeInView>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <FadeInView delay={0.1}>
-            <h1 className="font-serif text-3xl md:text-4xl mb-2">{data.title}</h1>
-          </FadeInView>
-
-          {/* Authors */}
-          {data.authors?.length > 0 && (
-            <FadeInView delay={0.15}>
-              <div className="flex flex-wrap items-center gap-3 mb-3">
-                {data.authors.map((author: any, i: number) => (
-                  <a
-                    key={author.key || i}
-                    href={`https://www.google.com/search?q=${encodeURIComponent(author.name + ' author')}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 hover:text-accent transition-colors"
-                  >
-                    {author.photo ? (
-                      <img src={author.photo} alt={author.name}
-                        className="w-7 h-7 rounded-full object-cover border border-white/10" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-dark-600 flex items-center justify-center text-white/30 text-xs font-bold border border-white/10">
-                        {author.name?.charAt(0)}
-                      </div>
-                    )}
-                    <span className="text-sm text-white/60">{author.name}</span>
-                    <ExternalLink size={12} className="text-white/20" />
-                  </a>
-                ))}
-              </div>
-            </FadeInView>
-          )}
-
-          <p className="text-white/40 text-sm mb-5">
-            {data.first_publish_date && `First published ${data.first_publish_date}`}
-            {data.edition_count > 0 && ` \u00B7 ${data.edition_count} editions`}
-          </p>
-
-          {/* Rating + Stats */}
-          <div className="flex flex-wrap items-start gap-3 mb-6">
-            {data.rating && (
-              <m.a
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
-                href={isGoogleBook ? data.info_link : `https://openlibrary.org${data.key}`}
-                target="_blank" rel="noopener noreferrer"
-                className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-accent/20 transition-colors"
-              >
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Star size={16} className="fill-current" style={{ color: getRatingHex(Number(data.rating)) }} />
-                  <span className="text-xl font-black" style={{ color: getRatingHex(Number(data.rating)) }}>{data.rating}</span>
-                  <span className="text-white/30 text-xs">/ 10</span>
-                </div>
-                <p className="text-[10px] text-white/40 uppercase tracking-wider">
-                  {isGoogleBook ? 'Google Books' : 'Open Library'}
-                </p>
-                {data.ratings_count > 0 && (
-                  <p className="text-[9px] text-white/20">{data.ratings_count.toLocaleString()} ratings</p>
-                )}
-              </m.a>
-            )}
-
-            {totalReaders > 0 && (
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[80px]">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Users size={14} className="text-accent" />
-                  <span className="text-lg font-bold">{totalReaders.toLocaleString()}</span>
-                </div>
-                <p className="text-[10px] text-white/30">Readers</p>
-              </div>
-            )}
-
-            {data.edition_count > 0 && (
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[80px]">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <BookCopy size={14} className="text-white/50" />
-                  <span className="text-lg font-bold">{data.edition_count}</span>
-                </div>
-                <p className="text-[10px] text-white/30">Editions</p>
-              </div>
-            )}
+          {/* Back button - positioned over the gradient */}
+          <div className="absolute top-4 sm:top-6 left-5 sm:left-8 lg:left-14 xl:left-20 2xl:left-28 z-10">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/30 backdrop-blur-md border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all text-sm font-medium"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} /> Back
+            </button>
           </div>
 
-          {/* Reader breakdown (Open Library only) */}
-          {!isGoogleBook && totalReaders > 0 && (
-            <>
-              <div className="flex flex-wrap gap-4 text-xs text-white/40 mb-4">
-                {data.want_to_read > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <BookMarked size={14} className="text-accent/70" />
-                    {data.want_to_read.toLocaleString()} want to read
-                  </span>
-                )}
-                {data.currently_reading > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <Eye size={14} className="text-blue-400/70" />
-                    {data.currently_reading.toLocaleString()} reading now
-                  </span>
-                )}
-                {data.already_read > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-green-400/70" />
-                    {data.already_read.toLocaleString()} have read
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] text-white/20 mb-6">Reader data via Open Library</p>
-            </>
-          )}
+          {/* Hero content */}
+          <div className="relative z-[2] flex items-end min-h-[280px] sm:min-h-[340px] px-5 sm:px-8 lg:px-14 xl:px-20 2xl:px-28 pb-6 sm:pb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6 sm:gap-8 w-full">
+              {/* Cover */}
+              <FadeInView yOffset={30}>
+                <div className="perspective-1000 flex-shrink-0">
+                  <div className="relative transition-transform duration-500 hover:rotate-y-[-5deg] hover:rotate-x-[3deg]">
+                    <BookCover
+                      coverUrls={data.cover_urls || (data.poster_path ? [data.poster_path] : [])}
+                      alt={data.title}
+                      className="w-40 sm:w-48 md:w-56 max-h-[340px] rounded-xl shadow-2xl shadow-black/60 bg-dark-700 object-contain"
+                    />
+                    <div className="absolute inset-0 rounded-xl ring-1 ring-white/10" />
+                  </div>
+                </div>
+              </FadeInView>
 
-          {/* Description */}
-          {data.description && (
-            <FadeInView delay={0.2}>
-              <p className="text-white/60 leading-relaxed mb-6 max-w-2xl whitespace-pre-line">
-                {data.description}
-              </p>
-            </FadeInView>
-          )}
+              {/* Title + meta */}
+              <div className="min-w-0 flex-1 pb-1">
+                <FadeInView delay={0.1}>
+                  <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-white leading-[1.1] mb-2 drop-shadow-lg">{data.title}</h1>
+                </FadeInView>
 
-          {/* Subjects */}
-          {data.subjects?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              {data.subjects.map((s: string) => (
-                <span key={s} className="text-xs bg-white/[0.04] border border-white/[0.06] rounded-full px-3 py-1 text-white/50">
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Books You Might Like */}
-          {recommendations.length > 0 && (
-            <FadeInView>
-              <div className="mt-6 mb-6">
-                <h3 className="text-lg font-semibold mb-3">Books You Might Like</h3>
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {recommendations.map((book: any) => (
-                    <div key={book.key} className="flex-shrink-0 w-[130px]">
-                      <MediaCard item={book} mediaType="book" />
+                {data.authors?.length > 0 && (
+                  <FadeInView delay={0.15}>
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                      {data.authors.map((author: any, i: number) => (
+                        <a
+                          key={author.key || i}
+                          href={`https://www.google.com/search?q=${encodeURIComponent(author.name + ' author')}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2 hover:text-accent transition-colors"
+                        >
+                          {author.photo ? (
+                            <img src={author.photo} alt={author.name}
+                              className="w-7 h-7 rounded-full object-cover border border-white/10" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center text-white/30 text-xs font-bold border border-white/10">
+                              {author.name?.charAt(0)}
+                            </div>
+                          )}
+                          <span className="text-sm text-white/50">{author.name}</span>
+                          <ExternalLink size={12} className="text-white/20" />
+                        </a>
+                      ))}
                     </div>
-                  ))}
+                  </FadeInView>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2 text-xs text-white/30">
+                  {data.first_publish_date && <span>{data.first_publish_date}</span>}
+                  {data.edition_count > 0 && (
+                    <>
+                      <span className="text-white/15">|</span>
+                      <span>{data.edition_count} editions</span>
+                    </>
+                  )}
+                  {data.rating && (
+                    <>
+                      <span className="text-white/15">|</span>
+                      <span className="inline-flex items-center gap-1 font-bold" style={{ color: getRatingHex(Number(data.rating)) }}>
+                        <Star size={11} className="fill-current" />
+                        {data.rating}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-            </FadeInView>
-          )}
-
-          {/* Where to Get */}
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider">Where to Get</h3>
-            <div className="flex flex-wrap gap-2">
-              <a href={`https://openlibrary.org${data.key}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
-                <BookOpen size={16} className="text-white/60" />
-                <span className="text-xs font-medium">Read Free</span>
-                <ExternalLink size={12} className="text-white/30" />
-              </a>
-              <a href={`https://www.amazon.com/s?k=${searchQ}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-[#ff9900]/10 border border-[#ff9900]/20 rounded-lg px-4 py-2.5 hover:bg-[#ff9900]/20 transition-colors">
-                <ShoppingCart size={16} className="text-[#ff9900]" />
-                <span className="text-xs font-medium text-[#ff9900]">Amazon</span>
-                <ExternalLink size={12} className="text-[#ff9900]/40" />
-              </a>
-              <a href={`https://www.booktopia.com.au/search?keywords=${searchQ}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
-                <ShoppingCart size={16} className="text-white/60" />
-                <span className="text-xs font-medium">Booktopia</span>
-                <ExternalLink size={12} className="text-white/30" />
-              </a>
-              <a href={`https://www.goodreads.com/search?q=${searchQ}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
-                <Star size={16} className="text-white/60" />
-                <span className="text-xs font-medium">Goodreads</span>
-                <ExternalLink size={12} className="text-white/30" />
-              </a>
             </div>
           </div>
-
-          {/* Fun Facts */}
-          <BookFunFacts data={data} isGoogleBook={isGoogleBook} totalReaders={totalReaders} />
-
-          {/* Library Panel */}
-          <LibraryPanel
-            mediaId={{ openlibrary_key: data.key }}
-            addPayload={{
-              openlibrary_key: data.key,
-              media_type: 'book',
-              title: data.title,
-              poster_url: data.poster_path,
-              external_rating: data.rating,
-            }}
-          />
         </div>
       </div>
+
+      {/* Content area */}
+      <div className="max-w-4xl">
+        {/* Rating + Stats cards */}
+        <div className="flex flex-wrap items-start gap-3 mb-6">
+          {data.rating && (
+            <m.a
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
+              href={isGoogleBook ? data.info_link : `https://openlibrary.org${data.key}`}
+              target="_blank" rel="noopener noreferrer"
+              className="bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 text-center min-w-[80px] hover:bg-accent/20 transition-colors"
+            >
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Star size={16} className="fill-current" style={{ color: getRatingHex(Number(data.rating)) }} />
+                <span className="text-xl font-black" style={{ color: getRatingHex(Number(data.rating)) }}>{data.rating}</span>
+                <span className="text-white/30 text-xs">/ 10</span>
+              </div>
+              <p className="text-[10px] text-white/40 uppercase tracking-wider">
+                {isGoogleBook ? 'Google Books' : 'Open Library'}
+              </p>
+              {data.ratings_count > 0 && (
+                <p className="text-[9px] text-white/20">{data.ratings_count.toLocaleString()} ratings</p>
+              )}
+            </m.a>
+          )}
+
+          {totalReaders > 0 && (
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[80px]">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Users size={14} className="text-accent" />
+                <span className="text-lg font-bold">{totalReaders.toLocaleString()}</span>
+              </div>
+              <p className="text-[10px] text-white/30">Readers</p>
+            </div>
+          )}
+
+          {data.edition_count > 0 && (
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 text-center min-w-[80px]">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <BookCopy size={14} className="text-white/50" />
+                <span className="text-lg font-bold">{data.edition_count}</span>
+              </div>
+              <p className="text-[10px] text-white/30">Editions</p>
+            </div>
+          )}
+        </div>
+
+        {/* Reader breakdown (Open Library only) */}
+        {!isGoogleBook && totalReaders > 0 && (
+          <>
+            <div className="flex flex-wrap gap-4 text-xs text-white/40 mb-2">
+              {data.want_to_read > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <BookMarked size={14} className="text-accent/70" />
+                  {data.want_to_read.toLocaleString()} want to read
+                </span>
+              )}
+              {data.currently_reading > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <Eye size={14} className="text-blue-400/70" />
+                  {data.currently_reading.toLocaleString()} reading now
+                </span>
+              )}
+              {data.already_read > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-green-400/70" />
+                  {data.already_read.toLocaleString()} have read
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-white/20 mb-6">Reader data via Open Library</p>
+          </>
+        )}
+
+        {/* Description */}
+        {data.description && (
+          <FadeInView delay={0.2}>
+            <p className="text-white/55 leading-relaxed mb-6 max-w-2xl whitespace-pre-line text-[15px]">
+              {data.description}
+            </p>
+          </FadeInView>
+        )}
+
+        {/* Subjects */}
+        {data.subjects?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {data.subjects.map((s: string) => (
+              <span key={s} className="text-xs bg-white/[0.04] border border-white/[0.06] rounded-full px-3 py-1 text-white/40">
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Where to Get */}
+        <div className="mb-8">
+          <h3 className="text-sm font-semibold text-white/60 mb-3 uppercase tracking-wider">Where to Get</h3>
+          <div className="flex flex-wrap gap-2">
+            <a href={`https://openlibrary.org${data.key}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
+              <BookOpen size={16} className="text-white/60" />
+              <span className="text-xs font-medium">Read Free</span>
+              <ExternalLink size={12} className="text-white/30" />
+            </a>
+            <a href={`https://www.amazon.com/s?k=${searchQ}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-[#ff9900]/10 border border-[#ff9900]/20 rounded-lg px-4 py-2.5 hover:bg-[#ff9900]/20 transition-colors">
+              <ShoppingCart size={16} className="text-[#ff9900]" />
+              <span className="text-xs font-medium text-[#ff9900]">Amazon</span>
+              <ExternalLink size={12} className="text-[#ff9900]/40" />
+            </a>
+            <a href={`https://www.booktopia.com.au/search?keywords=${searchQ}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
+              <ShoppingCart size={16} className="text-white/60" />
+              <span className="text-xs font-medium">Booktopia</span>
+              <ExternalLink size={12} className="text-white/30" />
+            </a>
+            <a href={`https://www.goodreads.com/search?q=${searchQ}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 hover:bg-white/[0.08] transition-colors">
+              <Star size={16} className="text-white/60" />
+              <span className="text-xs font-medium">Goodreads</span>
+              <ExternalLink size={12} className="text-white/30" />
+            </a>
+          </div>
+        </div>
+
+        {/* Fun Facts */}
+        <BookFunFacts data={data} isGoogleBook={isGoogleBook} totalReaders={totalReaders} />
+
+        {/* Library Panel */}
+        <LibraryPanel
+          mediaId={{ openlibrary_key: data.key }}
+          addPayload={{
+            openlibrary_key: data.key,
+            media_type: 'book',
+            title: data.title,
+            poster_url: data.poster_path,
+            external_rating: data.rating,
+          }}
+        />
+      </div>
+
+      {/* Recommendations — full width */}
+      {recommendations.length > 0 && (
+        <FadeInView>
+          <div className="mt-8">
+            <ScrollRow title="Books You Might Like">
+              {recommendations.map((book: any) => (
+                <MediaCard key={book.key} item={book} mediaType="book" />
+              ))}
+            </ScrollRow>
+          </div>
+        </FadeInView>
+      )}
     </div>
   );
 }
