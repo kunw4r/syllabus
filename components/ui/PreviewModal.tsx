@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { X, Play, Plus, Check, Maximize2 } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
@@ -134,7 +135,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {item && (
         <m.div
@@ -317,6 +318,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
           </m.div>
         </m.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
