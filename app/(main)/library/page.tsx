@@ -84,7 +84,7 @@ function AnimatedNumber({ value }: { value: number }) {
 const GENRE_COLORS = ['bg-rose-400', 'bg-cyan-400', 'bg-amber-400', 'bg-violet-400', 'bg-emerald-400'];
 const GENRE_TEXT_COLORS = ['text-rose-400', 'text-cyan-400', 'text-amber-400', 'text-violet-400', 'text-emerald-400'];
 
-function StatsPanel({ items }: { items: any[] }) {
+function StatsPanel({ items, onFilterByStatus }: { items: any[]; onFilterByStatus?: (status: string) => void }) {
   const router = useRouter();
   const stats = useMemo(() => {
     const total = items.length;
@@ -159,18 +159,22 @@ function StatsPanel({ items }: { items: any[] }) {
             {/* Stat numbers */}
             <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {[
-                { icon: Library, label: 'Total', value: stats.total, color: 'text-accent' },
-                { icon: CheckCircle2, label: 'Completed', value: stats.finished, color: 'text-green-400' },
-                { icon: Eye, label: 'In Progress', value: stats.watching, color: 'text-blue-400' },
-                { icon: Clock, label: 'Up Next', value: stats.want, color: 'text-purple-400' },
+                { icon: Library, label: 'Total', value: stats.total, color: 'text-accent', status: 'all' },
+                { icon: CheckCircle2, label: 'Completed', value: stats.finished, color: 'text-green-400', status: 'finished' },
+                { icon: Eye, label: 'In Progress', value: stats.watching, color: 'text-blue-400', status: 'watching' },
+                { icon: Clock, label: 'Up Next', value: stats.want, color: 'text-purple-400', status: 'want' },
               ].map((s) => (
-                <div key={s.label}>
+                <button
+                  key={s.label}
+                  onClick={() => onFilterByStatus?.(s.status)}
+                  className="text-left rounded-xl p-2 -m-2 hover:bg-white/[0.04] transition-colors cursor-pointer group/stat"
+                >
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <s.icon size={13} className={s.color} />
-                    <span className="text-[10px] text-white/30 uppercase tracking-wider">{s.label}</span>
+                    <span className="text-[10px] text-white/30 uppercase tracking-wider group-hover/stat:text-white/50 transition-colors">{s.label}</span>
                   </div>
                   <p className="text-2xl sm:text-3xl font-black"><AnimatedNumber value={s.value} /></p>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -1439,7 +1443,7 @@ export default function LibraryPage() {
       {activeTab === 'foryou' && <ForYouPanel items={allItems} />}
 
       {/* Stats Tab */}
-      {activeTab === 'stats' && <StatsPanel items={allItems} />}
+      {activeTab === 'stats' && <StatsPanel items={allItems} onFilterByStatus={(status) => { setFilter(status); setActiveTab('shelf'); }} />}
 
       {/* Review Modal (decimal slider) */}
       {reviewItem && (
