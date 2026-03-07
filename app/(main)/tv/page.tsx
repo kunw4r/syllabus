@@ -170,43 +170,6 @@ export default function TVPage() {
 
   return (
     <div className="min-w-0">
-      {/* Search */}
-      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search
-            size={16}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
-          />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search TV shows..."
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={searching}
-          className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2"
-        >
-          {searching ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Search size={14} />
-          )}
-          Search
-        </button>
-        {results && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            className="text-white/40 hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
-        )}
-      </form>
-
       {results ? (
         <>
           <h2 className="text-xl font-semibold mb-5">
