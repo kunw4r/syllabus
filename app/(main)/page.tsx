@@ -377,41 +377,55 @@ export default function Home() {
           </div>
         )}
 
-        {/* Trending — with rank numbers */}
+        {/* Top 10 Right Now — popularity-based with rank numbers */}
         <FadeInView>
-          <EditorialRow title="Trending Movies" items={trendingMovies.slice(0, 10)} mediaType="movie" showRank />
+          <EditorialRow title="Top 10 Movies Right Now" items={trendingMovies.slice(0, 10)} mediaType="movie" showRank />
         </FadeInView>
         <FadeInView delay={0.05}>
-          <EditorialRow title="Trending TV Shows" items={trendingTV.slice(0, 10)} mediaType="tv" showRank />
+          <EditorialRow title="Top 10 TV Right Now" items={trendingTV.slice(0, 10)} mediaType="tv" showRank />
         </FadeInView>
-        {nowPlaying.length > 0 && (
+
+        {/* Top 10 GOATs — sorted by rating with rank numbers */}
+        {topRatedMovies.length > 0 && (
+          <FadeInView delay={0.08}>
+            <EditorialRow
+              title="Top 10 Movies of All Time"
+              items={[...topRatedMovies].sort((a, b) => (b.unified_rating ?? b.vote_average ?? 0) - (a.unified_rating ?? a.vote_average ?? 0)).slice(0, 10)}
+              mediaType="movie"
+              showRank
+            />
+          </FadeInView>
+        )}
+        {topRatedTV.length > 0 && (
           <FadeInView delay={0.1}>
+            <EditorialRow
+              title="Top 10 TV Shows of All Time"
+              items={[...topRatedTV].sort((a, b) => (b.unified_rating ?? b.vote_average ?? 0) - (a.unified_rating ?? a.vote_average ?? 0)).slice(0, 10)}
+              mediaType="tv"
+              showRank
+            />
+          </FadeInView>
+        )}
+
+        {/* Browse rows */}
+        {nowPlaying.length > 0 && (
+          <FadeInView delay={0.12}>
             <EditorialRow title="Now Playing in Theaters" items={nowPlaying} mediaType="movie" />
           </FadeInView>
         )}
         {upcoming.length > 0 && (
-          <FadeInView delay={0.12}>
+          <FadeInView delay={0.14}>
             <EditorialRow title="Coming Soon" items={upcoming} mediaType="movie" />
           </FadeInView>
         )}
         {popularMovies.length > 0 && (
-          <FadeInView delay={0.14}>
-            <EditorialRow title="Popular Movies" items={popularMovies} mediaType="movie" />
-          </FadeInView>
-        )}
-        {topRatedMovies.length > 0 && (
           <FadeInView delay={0.16}>
-            <EditorialRow title="Top Rated Movies" items={topRatedMovies} mediaType="movie" />
+            <EditorialRow title="Popular Movies" items={popularMovies} mediaType="movie" />
           </FadeInView>
         )}
         {popularTV.length > 0 && (
           <FadeInView delay={0.18}>
             <EditorialRow title="Popular TV Shows" items={popularTV} mediaType="tv" />
-          </FadeInView>
-        )}
-        {topRatedTV.length > 0 && (
-          <FadeInView delay={0.2}>
-            <EditorialRow title="Top Rated TV Shows" items={topRatedTV} mediaType="tv" />
           </FadeInView>
         )}
         <FadeInView delay={0.22}>
