@@ -1260,7 +1260,7 @@ export default function LibraryPage() {
                       <div
                         key={item.id}
                         className="shrink-0 w-[160px] sm:w-[200px] cursor-pointer group"
-                        onClick={() => handleCardClick(item)}
+                        onClick={() => openReview(item)}
                       >
                         <div
                           className="aspect-[2/3] rounded-xl overflow-hidden ring-2 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl relative"
