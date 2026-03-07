@@ -34,7 +34,6 @@ import QuickFactsCard from '@/components/details/QuickFactsCard';
 import { getRatingHex, getRatingBg, getRatingGlow, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
 
 // ─── Image base URLs ───
-const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w92';
 const TMDB_PROFILE = 'https://image.tmdb.org/t/p/w185';
 

@@ -5,7 +5,7 @@
 export const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p/';
 export const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 export const TMDB_IMG_ORIGINAL = 'https://image.tmdb.org/t/p/original';
-export const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w780';
+export const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
 
 // ─── Genre slug → TMDB ID (used by Curated Picks) ───
 
