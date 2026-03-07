@@ -279,8 +279,8 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             {/* ── Extended backdrop behind entire modal (uses alt image to avoid doubling the hero) ── */}
             {(altBackdrop || backdrop) && !playingTrailer && (
               <div className="absolute inset-0 z-0 pointer-events-none">
-                <img src={altBackdrop || backdrop!} alt="" className="w-full h-[70%] object-cover object-[center_20%] blur-[2px]" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/80 via-[55%] to-transparent" />
+                <img src={altBackdrop || backdrop!} alt="" className="w-full h-[70%] object-cover object-[center_20%] blur-[2px] opacity-40" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/90 via-[50%] to-[#0c0c0c]/60" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-[30%] to-[#0c0c0c]" />
               </div>
             )}
