@@ -7,12 +7,12 @@ import {
   Star, Clock, Eye, CheckCircle2, Play, ExternalLink, Globe, Award,
   DollarSign, Film, Tv, BookOpen, Users, Calendar, X, Heart, Plus, Minus,
   ChevronLeft, Check, Trash2, Info, Sparkles, Lightbulb, ShoppingCart,
-  BookCopy, BookMarked, PenLine,
+  BookCopy, BookMarked, PenLine, ChevronDown,
 } from 'lucide-react';
 import { m, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/providers/ToastProvider';
-import { getMovieDetails, getTVDetails, getTrendingMovies, getTrendingTV } from '@/lib/api/tmdb';
+import { getMovieDetails, getTVDetails, getTrendingMovies, getTrendingTV, getTVSeasonDetails } from '@/lib/api/tmdb';
 import { getOMDbRatings, getOMDbSeasonEpisodes } from '@/lib/api/omdb';
 import { getMALRating } from '@/lib/api/jikan';
 import { getBookDetails, getBookRecommendations } from '@/lib/api/books';
@@ -31,7 +31,7 @@ import RatingCluster from '@/components/details/RatingCluster';
 import CastRow from '@/components/details/CastRow';
 import StreamingProviders from '@/components/details/StreamingProviders';
 import QuickFactsCard from '@/components/details/QuickFactsCard';
-import { getRatingHex, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
+import { getRatingHex, getRatingBg, getRatingGlow, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
 
 // ─── Image base URLs ───
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
@@ -914,6 +914,143 @@ function SeasonRatings({ imdbId, seasons }: { imdbId: string | null; seasons: an
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   EpisodesBrowser — Netflix-style episodes with images + descriptions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function EpisodesBrowser({ tvId, seasons }: { tvId: number | string; seasons: any[] }) {
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const [seasonData, setSeasonData] = useState<any>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const regularSeasons = seasons
+    .filter((s: any) => s.season_number > 0)
+    .sort((a: any, b: any) => a.season_number - b.season_number);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSeasonData(null);
+    (async () => {
+      try {
+        const data = await getTVSeasonDetails(tvId, selectedSeason);
+        if (!cancelled) setSeasonData(data);
+      } catch { /* best-effort */ }
+    })();
+    return () => { cancelled = true; };
+  }, [tvId, selectedSeason]);
+
+  if (regularSeasons.length === 0) return null;
+
+  const episodes = seasonData?.episodes || [];
+
+  // Compute season average rating
+  const ratedEps = episodes.filter((ep: any) => ep.vote_average > 0);
+  const seasonAvg = ratedEps.length > 0
+    ? ratedEps.reduce((s: number, ep: any) => s + ep.vote_average, 0) / ratedEps.length
+    : null;
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-xl font-bold text-white">Episodes</h3>
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-sm text-white hover:border-white/20 transition-colors"
+          >
+            Season {selectedSeason}
+            <ChevronDown size={14} className={`text-white/40 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {dropdownOpen && (
+            <div className="absolute right-0 top-full mt-1 border border-white/10 rounded-lg shadow-2xl z-20 max-h-64 overflow-y-auto min-w-[180px] bg-dark-800">
+              {regularSeasons.map((s: any) => (
+                <button
+                  key={s.season_number}
+                  onClick={() => { setSelectedSeason(s.season_number); setDropdownOpen(false); }}
+                  className={`w-full text-left px-4 py-3 text-sm hover:bg-white/10 transition-colors ${
+                    selectedSeason === s.season_number ? 'text-white bg-white/5' : 'text-white/60'
+                  }`}
+                >
+                  Season {s.season_number}
+                  {s.episode_count ? <span className="text-white/30 ml-2">({s.episode_count} eps)</span> : null}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Season subtitle with rating */}
+      {seasonData && (
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-sm font-semibold text-white/80">Season {selectedSeason}</span>
+          {seasonData.air_date && <span className="text-sm text-white/40">{seasonData.air_date.slice(0, 4)}</span>}
+          {seasonAvg != null && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <Star size={13} className="fill-current" style={{ color: getRatingHex(seasonAvg) }} />
+              <span className="text-sm font-bold" style={{ color: getRatingHex(seasonAvg) }}>{seasonAvg.toFixed(1)}</span>
+              <span className="text-[10px] text-white/25">/10</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {episodes.length > 0 ? (
+        <div className="space-y-0">
+          {episodes.map((ep: any, i: number) => (
+            <div
+              key={ep.id}
+              className={`flex gap-4 sm:gap-5 py-5 ${i > 0 ? 'border-t border-white/[0.05]' : ''} hover:bg-white/[0.02] transition-colors rounded-lg px-3 -mx-3`}
+            >
+              <div className="shrink-0 w-8 flex items-center justify-center">
+                <span className="text-2xl font-bold text-white/10">{ep.episode_number}</span>
+              </div>
+              <div className="shrink-0 w-[180px] sm:w-[220px] aspect-[16/9] rounded-lg overflow-hidden bg-white/[0.03]">
+                {ep.still_path ? (
+                  <img src={`${TMDB_IMG}${ep.still_path}`} alt={ep.name} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/10"><Play size={24} /></div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-3">
+                  <h4 className="text-sm font-semibold text-white truncate">{ep.name}</h4>
+                  <span className="text-xs text-white/30 shrink-0">{ep.runtime ? `${ep.runtime} min` : ''}</span>
+                </div>
+                {ep.overview && (
+                  <p className="text-xs text-white/40 mt-2 leading-relaxed line-clamp-3">{ep.overview}</p>
+                )}
+                {ep.vote_average > 0 && (
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <div className="flex-1 h-[3px] rounded-full bg-white/[0.06] overflow-hidden max-w-[200px]">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min((ep.vote_average / 10) * 100, 100)}%`,
+                          background: getRatingHex(ep.vote_average),
+                          boxShadow: `0 0 8px ${getRatingHex(ep.vote_average)}40`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star size={10} className="fill-current" style={{ color: getRatingHex(ep.vote_average) }} />
+                      <span className="text-xs font-bold" style={{ color: getRatingHex(ep.vote_average) }}>{ep.vote_average.toFixed(1)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : seasonData === null ? (
+        <div className="flex justify-center py-10">
+          <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MovieTVDetails
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -1464,6 +1601,15 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         <div className="px-4 sm:px-6 lg:px-10 mt-2 max-w-7xl mx-auto">
           <FadeInView>
             <SeasonRatings imdbId={imdbId} seasons={data.seasons} />
+          </FadeInView>
+        </div>
+      )}
+
+      {/* ── Episodes Browser (TV only) ── */}
+      {mediaType === 'tv' && data.seasons?.length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-10 mt-8 max-w-7xl mx-auto">
+          <FadeInView>
+            <EpisodesBrowser tvId={data.id} seasons={data.seasons} />
           </FadeInView>
         </div>
       )}

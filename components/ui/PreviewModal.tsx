@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Play, Plus, Check, Maximize2, ChevronDown } from 'lucide-react';
+import { X, Play, Plus, Check, Maximize2, ChevronDown, Star } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL, TMDB_IMG, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
@@ -398,9 +398,24 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                   </div>
 
                   {seasonData && (
-                    <div className="flex items-center gap-2 mb-5">
+                    <div className="flex items-center gap-3 mb-5">
                       <span className="text-sm font-semibold text-white">Season {selectedSeason}</span>
                       {seasonData.air_date && <span className="text-sm text-white/40">{seasonData.air_date.slice(0, 4)}</span>}
+                      {(() => {
+                        const rated = episodes.filter((ep: any) => ep.vote_average > 0);
+                        if (rated.length === 0) return null;
+                        const avg = rated.reduce((s: number, ep: any) => s + ep.vote_average, 0) / rated.length;
+                        return (
+                          <div
+                            className="flex items-center gap-1.5 ml-auto rounded-md px-2 py-0.5 backdrop-blur-md border border-white/10"
+                            style={{ background: getRatingBg(avg), boxShadow: getRatingGlow(avg) }}
+                          >
+                            <Star size={11} className="fill-current" style={{ color: getRatingHex(avg) }} />
+                            <span className="text-xs font-bold" style={{ color: getRatingHex(avg) }}>{avg.toFixed(1)}</span>
+                            <span className="text-[9px] text-white/25">/10</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
