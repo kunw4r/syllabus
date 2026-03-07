@@ -38,8 +38,8 @@ interface PreviewModalProps {
   onClose: () => void;
 }
 
-const BG = '#141414';
-const CARD_BG = '#1a1a1a';
+const BG = '#0c0c0c';
+const CARD_BG = '#151515';
 
 function RatingBadge({ value, size = 'sm' }: { value: number; size?: 'sm' | 'xs' }) {
   if (!value || value <= 0) return null;
@@ -220,14 +220,14 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={handleOverlayClick}
-          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/85 backdrop-blur-sm overflow-y-auto pt-[2vh] sm:pt-[4vh] pb-10"
+          className="fixed inset-0 z-[100] flex items-start justify-center bg-black/90 backdrop-blur-sm overflow-y-auto pt-[2vh] sm:pt-[3vh] pb-10"
         >
           <m.div
             initial={{ opacity: 0, scale: 0.92, y: 40 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-            className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.9)] mx-4"
+            className="relative w-full max-w-6xl rounded-2xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.95)] mx-4"
             style={{ background: BG }}
           >
             {/* ── Hero ── */}
@@ -247,8 +247,8 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
               {!playingTrailer && (
                 <>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent via-[50%] to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#141414] to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-transparent via-[50%] to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#0c0c0c] to-transparent" />
                 </>
               )}
 
@@ -350,7 +350,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 </div>
               </div>
 
-              <div className="sm:hidden mt-5 pt-4 border-t border-white/[0.06]">
+              <div className="sm:hidden mt-5 pt-4 border-t border-white/[0.05]">
                 {cast.length > 0 && (
                   <p className="text-xs text-white/40 mb-1"><span className="text-white/25">Starring: </span>{cast.join(', ')}</p>
                 )}
@@ -363,7 +363,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             {/* ── Episodes (TV) ── */}
             {mediaType === 'tv' && seasonsList.length > 0 && (
               <div className="px-10 pb-10">
-                <div className="border-t border-white/[0.06] pt-8">
+                <div className="border-t border-white/[0.05] pt-8">
                   <div className="flex items-center justify-between mb-5">
                     <h3 className="text-2xl font-bold text-white">Episodes</h3>
                     <div className="relative">
@@ -409,7 +409,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                       {episodes.map((ep: any, i: number) => (
                         <div
                           key={ep.id}
-                          className={`flex gap-4 sm:gap-5 py-5 ${i > 0 ? 'border-t border-white/[0.06]' : ''} hover:bg-white/[0.03] transition-colors rounded-lg px-3 -mx-3`}
+                          className={`flex gap-4 sm:gap-5 py-5 ${i > 0 ? 'border-t border-white/[0.05]' : ''} hover:bg-white/[0.04] transition-colors rounded-lg px-3 -mx-3`}
                         >
                           <div className="shrink-0 w-8 flex items-center justify-center">
                             <span className="text-2xl font-bold text-white/15">{ep.episode_number}</span>
@@ -448,7 +448,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             {/* ── More Like This (Movies) ── */}
             {mediaType === 'movie' && details?.recommendations?.results?.length > 0 && (
               <div className="px-10 pb-10">
-                <div className="border-t border-white/[0.06] pt-8">
+                <div className="border-t border-white/[0.05] pt-8">
                   <h3 className="text-2xl font-bold text-white mb-5">More Like This</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {details.recommendations.results
@@ -506,7 +506,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             {/* ── About (Movies) ── */}
             {mediaType === 'movie' && details && (
               <div className="px-10 pb-10">
-                <div className="border-t border-white/[0.06] pt-8">
+                <div className="border-t border-white/[0.05] pt-8">
                   <h3 className="text-2xl font-bold text-white mb-5">About {title}</h3>
                   <div className="space-y-2.5 text-sm">
                     {directors.length > 0 && (
@@ -540,7 +540,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             {/* ── About (TV) ── */}
             {mediaType === 'tv' && details && (
               <div className="px-10 pb-10">
-                <div className="border-t border-white/[0.06] pt-8">
+                <div className="border-t border-white/[0.05] pt-8">
                   <h3 className="text-2xl font-bold text-white mb-5">About {title}</h3>
                   <div className="space-y-2.5 text-sm">
                     {creators.length > 0 && (
