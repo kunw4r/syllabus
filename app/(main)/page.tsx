@@ -321,12 +321,19 @@ export default function Home() {
           </FadeInView>
         )}
 
-        {/* Trending */}
+        {/* Divider between personal and browse sections */}
+        {(continueWatching.length > 0 || watchlist.length > 0 || recommendations.length > 0) && (
+          <div className="pt-2 pb-1">
+            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+          </div>
+        )}
+
+        {/* Trending — with rank numbers */}
         <FadeInView>
-          <EditorialRow title="Trending Movies" items={trendingMovies} mediaType="movie" />
+          <EditorialRow title="Trending Movies" items={trendingMovies.slice(0, 10)} mediaType="movie" showRank />
         </FadeInView>
         <FadeInView delay={0.05}>
-          <EditorialRow title="Trending TV Shows" items={trendingTV} mediaType="tv" />
+          <EditorialRow title="Trending TV Shows" items={trendingTV.slice(0, 10)} mediaType="tv" showRank />
         </FadeInView>
         {nowPlaying.length > 0 && (
           <FadeInView delay={0.1}>
