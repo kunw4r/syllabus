@@ -915,9 +915,6 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
                                     <Star size={10} className="fill-current" style={{ color: getRatingHex(epRating) }} />
                                     <span className="text-xs font-bold tabular-nums" style={{ color: getRatingHex(epRating) }}>{epRating.toFixed(1)}</span>
                                   </div>
-                                  {ratingSource === 'tmdb' && (
-                                    
-                                  )}
                                 </div>
                               )}
                             </div>
