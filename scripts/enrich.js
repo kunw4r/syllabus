@@ -673,6 +673,88 @@ async function fetchTier7(db) {
   return totalNew;
 }
 
+// ─── RT Direct Scraper (fills gaps where OMDb has no RT score) ───
+const RT_BASE = 'https://www.rottentomatoes.com';
+const RT_LIMIT = parseInt(args.find((_, i, a) => a[i - 1] === '--rt-limit') || '200');
+let rtCalls = 0;
+
+function toRTSlug(title) {
+  return title.toLowerCase()
+    .replace(/[''ʼ]/g, '')
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+async function fetchRTScore(title, type) {
+  const slug = toRTSlug(title);
+  const prefix = type === 'tv' ? '/tv/' : '/m/';
+  const url = `${RT_BASE}${prefix}${slug}`;
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+    });
+    rtCalls++;
+    if (!res.ok) return null;
+    const html = await res.text();
+    const ldMatch = html.match(/application\/ld\+json">([^<]+)/);
+    if (!ldMatch) return null;
+    const ld = JSON.parse(ldMatch[1]);
+    const score = ld.aggregateRating?.ratingValue;
+    return score ? parseInt(score) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function backfillRT(db) {
+  log('\n── RT BACKFILL: Filling missing Rotten Tomatoes scores ──');
+  let filled = 0;
+
+  // Collect entries missing RT score, prioritize TV (OMDb rarely has RT for TV)
+  const missing = [];
+  for (const [id, entry] of Object.entries(db.tv)) {
+    if (!entry.r && entry.t) missing.push({ id, type: 'tv', entry });
+  }
+  for (const [id, entry] of Object.entries(db.movie)) {
+    if (!entry.r && entry.t) missing.push({ id, type: 'movie', entry });
+  }
+
+  log(`   ${missing.length} entries missing RT (${Object.values(db.tv).filter(e => !e.r).length} TV, ${Object.values(db.movie).filter(e => !e.r).length} movies)`);
+
+  const limit = Math.min(missing.length, RT_LIMIT);
+
+  for (let i = 0; i < limit; i++) {
+    const { id, type, entry } = missing[i];
+    const score = await fetchRTScore(entry.t, type);
+
+    if (score != null) {
+      entry.r = score;
+      // Recompute unified score with RT included
+      const scores = [];
+      if (entry.i) scores.push(entry.i);
+      if (entry.m) scores.push(entry.m); // MAL for anime
+      else if (entry.r) scores.push(entry.r / 10); // RT/10 for non-anime
+      entry.s = scores.length > 0
+        ? parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1))
+        : entry.s;
+      filled++;
+    }
+
+    if ((i + 1) % 50 === 0) {
+      log(`   ${i + 1}/${limit} checked (${filled} RT scores found, ${rtCalls} requests)`);
+      saveScores(db);
+    }
+
+    // Rate limit: ~2 req/sec to be polite
+    await sleep(500);
+  }
+
+  saveScores(db);
+  log(`   RT backfill done: ${filled} new RT scores from ${rtCalls} requests`);
+  return filled;
+}
+
 // ─── Entry point ───
 async function main() {
   console.log('\n' + '═'.repeat(60));
@@ -732,6 +814,11 @@ async function main() {
     totalNew += await fetchTier7(db);
   }
 
+  // ── RT Backfill: scrape Rotten Tomatoes directly for missing RT scores ──
+  if (!args.includes('--skip-rt')) {
+    await backfillRT(db);
+  }
+
   // Count anime entries
   const animeMovies = Object.values(db.movie).filter(e => e.m != null).length;
   const animeTV = Object.values(db.tv).filter(e => e.m != null).length;
@@ -743,6 +830,7 @@ async function main() {
   db._meta.totalAnime = animeMovies + animeTV;
   db._meta.omdbCallsThisRun = totalCalls;
   db._meta.jikanCallsThisRun = jikanCalls;
+  db._meta.rtCallsThisRun = rtCalls;
   db._meta.newScoresThisRun = totalNew;
 
   // Write final database
@@ -753,7 +841,7 @@ async function main() {
   log('✅  Enrichment complete!');
   log(`   📊  ${db._meta.totalMovies} movies + ${db._meta.totalTV} TV shows (${db._meta.totalAnime} anime)`);
   log(`   🆕  ${totalNew} new scores added`);
-  log(`   📱  ${totalCalls} OMDb + ${jikanCalls} Jikan API calls used`);
+  log(`   📱  ${totalCalls} OMDb + ${jikanCalls} Jikan + ${rtCalls} RT calls used`);
   log(`   💾  ${SCORES_PATH} (${sizeKB} KB)`);
   if (db._meta.backfillYear !== 'done') {
     log(`   📅  Next backfill year: ${db._meta.backfillYear ?? BACKFILL_START_YEAR}`);
