@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Play, Star } from 'lucide-react';
+import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
+import { getRatingHex, getRatingBg, getRatingGlow } from '@/lib/utils/rating-colors';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { getLibrary, removeFromLibrary } from '@/lib/api/library';
 import {
@@ -201,48 +203,135 @@ export default function Home() {
           </FadeInView>
         )}
 
-        {/* Continue Watching — first row, highest priority */}
-        {continueWatching.length > 0 && (
-          <FadeInView>
-            <ScrollRow
-              title={
-                <div className="flex items-center justify-between w-full">
-                  <span>Continue Watching</span>
-                  <button
-                    onClick={() => router.push('/library?tab=watching')}
-                    className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors font-normal"
-                  >
-                    See all <ChevronRight size={14} />
-                  </button>
+        {/* Continue Watching — hero backdrop + progress bar cards */}
+        {continueWatching.length > 0 && (() => {
+          // Pick the most recently updated item as the hero
+          const heroItem = [...continueWatching].sort((a, b) =>
+            new Date(b.updated_at || b.added_at || 0).getTime() - new Date(a.updated_at || a.added_at || 0).getTime()
+          )[0];
+          const heroBackdrop = extractTmdbPath(heroItem?.backdrop_url);
+          const heroPoster = extractTmdbPath(heroItem?.poster_url);
+
+          return (
+            <FadeInView>
+              <section className="relative -mx-5 sm:-mx-8 lg:-mx-14 mb-4 overflow-hidden rounded-2xl">
+                {/* Hero backdrop — blurred behind the row */}
+                {(heroBackdrop || heroPoster) && (
+                  <div className="absolute inset-0 z-0">
+                    <img
+                      src={heroBackdrop ? `${TMDB_IMG_ORIGINAL}${heroBackdrop}` : `${TMDB_IMG}${heroPoster}`}
+                      alt=""
+                      className="w-full h-full object-cover scale-105 blur-sm"
+                    />
+                    <div className="absolute inset-0 bg-dark-900/80" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/60 to-dark-900/40" />
+                  </div>
+                )}
+
+                <div className="relative z-10 px-5 sm:px-8 lg:px-14 pt-5 pb-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Continue Watching</h2>
+                    <button
+                      onClick={() => router.push('/library?tab=watching')}
+                      className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
+                    >
+                      See all <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  {/* Cards with progress bars */}
+                  <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+                    {continueWatching.map((item) => {
+                      const backdrop = extractTmdbPath(item.backdrop_url);
+                      const poster = extractTmdbPath(item.poster_url);
+                      const displayImg = backdrop
+                        ? `${TMDB_IMG_ORIGINAL}${backdrop}`
+                        : poster
+                          ? `${TMDB_IMG}${poster}`
+                          : null;
+                      const mt = (item.media_type as 'movie' | 'tv') || 'movie';
+
+                      // Progress label + approximate percentage
+                      let pLabel = '';
+                      let pPercent = 30; // default visual hint
+                      if (mt === 'tv' && item.progress_season && item.progress_episode) {
+                        pLabel = `S${item.progress_season} E${item.progress_episode}`;
+                        // Rough estimate: assume ~8 eps per season
+                        const estTotal = Math.max(item.progress_season * 8, item.progress_episode);
+                        const estWatched = (item.progress_season - 1) * 8 + item.progress_episode;
+                        pPercent = Math.min(Math.round((estWatched / estTotal) * 100), 95);
+                      } else if (mt === 'movie' && item.progress_timestamp) {
+                        const mins = Math.floor(item.progress_timestamp / 60);
+                        pLabel = mins >= 60
+                          ? `${Math.floor(mins / 60)}h ${mins % 60}m`
+                          : `${mins}m`;
+                        // Assume ~120 min avg movie
+                        pPercent = Math.min(Math.round((mins / 120) * 100), 95);
+                      }
+
+                      const rating = item.external_rating;
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="shrink-0 w-[240px] sm:w-[280px] lg:w-[320px] group/cw cursor-pointer"
+                          onClick={() => router.push(`/details/${mt}/${item.tmdb_id}`)}
+                        >
+                          <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-dark-800 transition-all duration-300 group-hover/cw:scale-[1.03] group-hover/cw:shadow-xl group-hover/cw:shadow-black/50">
+                            {displayImg ? (
+                              <img src={displayImg} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-3xl">{'\u{1F3AC}'}</div>
+                            )}
+
+                            {/* Hover play overlay */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cw:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                                <Play size={18} className="text-black fill-black ml-0.5" />
+                              </div>
+                            </div>
+
+                            {/* Rating badge */}
+                            {rating != null && rating > 0 && (
+                              <div
+                                className="absolute top-2 right-2 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 backdrop-blur-md border border-white/10 z-10 group-hover/cw:opacity-0 transition-opacity"
+                                style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
+                              >
+                                <Star size={9} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+                                <span className="text-[11px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(rating)) }}>
+                                  {Number(rating).toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Bottom info bar */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5 pt-6">
+                              <p className="text-[13px] font-semibold text-white truncate leading-tight" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
+                                {item.title}
+                              </p>
+                              {pLabel && (
+                                <span className="text-[10px] text-white/50 mt-0.5 block">{pLabel}</span>
+                              )}
+                            </div>
+
+                            {/* Progress bar — bottom edge */}
+                            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10">
+                              <div
+                                className="h-full bg-accent rounded-r-full transition-all duration-500"
+                                style={{ width: `${pPercent}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              }
-            >
-              {continueWatching.map((item) => {
-                const pLabel = item.media_type === 'tv' && item.progress_season && item.progress_episode
-                  ? `S${item.progress_season} E${item.progress_episode}`
-                  : item.media_type === 'movie' && item.progress_timestamp
-                    ? `${Math.floor(item.progress_timestamp / 3600)}h ${Math.floor((item.progress_timestamp % 3600) / 60)}m`
-                    : undefined;
-                return (
-                  <MediaCard
-                    key={item.id}
-                    item={{
-                      id: item.tmdb_id,
-                      title: item.title,
-                      backdrop_path: extractTmdbPath(item.backdrop_url),
-                      poster_path: extractTmdbPath(item.poster_url),
-                      vote_average: item.external_rating,
-                      media_type: item.media_type || 'movie',
-                    }}
-                    mediaType={(item.media_type as 'movie' | 'tv' | 'book') || 'movie'}
-                    showAdd={false}
-                    progressLabel={pLabel}
-                  />
-                );
-              })}
-            </ScrollRow>
-          </FadeInView>
-        )}
+              </section>
+            </FadeInView>
+          );
+        })()}
 
         {/* Recommendation rows */}
         {recommendations.length > 0 && (
