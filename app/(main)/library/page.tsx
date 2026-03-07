@@ -1251,38 +1251,44 @@ export default function LibraryPage() {
                   <Award size={14} className="text-gold" /> Top Rated
                 </h2>
                 <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                  {pinnedFavourites.map((item) => (
-                    <div
-                      key={item.id}
-                      className="shrink-0 w-[160px] sm:w-[200px] cursor-pointer group"
-                      onClick={() => handleCardClick(item)}
-                    >
-                      <div className="aspect-[2/3] rounded-xl overflow-hidden ring-2 ring-gold/30 group-hover:ring-gold/60 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-gold/10 relative">
-                        {item.poster_url ? (
-                          <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
-                        ) : (
-                          <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
-                            {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
-                          </div>
-                        )}
-                        {(() => {
-                          const rv = Number(item.user_rating);
-                          const rh = getUserRatingRed(rv);
-                          return (
-                            <div className="absolute top-2 right-2 backdrop-blur-md rounded-lg px-2 py-0.5 flex items-center gap-1" style={{ background: getUserRatingBg(rv, false), boxShadow: getUserRatingGlow(rv), borderWidth: 1, borderColor: `${rh}40` }}>
-                              <Star size={12} className="fill-current" style={{ color: rh, filter: `drop-shadow(0 0 4px ${rh}88)` }} />
-                              <span className="text-xs font-black drop-shadow-sm" style={{ color: rh, textShadow: `0 0 6px ${rh}88` }}>
-                                {rv % 1 === 0 ? item.user_rating : rv.toFixed(1)}
-                              </span>
+                  {pinnedFavourites.map((item) => {
+                    const rv = Number(item.user_rating);
+                    const ratingColor = getRatingHex(rv);
+                    return (
+                      <div
+                        key={item.id}
+                        className="shrink-0 w-[160px] sm:w-[200px] cursor-pointer group"
+                        onClick={() => handleCardClick(item)}
+                      >
+                        <div
+                          className="aspect-[2/3] rounded-xl overflow-hidden ring-2 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl relative"
+                          style={{ '--tw-ring-color': `${ratingColor}30`, boxShadow: `0 0 0 2px ${ratingColor}30` } as React.CSSProperties}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 2px ${ratingColor}60, 0 4px 20px ${ratingColor}15`; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 2px ${ratingColor}30`; }}
+                        >
+                          {item.poster_url ? (
+                            <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
+                              {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
                             </div>
-                          );
-                        })()}
+                          )}
+                          <div
+                            className="absolute top-2 right-2 backdrop-blur-md rounded-lg px-2 py-0.5 flex items-center gap-1 border border-white/10"
+                            style={{ background: getRatingBg(rv), boxShadow: getRatingGlow(rv) }}
+                          >
+                            <Star size={12} className="fill-current" style={{ color: ratingColor, filter: `drop-shadow(0 0 4px ${ratingColor}88)` }} />
+                            <span className="text-xs font-black drop-shadow-sm" style={{ color: ratingColor, textShadow: `0 0 6px ${ratingColor}88` }}>
+                              {rv % 1 === 0 ? item.user_rating : rv.toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm font-medium text-white/70 truncate group-hover:text-white transition-colors">
+                          {item.title}
+                        </p>
                       </div>
-                      <p className="mt-2 text-sm font-medium text-white/70 truncate group-hover:text-gold transition-colors">
-                        {item.title}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </FadeInView>

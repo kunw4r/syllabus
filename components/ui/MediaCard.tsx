@@ -172,6 +172,14 @@ export default function MediaCard({
                 onLoad={handleImgLoad}
                 loading="lazy"
               />
+            ) : poster ? (
+              /* No backdrop available — show poster centered over blurred bg */
+              <div className="w-full h-full bg-dark-800 relative">
+                <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-40" loading="lazy" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <img src={poster} alt={title} className="h-full w-auto max-w-[40%] object-contain drop-shadow-2xl" loading="lazy" />
+                </div>
+              </div>
             ) : (
               <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/10 text-4xl">
                 {'\u{1F3AC}'}
