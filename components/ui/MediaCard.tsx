@@ -7,7 +7,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex, sampleImageBrightness } from '@/lib/utils/rating-colors';
-import PreviewModal from '@/components/ui/PreviewModal';
+import { usePreviewModal } from '@/components/providers/PreviewModalProvider';
 
 interface MediaItem {
   id?: number | string;
@@ -52,9 +52,9 @@ export default function MediaCard({
 }: MediaCardProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const { openPreview } = usePreviewModal();
   const [added, setAdded] = useState(false);
   const [isBright, setIsBright] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
 
   const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     setIsBright(sampleImageBrightness(e.currentTarget, 'top-right'));
@@ -241,7 +241,7 @@ export default function MediaCard({
                   )}
                   {!isBook && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); setShowPreview(true); }}
+                      onClick={(e) => { e.stopPropagation(); openPreview(item, mediaType); }}
                       className="w-8 h-8 rounded-full border-2 border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-white hover:bg-black/60 transition-all"
                     >
                       <Info size={14} className="text-white" />
@@ -279,13 +279,6 @@ export default function MediaCard({
             </div>
           </div>
         </div>
-        {showPreview && (
-          <PreviewModal
-            item={item as any}
-            mediaType={mediaType}
-            onClose={() => setShowPreview(false)}
-          />
-        )}
       </div>
     );
   }
