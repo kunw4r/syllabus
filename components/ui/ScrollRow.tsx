@@ -26,7 +26,7 @@ export default function ScrollRow({
     <section className={`relative ${className}`}>
       {title && (
         <div className="flex items-center justify-between mb-2 relative z-0">
-          <h2 className="text-lg sm:text-xl font-bold text-white">{title}</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-white flex-1 min-w-0">{title}</h2>
           <div className="flex gap-1">
             <button
               onClick={() => scroll(-1)}

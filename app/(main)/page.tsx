@@ -29,6 +29,7 @@ interface LibraryItem {
   media_type?: string;
   status?: string;
   poster_url?: string;
+  backdrop_url?: string;
   tmdb_id?: number;
   openlibrary_key?: string;
   user_rating?: number;
@@ -256,8 +257,8 @@ export default function Home() {
                     item={{
                       id: item.tmdb_id,
                       title: item.title,
-                      backdrop_path: undefined,
-                      poster_path: item.poster_url || undefined,
+                      backdrop_path: item.backdrop_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
+                      poster_path: item.poster_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
                       vote_average: item.external_rating,
                       media_type: item.media_type || 'movie',
                     }}
@@ -291,8 +292,8 @@ export default function Home() {
                   item={{
                     id: item.tmdb_id,
                     title: item.title,
-                    backdrop_path: undefined,
-                    poster_path: item.poster_url || undefined,
+                    backdrop_path: item.backdrop_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
+                    poster_path: item.poster_url?.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+/, '') || undefined,
                     vote_average: item.external_rating,
                     media_type: item.media_type || 'movie',
                   }}

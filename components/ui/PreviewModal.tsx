@@ -246,7 +246,9 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
       const poster = item.poster_path ? `${TMDB_IMG}${item.poster_path}` : null;
       await addToLibrary({
         tmdb_id: item.id ?? null, media_type: mediaType, title,
-        poster_url: poster, genres: genreNames.join(', '),
+        poster_url: poster,
+        backdrop_url: item.backdrop_path ? `${TMDB_IMG_ORIGINAL}${item.backdrop_path}` : null,
+        genres: genreNames.join(', '),
         external_rating: rating ?? null, status: 'want',
       });
       setAdded(true);
