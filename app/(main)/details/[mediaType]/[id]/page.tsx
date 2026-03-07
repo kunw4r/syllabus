@@ -818,7 +818,7 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
                         <span className="text-sm font-bold tabular-nums" style={{ color: getRatingHex(season.vote_average), opacity: 0.7 }}>
                           {season.vote_average.toFixed(1)}
                         </span>
-                        <span className="text-[8px] text-white/20">TMDB</span>
+                        
                       </div>
                     ) : loadingSeasons ? (
                       <div className="w-3 h-3 border border-white/10 border-t-accent/50 rounded-full animate-spin" />
@@ -916,7 +916,7 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
                                     <span className="text-xs font-bold tabular-nums" style={{ color: getRatingHex(epRating) }}>{epRating.toFixed(1)}</span>
                                   </div>
                                   {ratingSource === 'tmdb' && (
-                                    <span className="text-[8px] text-white/15">TMDB</span>
+                                    
                                   )}
                                 </div>
                               )}

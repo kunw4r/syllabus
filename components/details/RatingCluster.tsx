@@ -109,11 +109,11 @@ export default function RatingCluster({
 }: RatingClusterProps) {
   const syllabusScore = avgScore || getSyllabusScore(mediaType, dataId);
   const displayScore = syllabusScore || (tmdbScore ? tmdbScore.toFixed(1) : null);
-  const label = syllabusScore ? 'Syllabus' : 'TMDB';
+  const label = 'Syllabus';
 
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      {/* Syllabus / TMDB Score */}
+      {/* Syllabus Score */}
       {displayScore && (
         <m.div
           custom={0}
