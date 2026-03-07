@@ -63,6 +63,30 @@ function RatingBadge({ value, size = 'sm' }: { value: number; size?: 'sm' | 'xs'
   );
 }
 
+function RatingBar({ value }: { value: number }) {
+  if (!value || value <= 0) return null;
+  const v = Number(value);
+  const pct = Math.min((v / 10) * 100, 100);
+  const color = getRatingHex(v);
+  return (
+    <div className="flex items-center gap-2.5 mt-2.5 w-full">
+      <div className="flex-1 h-[3px] rounded-full bg-white/[0.08] overflow-hidden">
+        <m.div
+          className="h-full rounded-full"
+          style={{ background: `linear-gradient(90deg, ${color}, ${color}aa)`, boxShadow: `0 0 8px ${color}40` }}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const }}
+        />
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-xs font-bold" style={{ color }}>{v.toFixed(1)}</span>
+        <span className="text-[9px] text-white/25">/10</span>
+      </div>
+    </div>
+  );
+}
+
 function getTrailerKey(details: any): string | null {
   const videos = details?.videos?.results || [];
   const trailer =
@@ -406,9 +430,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                               <p className="text-xs text-white/40 mt-2 leading-relaxed line-clamp-2">{ep.overview}</p>
                             )}
                             {ep.vote_average > 0 && (
-                              <div className="mt-2">
-                                <RatingBadge value={ep.vote_average} size="xs" />
-                              </div>
+                              <RatingBar value={ep.vote_average} />
                             )}
                           </div>
                         </div>
