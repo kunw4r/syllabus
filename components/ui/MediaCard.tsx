@@ -57,6 +57,7 @@ export default function MediaCard({
   const { openPreview } = usePreviewModal();
   const [added, setAdded] = useState(false);
   const [isBright, setIsBright] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     setIsBright(sampleImageBrightness(e.currentTarget, 'top-right'));
@@ -94,8 +95,10 @@ export default function MediaCard({
   }
 
   // For landscape mode, prefer backdrop, fall back to poster
-  const landscapeImg = backdrop || poster;
-  const displayImg = mode === 'landscape' ? landscapeImg : poster;
+  // If the primary image failed, try the fallback
+  const landscapeImg = imgFailed ? (poster || null) : (backdrop || poster);
+  const posterImg = imgFailed ? null : poster;
+  const displayImg = mode === 'landscape' ? landscapeImg : posterImg;
 
   const handleClick = () => {
     if (isBook) {
@@ -170,6 +173,7 @@ export default function MediaCard({
                 className="w-full h-full object-cover"
                 crossOrigin="anonymous"
                 onLoad={handleImgLoad}
+                onError={() => setImgFailed(true)}
                 loading="lazy"
               />
             ) : poster ? (

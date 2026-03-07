@@ -377,17 +377,33 @@ export default function Home() {
           </div>
         )}
 
-        {/* Top 10 Right Now — popularity-based with rank numbers */}
+        {/* Top 10 Movies Right Now */}
         <FadeInView>
           <EditorialRow title="Top 10 Movies Right Now" items={trendingMovies.slice(0, 10)} mediaType="movie" showRank />
         </FadeInView>
-        <FadeInView delay={0.05}>
+
+        {/* Now Playing — break up the Top 10s */}
+        {nowPlaying.length > 0 && (
+          <FadeInView delay={0.05}>
+            <EditorialRow title="Now Playing in Theaters" items={nowPlaying} mediaType="movie" />
+          </FadeInView>
+        )}
+
+        {/* Top 10 TV Right Now */}
+        <FadeInView delay={0.08}>
           <EditorialRow title="Top 10 TV Right Now" items={trendingTV.slice(0, 10)} mediaType="tv" showRank />
         </FadeInView>
 
-        {/* Top 10 GOATs — sorted by rating with rank numbers */}
+        {/* Coming Soon */}
+        {upcoming.length > 0 && (
+          <FadeInView delay={0.1}>
+            <EditorialRow title="Coming Soon" items={upcoming} mediaType="movie" />
+          </FadeInView>
+        )}
+
+        {/* Top 10 Movies of All Time */}
         {topRatedMovies.length > 0 && (
-          <FadeInView delay={0.08}>
+          <FadeInView delay={0.12}>
             <EditorialRow
               title="Top 10 Movies of All Time"
               items={[...topRatedMovies].sort((a, b) => (b.unified_rating ?? b.vote_average ?? 0) - (a.unified_rating ?? a.vote_average ?? 0)).slice(0, 10)}
@@ -396,8 +412,17 @@ export default function Home() {
             />
           </FadeInView>
         )}
+
+        {/* Popular Movies */}
+        {popularMovies.length > 0 && (
+          <FadeInView delay={0.14}>
+            <EditorialRow title="Popular Movies" items={popularMovies} mediaType="movie" />
+          </FadeInView>
+        )}
+
+        {/* Top 10 TV Shows of All Time */}
         {topRatedTV.length > 0 && (
-          <FadeInView delay={0.1}>
+          <FadeInView delay={0.16}>
             <EditorialRow
               title="Top 10 TV Shows of All Time"
               items={[...topRatedTV].sort((a, b) => (b.unified_rating ?? b.vote_average ?? 0) - (a.unified_rating ?? a.vote_average ?? 0)).slice(0, 10)}
@@ -407,22 +432,7 @@ export default function Home() {
           </FadeInView>
         )}
 
-        {/* Browse rows */}
-        {nowPlaying.length > 0 && (
-          <FadeInView delay={0.12}>
-            <EditorialRow title="Now Playing in Theaters" items={nowPlaying} mediaType="movie" />
-          </FadeInView>
-        )}
-        {upcoming.length > 0 && (
-          <FadeInView delay={0.14}>
-            <EditorialRow title="Coming Soon" items={upcoming} mediaType="movie" />
-          </FadeInView>
-        )}
-        {popularMovies.length > 0 && (
-          <FadeInView delay={0.16}>
-            <EditorialRow title="Popular Movies" items={popularMovies} mediaType="movie" />
-          </FadeInView>
-        )}
+        {/* Popular TV */}
         {popularTV.length > 0 && (
           <FadeInView delay={0.18}>
             <EditorialRow title="Popular TV Shows" items={popularTV} mediaType="tv" />
