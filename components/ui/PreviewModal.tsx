@@ -4,8 +4,36 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Play, Plus, Check, Maximize2, ChevronDown, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
-import { TMDB_IMG_ORIGINAL, TMDB_IMG, GENRE_ID_TO_NAME } from '@/lib/constants';
+import { TMDB_IMG_ORIGINAL, TMDB_IMG, TMDB_BACKDROP, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
+
+/** Sample the bottom third of an image to detect if it's bright (for text contrast) */
+function sampleBottomBrightness(img: HTMLImageElement): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    const size = 40;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    // Sample the bottom-left third (where title text sits)
+    const sy = nh * 0.6;
+    const sh = nh * 0.4;
+    const sw = nw * 0.6;
+    ctx.drawImage(img, 0, sy, sw, sh, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+    let totalLum = 0;
+    const pixels = size * size;
+    for (let i = 0; i < data.length; i += 4) {
+      totalLum += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    }
+    return totalLum / pixels > 140;
+  } catch {
+    return false;
+  }
+}
 import { useAuth } from '@/components/providers/AuthProvider';
 import { addToLibrary } from '@/lib/api/library';
 import {
@@ -108,7 +136,9 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
   const [seasonData, setSeasonData] = useState<any>(null);
   const [seasonDropdownOpen, setSeasonDropdownOpen] = useState(false);
   const [showAllRecs, setShowAllRecs] = useState(false);
+  const [isBright, setIsBright] = useState(false);
   const recScrollRef = useRef<HTMLDivElement>(null);
+  const heroImgRef = useRef<HTMLImageElement>(null);
 
   const title = item?.title || item?.name || '';
   const rating = item?.unified_rating || item?.vote_average;
@@ -127,6 +157,18 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
   const trailerKey = getTrailerKey(details);
 
+  // Pick an alternative backdrop for the body background (avoid duplicating the hero image)
+  const altBackdrop = (() => {
+    const backdrops = details?.images?.backdrops || [];
+    // Find a different backdrop than the hero (prefer wider/landscape ones)
+    const heroPath = item?.backdrop_path;
+    const alt = backdrops.find((b: any) => b.file_path !== heroPath && b.aspect_ratio >= 1.5);
+    if (alt) return `${TMDB_BACKDROP}${alt.file_path}`;
+    // If no alternative, use poster as body bg instead
+    if (item?.poster_path) return `${TMDB_IMG}${item.poster_path}`;
+    return null;
+  })();
+
   useEffect(() => {
     setAdded(false);
     setPlayingTrailer(false);
@@ -135,6 +177,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
     setSeasonData(null);
     setSelectedSeason(1);
     setShowAllRecs(false);
+    setIsBright(false);
   }, [item?.id]);
 
   useEffect(() => {
@@ -233,10 +276,10 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             className="relative w-full max-w-6xl rounded-2xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.95)] mx-4"
             style={{ background: BG }}
           >
-            {/* ── Extended backdrop behind entire modal ── */}
-            {backdrop && !playingTrailer && (
+            {/* ── Extended backdrop behind entire modal (uses alt image to avoid doubling the hero) ── */}
+            {(altBackdrop || backdrop) && !playingTrailer && (
               <div className="absolute inset-0 z-0 pointer-events-none">
-                <img src={backdrop} alt="" className="w-full h-[70%] object-cover object-[center_20%]" />
+                <img src={altBackdrop || backdrop!} alt="" className="w-full h-[70%] object-cover object-[center_20%] blur-[2px]" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/80 via-[55%] to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-[30%] to-[#0c0c0c]" />
               </div>
@@ -252,7 +295,14 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                   className="w-full h-full"
                 />
               ) : backdrop ? (
-                <img src={backdrop} alt={title} className="w-full h-full object-cover" />
+                <img
+                  ref={heroImgRef}
+                  src={backdrop}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                  crossOrigin="anonymous"
+                  onLoad={(e) => setIsBright(sampleBottomBrightness(e.currentTarget))}
+                />
               ) : (
                 <div className="w-full h-full bg-dark-700" />
               )}
@@ -260,7 +310,13 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
               {!playingTrailer && (
                 <>
                   <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent via-[40%] to-black/30" />
-                  <div className="absolute bottom-0 left-0 right-0 h-3/5 bg-gradient-to-t from-[#0c0c0c]/90 to-transparent" />
+                  <div className={`absolute bottom-0 left-0 right-0 h-3/5 bg-gradient-to-t to-transparent ${
+                    isBright ? 'from-black/80' : 'from-[#0c0c0c]/90'
+                  }`} />
+                  {/* Extra darkening scrim for bright images so text is legible */}
+                  {isBright && (
+                    <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-black/70 to-transparent" />
+                  )}
                 </>
               )}
 
@@ -286,7 +342,11 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 <div className="absolute bottom-0 left-0 right-0 px-10 pb-8 z-10">
                   <h2
                     className="text-4xl sm:text-5xl font-black text-white leading-[1.1] mb-5"
-                    style={{ textShadow: '0 2px 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.5)' }}
+                    style={{
+                      textShadow: isBright
+                        ? '0 2px 8px rgba(0,0,0,1), 0 4px 30px rgba(0,0,0,1), 0 0 60px rgba(0,0,0,0.8)'
+                        : '0 2px 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.5)',
+                    }}
                   >
                     {title}
                   </h2>
