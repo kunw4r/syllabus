@@ -81,29 +81,11 @@ function AnimatedNumber({ value }: { value: number }) {
   return <>{display}</>;
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  value: number;
-  color: string;
-}) {
-  return (
-    <div className="glass rounded-2xl p-4 flex items-center gap-3">
-      <Icon size={20} className={color} />
-      <div>
-        <p className="text-2xl font-black"><AnimatedNumber value={value} /></p>
-        <p className="text-xs text-white/40">{label}</p>
-      </div>
-    </div>
-  );
-}
+const GENRE_COLORS = ['bg-rose-400', 'bg-cyan-400', 'bg-amber-400', 'bg-violet-400', 'bg-emerald-400'];
+const GENRE_TEXT_COLORS = ['text-rose-400', 'text-cyan-400', 'text-amber-400', 'text-violet-400', 'text-emerald-400'];
 
 function StatsPanel({ items }: { items: any[] }) {
+  const router = useRouter();
   const stats = useMemo(() => {
     const total = items.length;
     const finished = items.filter((i) => i.status === 'finished');
@@ -114,198 +96,260 @@ function StatsPanel({ items }: { items: any[] }) {
     const books = items.filter((i) => i.media_type === 'book');
     const rated = items.filter((i) => i.user_rating);
     const avgRating = rated.length
-      ? (
-          rated.reduce((s, i) => s + i.user_rating, 0) / rated.length
-        ).toFixed(1)
+      ? (rated.reduce((s, i) => s + i.user_rating, 0) / rated.length).toFixed(1)
       : null;
+
+    // Rating distribution (1-10)
+    const ratingDist = Array(10).fill(0);
+    rated.forEach((i) => {
+      const bucket = Math.min(Math.max(Math.round(i.user_rating) - 1, 0), 9);
+      ratingDist[bucket]++;
+    });
 
     const genreCounts: Record<string, number> = {};
     items.forEach((i) => {
       if (i.genres)
-        i.genres
-          .split(',')
-          .map((g: string) => g.trim())
-          .filter(Boolean)
-          .forEach((g: string) => {
-            genreCounts[g] = (genreCounts[g] || 0) + 1;
-          });
+        i.genres.split(',').map((g: string) => g.trim()).filter(Boolean)
+          .forEach((g: string) => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
     });
-    const topGenres = Object.entries(genreCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+    const topGenres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
     const topRated = [...items]
       .filter((i) => i.user_rating)
       .sort((a, b) => b.user_rating - a.user_rating)
-      .slice(0, 3);
+      .slice(0, 5);
 
     return {
-      total,
-      finished: finished.length,
-      watching: watching.length,
-      want: want.length,
-      movies: movies.length,
-      tv: tv.length,
-      books: books.length,
-      avgRating,
-      topGenres,
-      topRated,
-      rated: rated.length,
+      total, finished: finished.length, watching: watching.length, want: want.length,
+      movies: movies.length, tv: tv.length, books: books.length,
+      avgRating, ratingDist, topGenres, topRated, rated: rated.length,
     };
   }, [items]);
 
-  return (
-    <div className="space-y-6">
-      <StaggerContainer className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StaggerItem>
-          <StatCard icon={Library} label="Total" value={stats.total} color="text-accent" />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard icon={CheckCircle2} label="Completed" value={stats.finished} color="text-green-400" />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard icon={Eye} label="In Progress" value={stats.watching} color="text-blue-400" />
-        </StaggerItem>
-        <StaggerItem>
-          <StatCard icon={Clock} label="Up Next" value={stats.want} color="text-purple-400" />
-        </StaggerItem>
-      </StaggerContainer>
+  const completionPct = stats.total > 0 ? Math.round((stats.finished / stats.total) * 100) : 0;
+  const circumference = 2 * Math.PI * 40;
+  const maxRatingCount = Math.max(...stats.ratingDist, 1);
 
-      {/* Completion radial + media type breakdown */}
-      <FadeInView delay={0.2}>
-        <div className="glass rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-4">Library Breakdown</h3>
-          <div className="flex items-center gap-6">
-            {/* Radial completion chart */}
-            <div className="relative flex-shrink-0" style={{ width: 80, height: 80 }}>
-              <svg width={80} height={80} className="-rotate-90">
-                <circle cx={40} cy={40} r={34} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={6} />
+  return (
+    <div className="space-y-5">
+      {/* ── Top row: Completion ring + stat numbers ── */}
+      <FadeInView>
+        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5 sm:p-6">
+          <div className="flex items-center gap-5 sm:gap-8">
+            {/* Completion ring */}
+            <div className="relative flex-shrink-0" style={{ width: 96, height: 96 }}>
+              <svg width={96} height={96} className="-rotate-90">
+                <circle cx={48} cy={48} r={40} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={5} />
                 <circle
-                  cx={40} cy={40} r={34} fill="none" stroke="#22c55e" strokeWidth={6} strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 34}
-                  strokeDashoffset={2 * Math.PI * 34 - (stats.total > 0 ? (stats.finished / stats.total) : 0) * 2 * Math.PI * 34}
+                  cx={48} cy={48} r={40} fill="none"
+                  stroke={completionPct >= 75 ? '#22c55e' : completionPct >= 40 ? '#eab308' : '#f97316'}
+                  strokeWidth={5} strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference - (completionPct / 100) * circumference}
                   className="transition-all duration-1000 ease-out"
+                  style={{ filter: `drop-shadow(0 0 6px ${completionPct >= 75 ? 'rgba(34,197,94,0.3)' : completionPct >= 40 ? 'rgba(234,179,8,0.3)' : 'rgba(249,115,22,0.3)'})` }}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-black">{stats.total > 0 ? Math.round((stats.finished / stats.total) * 100) : 0}%</span>
-                <span className="text-[8px] text-white/30">done</span>
+                <span className="text-xl font-black">{completionPct}%</span>
+                <span className="text-[9px] text-white/30 tracking-wide">COMPLETE</span>
               </div>
             </div>
-            {/* Type bars */}
-            <div className="flex-1 space-y-2">
+
+            {/* Stat numbers */}
+            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {[
-                { label: 'Movies', count: stats.movies, color: 'bg-rose-400', icon: Film },
-                { label: 'TV Shows', count: stats.tv, color: 'bg-cyan-400', icon: Tv },
-                { label: 'Books', count: stats.books, color: 'bg-amber-400', icon: BookOpen },
-              ].map((t) => (
-                <div key={t.label} className="flex items-center gap-2">
-                  <t.icon size={14} className="text-white/30 flex-shrink-0" />
-                  <span className="text-xs text-white/50 w-16">{t.label}</span>
-                  <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                    <m.div
-                      initial={{ width: 0 }}
-                      animate={{ width: stats.total > 0 ? `${(t.count / stats.total) * 100}%` : '0%' }}
-                      transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-                      className={`h-full rounded-full ${t.color}`}
-                    />
+                { icon: Library, label: 'Total', value: stats.total, color: 'text-accent' },
+                { icon: CheckCircle2, label: 'Completed', value: stats.finished, color: 'text-green-400' },
+                { icon: Eye, label: 'In Progress', value: stats.watching, color: 'text-blue-400' },
+                { icon: Clock, label: 'Up Next', value: stats.want, color: 'text-purple-400' },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <s.icon size={13} className={s.color} />
+                    <span className="text-[10px] text-white/30 uppercase tracking-wider">{s.label}</span>
                   </div>
-                  <span className="text-xs font-bold text-white/60 w-6 text-right">{t.count}</span>
+                  <p className="text-2xl sm:text-3xl font-black"><AnimatedNumber value={s.value} /></p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </FadeInView>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="glass rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-3 flex items-center gap-2">
-            <Star size={14} className="text-gold" /> Your Rating Stats
-          </h3>
-          {stats.avgRating ? (
-            <div>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-4xl font-black" style={{ color: getRatingHex(Number(stats.avgRating)) }}>
-                  {stats.avgRating}
-                </span>
-                <span className="text-white/30 text-sm">/10 average</span>
-              </div>
-              <p className="text-xs text-white/30">
-                {stats.rated} items rated
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-white/30">Rate items to see stats</p>
-          )}
-        </div>
-        <div className="glass rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-3 flex items-center gap-2">
-            <TrendingUp size={14} className="text-accent" /> Top Genres
-          </h3>
-          {stats.topGenres.length > 0 ? (
-            <div className="space-y-2">
-              {stats.topGenres.map(([genre, count], idx) => (
-                <div key={genre} className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white/20 w-4">
-                    {idx + 1}
-                  </span>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm text-white/70">{genre}</span>
-                      <span className="text-xs text-white/30">{count}</span>
-                    </div>
-                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-accent/60 rounded-full transition-all"
-                        style={{
-                          width: `${(count / stats.topGenres[0][1]) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
+
+          {/* Media type breakdown — inline pills */}
+          <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.05]">
+            {[
+              { label: 'Movies', count: stats.movies, color: 'bg-rose-400', icon: Film },
+              { label: 'TV Shows', count: stats.tv, color: 'bg-cyan-400', icon: Tv },
+              { label: 'Books', count: stats.books, color: 'bg-amber-400', icon: BookOpen },
+            ].map((t) => (
+              <div key={t.label} className="flex-1">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <t.icon size={12} className="text-white/30" />
+                  <span className="text-[11px] text-white/40">{t.label}</span>
+                  <span className="text-[11px] font-bold text-white/60 ml-auto">{t.count}</span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-white/30">
-              Add items with genres to see breakdown
-            </p>
-          )}
-        </div>
-      </div>
-      {stats.topRated.length > 0 && (
-        <div className="glass rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white/40 mb-4 flex items-center gap-2">
-            <Award size={14} className="text-gold" /> Your Highest Rated
-          </h3>
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide">
-            {stats.topRated.map((item, idx) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 min-w-[200px]"
-              >
-                <span className="text-2xl font-black text-white/10">
-                  #{idx + 1}
-                </span>
-                {item.poster_url && (
-                  <img
-                    src={item.poster_url}
-                    alt=""
-                    className="w-10 h-14 rounded-lg object-cover"
+                <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                  <m.div
+                    initial={{ width: 0 }}
+                    animate={{ width: stats.total > 0 ? `${(t.count / stats.total) * 100}%` : '0%' }}
+                    transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
+                    className={`h-full rounded-full ${t.color}`}
                   />
-                )}
-                <div>
-                  <p className="text-sm font-semibold truncate max-w-[120px]">
-                    {item.title}
-                  </p>
-                  <p className="text-xs font-bold" style={{ color: getRatingHex(Number(item.user_rating)), textShadow: `0 0 6px ${getRatingHex(Number(item.user_rating))}66` }}>
-                    {item.user_rating}/10
-                  </p>
                 </div>
               </div>
             ))}
           </div>
         </div>
+      </FadeInView>
+
+      {/* ── Middle row: Rating stats + Top Genres side by side ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Rating Stats with distribution */}
+        <FadeInView delay={0.1}>
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5">
+            <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Star size={12} className="text-yellow-500" /> Your Ratings
+            </h3>
+            {stats.avgRating ? (
+              <div>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-5xl font-black" style={{ color: getRatingHex(Number(stats.avgRating)) }}>
+                    {stats.avgRating}
+                  </span>
+                  <div>
+                    <span className="text-white/25 text-sm">/10 avg</span>
+                    <p className="text-[11px] text-white/20">{stats.rated} rated</p>
+                  </div>
+                </div>
+                {/* Rating distribution histogram */}
+                <div className="flex items-end gap-[3px] h-16">
+                  {stats.ratingDist.map((count, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <m.div
+                        initial={{ height: 0 }}
+                        animate={{ height: count > 0 ? `${Math.max((count / maxRatingCount) * 100, 8)}%` : '3%' }}
+                        transition={{ duration: 0.6, delay: 0.1 * i, ease: 'easeOut' }}
+                        className="w-full rounded-sm"
+                        style={{
+                          backgroundColor: count > 0 ? getRatingHex((i + 1)) : 'rgba(255,255,255,0.04)',
+                          opacity: count > 0 ? 0.8 : 1,
+                        }}
+                      />
+                      <span className="text-[8px] text-white/20">{i + 1}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-white/25">Rate items to see your stats</p>
+            )}
+          </div>
+        </FadeInView>
+
+        {/* Top Genres */}
+        <FadeInView delay={0.15}>
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5">
+            <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <TrendingUp size={12} className="text-accent" /> Top Genres
+            </h3>
+            {stats.topGenres.length > 0 ? (
+              <div className="space-y-3">
+                {stats.topGenres.map(([genre, count], idx) => (
+                  <div key={genre} className="flex items-center gap-2.5">
+                    <span className={`text-xs font-black w-4 ${GENRE_TEXT_COLORS[idx] || 'text-white/20'}`}>
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[13px] font-medium text-white/80 truncate">{genre}</span>
+                        <span className="text-[11px] font-bold text-white/40 ml-2">{count}</span>
+                      </div>
+                      <div className="h-1 bg-white/[0.04] rounded-full overflow-hidden">
+                        <m.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(count / stats.topGenres[0][1]) * 100}%` }}
+                          transition={{ duration: 0.6, delay: 0.1 * idx, ease: 'easeOut' }}
+                          className={`h-full rounded-full ${GENRE_COLORS[idx] || 'bg-white/20'}`}
+                          style={{ opacity: 0.7 }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-white/25">Add items with genres to see breakdown</p>
+            )}
+          </div>
+        </FadeInView>
+      </div>
+
+      {/* ── Highest Rated — visual podium ── */}
+      {stats.topRated.length > 0 && (
+        <FadeInView delay={0.2}>
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5">
+            <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wider mb-5 flex items-center gap-2">
+              <Award size={12} className="text-yellow-500" /> Your Highest Rated
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {stats.topRated.map((item, idx) => {
+                const ratingColor = getRatingHex(Number(item.user_rating));
+                const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32', '#9CA3AF', '#6B7280'];
+                return (
+                  <div
+                    key={item.id}
+                    className="group cursor-pointer"
+                    onClick={() => {
+                      const mt = item.media_type || 'movie';
+                      if (mt === 'book') {
+                        if (item.openlibrary_key) router.push(`/details/book/${item.openlibrary_key}`);
+                      } else {
+                        if (item.tmdb_id) router.push(`/details/${mt}/${item.tmdb_id}`);
+                      }
+                    }}
+                  >
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2 group-hover:scale-[1.03] transition-transform duration-200">
+                      {item.poster_url ? (
+                        <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full bg-white/[0.04] flex items-center justify-center text-white/10 text-3xl">
+                          {item.media_type === 'book' ? '\u{1F4DA}' : '\u{1F3AC}'}
+                        </div>
+                      )}
+                      {/* Rank badge */}
+                      <div
+                        className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black"
+                        style={{
+                          backgroundColor: `${medalColors[idx]}20`,
+                          color: medalColors[idx],
+                          border: `1.5px solid ${medalColors[idx]}40`,
+                          backdropFilter: 'blur(8px)',
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      {/* Bottom gradient */}
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
+                      {/* Rating */}
+                      <div
+                        className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md backdrop-blur-md border border-white/10"
+                        style={{ background: getRatingBg(Number(item.user_rating)), boxShadow: getRatingGlow(Number(item.user_rating)) }}
+                      >
+                        <Star size={9} className="fill-current" style={{ color: getRatingHex(Number(item.user_rating)) }} />
+                        <span className="text-[11px] font-bold drop-shadow-sm" style={{ color: getRatingHex(Number(item.user_rating)) }}>
+                          {item.user_rating}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[12px] font-medium text-white/70 truncate group-hover:text-white transition-colors">
+                      {item.title}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </FadeInView>
       )}
     </div>
   );
