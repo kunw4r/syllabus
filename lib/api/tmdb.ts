@@ -271,7 +271,14 @@ export async function getCuratedPicks(genre = 'all', page = 1) {
   return data.results || [];
 }
 
-const SCENARIO_KEYWORDS: Record<string, { genres: string; keywords: string }> = {
+interface ScenarioConfig {
+  genres: string;
+  keywords: string;
+  language?: string;
+  region?: string;
+}
+
+const SCENARIO_KEYWORDS: Record<string, ScenarioConfig> = {
   'date night': { genres: '10749,35', keywords: '' },
   'date': { genres: '10749,35', keywords: '' },
   'romantic': { genres: '10749', keywords: '' },
@@ -317,23 +324,54 @@ const SCENARIO_KEYWORDS: Record<string, { genres: string; keywords: string }> = 
   'music': { genres: '10402', keywords: '' },
   'sport': { genres: '18', keywords: '6075' },
   'revenge': { genres: '28,53', keywords: '10084' },
+  // Regional cinema
+  'bollywood': { genres: '', keywords: '', language: 'hi', region: 'IN' },
+  'tollywood': { genres: '', keywords: '', language: 'te', region: 'IN' },
+  'telugu': { genres: '', keywords: '', language: 'te', region: 'IN' },
+  'tamil': { genres: '', keywords: '', language: 'ta', region: 'IN' },
+  'korean': { genres: '', keywords: '', language: 'ko', region: 'KR' },
+  'korean drama': { genres: '18', keywords: '', language: 'ko', region: 'KR' },
+  'k-drama': { genres: '18', keywords: '', language: 'ko', region: 'KR' },
+  'k drama': { genres: '18', keywords: '', language: 'ko', region: 'KR' },
+  'french': { genres: '', keywords: '', language: 'fr', region: 'FR' },
+  'spanish': { genres: '', keywords: '', language: 'es', region: 'ES' },
+  'japanese': { genres: '', keywords: '', language: 'ja', region: 'JP' },
+  'chinese': { genres: '', keywords: '', language: 'zh', region: 'CN' },
+  'turkish': { genres: '', keywords: '', language: 'tr', region: 'TR' },
+  'german': { genres: '', keywords: '', language: 'de', region: 'DE' },
+  'italian': { genres: '', keywords: '', language: 'it', region: 'IT' },
+  'british': { genres: '', keywords: '', language: 'en', region: 'GB' },
+  'hindi': { genres: '', keywords: '', language: 'hi', region: 'IN' },
 };
 
 export async function searchByScenario(query: string) {
   const q = query.toLowerCase().trim();
   let genres = '';
   let keywords = '';
+  let language = '';
+  let region = '';
 
+  // Match ALL scenario keywords found in the query (combine genres + language)
   const sorted = Object.entries(SCENARIO_KEYWORDS).sort((a, b) => b[0].length - a[0].length);
+  const genreSet = new Set<string>();
+  const kwSet = new Set<string>();
+
   for (const [phrase, config] of sorted) {
     if (q.includes(phrase)) {
-      genres = config.genres;
-      keywords = config.keywords;
-      break;
+      if (config.genres) config.genres.split(',').forEach((g) => genreSet.add(g));
+      if (config.keywords) config.keywords.split('|').forEach((k) => kwSet.add(k));
+      if (config.language && !language) language = config.language;
+      if (config.region && !region) region = config.region;
     }
   }
 
-  if (!genres) {
+  genres = [...genreSet].join(',');
+  keywords = [...kwSet].join('|');
+
+  const langParam = language ? `&with_original_language=${language}` : '';
+  const minVotes = language ? 50 : 200; // lower threshold for regional cinema
+
+  if (!genres && !language) {
     const kwRes = await tmdb('/search/keyword', `query=${encodeURIComponent(q)}`);
     const kwIds = (kwRes.results || []).slice(0, 3).map((k: any) => k.id).join('|');
     if (kwIds) {
@@ -345,9 +383,10 @@ export async function searchByScenario(query: string) {
   }
 
   const kwParam = keywords ? `&with_keywords=${keywords}` : '';
+  const genreParam = genres ? `with_genres=${genres}` : '';
   const [movies, tv] = await Promise.all([
-    tmdb('/discover/movie', `with_genres=${genres}${kwParam}&sort_by=vote_average.desc&vote_count.gte=200&page=${Math.floor(Math.random() * 3) + 1}`),
-    tmdb('/discover/tv', `with_genres=${genres.replace('10752', '10768')}${kwParam}&sort_by=vote_average.desc&vote_count.gte=200&page=${Math.floor(Math.random() * 2) + 1}`),
+    tmdb('/discover/movie', `${genreParam}${kwParam}${langParam}&sort_by=vote_average.desc&vote_count.gte=${minVotes}&page=${Math.floor(Math.random() * 3) + 1}`),
+    tmdb('/discover/tv', `${genreParam ? `with_genres=${genres.replace('10752', '10768')}` : ''}${kwParam}${langParam}&sort_by=vote_average.desc&vote_count.gte=${minVotes}&page=${Math.floor(Math.random() * 2) + 1}`),
   ]);
 
   const combined = [

@@ -3,6 +3,36 @@ import { searchBooks } from '@/lib/api/books';
 
 // ─── Query Variation Helpers ───
 
+const NUMBER_TO_WORD: Record<string, string> = {
+  '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+  '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
+  '10': 'ten', '11': 'eleven', '12': 'twelve', '13': 'thirteen',
+};
+const WORD_TO_NUMBER: Record<string, string> = Object.fromEntries(
+  Object.entries(NUMBER_TO_WORD).map(([k, v]) => [v, k])
+);
+
+// Common phonetic / spelling substitutions
+const PHONETIC_SUBS: [RegExp, string][] = [
+  [/\bnight\b/gi, 'knight'],
+  [/\bknight\b/gi, 'night'],
+  [/\bnite\b/gi, 'night'],
+  [/\brite\b/gi, 'right'],
+  [/\bright\b/gi, 'rite'],
+  [/\bno\b/gi, 'know'],
+  [/\bnew\b/gi, 'knew'],
+  [/\bwon\b/gi, 'one'],
+  [/\bsun\b/gi, 'son'],
+  [/\bson\b/gi, 'sun'],
+  [/\bbear\b/gi, 'bare'],
+  [/\bware\b/gi, 'wear'],
+  [/\bwar\b/gi, 'wore'],
+  [/\bthru\b/gi, 'through'],
+  [/\btoo\b/gi, 'two'],
+  [/\bfor\b/gi, 'four'],
+  [/\bfour\b/gi, 'for'],
+];
+
 /** Generate alternate query forms to improve fuzzy matching */
 function generateQueryVariations(query: string): string[] {
   const variations: string[] = [];
@@ -20,6 +50,33 @@ function generateQueryVariations(query: string): string[] {
   const noPunct = q.replace(/[''"".,!?:;-]/g, '').replace(/\s+/g, ' ').trim();
   if (noPunct !== q) variations.push(noPunct);
 
+  // Number → word and word → number substitutions
+  const numToWord = q.replace(/\b(\d{1,2})\b/g, (_, n) => NUMBER_TO_WORD[n] || n);
+  if (numToWord !== q) variations.push(numToWord);
+  const wordToNum = q.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen)\b/gi, (w) => WORD_TO_NUMBER[w.toLowerCase()] || w);
+  if (wordToNum !== q) variations.push(wordToNum);
+
+  // Phonetic substitutions — try each one that matches
+  for (const [pattern, replacement] of PHONETIC_SUBS) {
+    if (pattern.test(q)) {
+      // Reset lastIndex since we use /g flag
+      pattern.lastIndex = 0;
+      const swapped = q.replace(pattern, replacement);
+      if (swapped !== q) variations.push(swapped);
+    }
+  }
+
+  // Combined: number + phonetic (e.g. "a night of the 7 kingdoms" → "a knight of the seven kingdoms")
+  if (numToWord !== q) {
+    for (const [pattern, replacement] of PHONETIC_SUBS) {
+      if (pattern.test(numToWord)) {
+        pattern.lastIndex = 0;
+        const combined = numToWord.replace(pattern, replacement);
+        if (combined !== q && combined !== numToWord) variations.push(combined);
+      }
+    }
+  }
+
   // Common double letter misspellings: try collapsing double letters
   const collapsed = q.replace(/(.)\1+/g, '$1');
   if (collapsed !== q.toLowerCase()) variations.push(collapsed);
@@ -28,7 +85,14 @@ function generateQueryVariations(query: string): string[] {
   const depluralized = q.replace(/(\w{3,})s\b/gi, '$1');
   if (depluralized !== q) variations.push(depluralized);
 
-  return [...new Set(variations.filter(v => v.length >= 2 && v !== q))];
+  // Extract just the significant words (3+ chars, skip articles/prepositions) for a broad search
+  const stopWords = new Set(['the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'and', 'or', 'but', 'is', 'it', 'my', 'me', 'we', 'our', 'by', 'as']);
+  const keywords = q.toLowerCase().split(/\s+/).filter(w => w.length >= 3 && !stopWords.has(w));
+  if (keywords.length >= 2 && keywords.length < q.split(/\s+/).length) {
+    variations.push(keywords.join(' '));
+  }
+
+  return [...new Set(variations.filter(v => v.length >= 2 && v !== q))].slice(0, 8);
 }
 
 // ─── Types ───
@@ -182,28 +246,28 @@ export function aiSearchProgressive(
       semantic: [],
     });
 
-    // ── Phase 1.5: If few results, try query variations for better fuzzy matching ──
-    if (mergedMovies.length + mergedTV.length < 3) {
-      const variations = generateQueryVariations(query);
-      if (variations.length > 0) {
-        const varResults = await Promise.all(
-          variations.slice(0, 3).map((v) => multiSearchTMDB(v).catch(() => [] as any[]))
-        );
-        if (cancelled) return;
-        const allVarResults = varResults.flat();
-        const varMovies = allVarResults.filter((r: any) => r.media_type === 'movie');
-        const varTV = allVarResults.filter((r: any) => r.media_type === 'tv');
-        const betterMovies = deduplicateById([...mergedMovies, ...varMovies]);
-        const betterTV = deduplicateById([...mergedTV, ...varTV]);
-        if (betterMovies.length > mergedMovies.length || betterTV.length > mergedTV.length) {
-          onProgress({
-            intent: titleIntent,
-            movies: betterMovies,
-            tv: betterTV,
-            books: titleBooks,
-            semantic: [],
-          });
-        }
+    // ── Phase 1.5: Try query variations for better fuzzy matching ──
+    const variations = generateQueryVariations(query);
+    if (variations.length > 0) {
+      const varResults = await Promise.all(
+        variations.slice(0, 5).map((v) => multiSearchTMDB(v).catch(() => [] as any[]))
+      );
+      if (cancelled) return;
+      const allVarResults = varResults.flat();
+      const varMovies = allVarResults.filter((r: any) => r.media_type === 'movie');
+      const varTV = allVarResults.filter((r: any) => r.media_type === 'tv');
+      const betterMovies = deduplicateById([...mergedMovies, ...varMovies]);
+      const betterTV = deduplicateById([...mergedTV, ...varTV]);
+      if (betterMovies.length > mergedMovies.length || betterTV.length > mergedTV.length) {
+        mergedMovies.length = 0; mergedMovies.push(...betterMovies);
+        mergedTV.length = 0; mergedTV.push(...betterTV);
+        onProgress({
+          intent: titleIntent,
+          movies: betterMovies,
+          tv: betterTV,
+          books: titleBooks,
+          semantic: [],
+        });
       }
     }
 

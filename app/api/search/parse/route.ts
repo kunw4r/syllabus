@@ -18,6 +18,9 @@ const DESCRIPTIVE_WORDS = [
   'romantic', 'thrilling', 'inspiring', 'emotional', 'mind',
   'something', 'anything', 'recommend', 'suggestion', 'watch',
   'movies', 'shows', 'films', 'series', 'anime', 'documentary',
+  'bollywood', 'korean', 'french', 'spanish', 'japanese', 'chinese',
+  'turkish', 'german', 'italian', 'british', 'hindi', 'tamil', 'telugu',
+  'tollywood', 'k-drama', 'binge', 'underrated', 'hidden gem',
 ];
 
 function isDescriptiveQuery(query: string): boolean {
