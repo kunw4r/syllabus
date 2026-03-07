@@ -185,7 +185,7 @@ export default function TVPage() {
         <>
           {/* Hero Banner */}
           {hero?.backdrop_path && (
-            <div className="relative -mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-2 mb-10 h-[50vh] sm:h-[60vh] min-h-[320px] overflow-hidden rounded-b-3xl">
+            <div className="relative -mx-5 sm:-mx-8 lg:-mx-14 xl:-mx-20 2xl:-mx-28 -mt-2 mb-10 h-[45vh] sm:h-[55vh] lg:h-[60vh] min-h-[300px] overflow-hidden rounded-b-3xl">
               <img
                 src={`${TMDB_IMG_ORIGINAL}${hero.backdrop_path}`}
                 alt=""

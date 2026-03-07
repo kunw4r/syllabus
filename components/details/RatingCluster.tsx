@@ -74,7 +74,7 @@ function RatingCard({
       animate="visible"
       {...linkProps}
       className={`
-        flex items-center gap-3 rounded-2xl px-4 py-3.5
+        flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl px-2.5 sm:px-4 py-2 sm:py-3.5
         bg-white/[0.04] backdrop-blur-md
         border border-white/[0.08]
         ${href ? 'cursor-pointer hover:bg-white/[0.07] hover:border-white/[0.14]' : ''}
@@ -83,7 +83,7 @@ function RatingCard({
     >
       <GlassPill label={label} color={color} />
       <div className="flex items-baseline gap-1.5">
-        <span className="text-2xl font-black leading-none" style={{ color }}>
+        <span className="text-lg sm:text-2xl font-black leading-none" style={{ color }}>
           {score}
         </span>
         {subtitle && (
@@ -112,7 +112,7 @@ export default function RatingCluster({
   const label = 'Syllabus';
 
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
       {/* Syllabus Score */}
       {displayScore && (
         <m.div
@@ -120,7 +120,7 @@ export default function RatingCluster({
           variants={ratingVariants}
           initial="hidden"
           animate="visible"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3.5 bg-white/[0.04] backdrop-blur-md border border-white/[0.08]"
+          className="flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl px-2.5 sm:px-4 py-2 sm:py-3.5 bg-white/[0.04] backdrop-blur-md border border-white/[0.08]"
         >
           <span
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-tight backdrop-blur-xl border shrink-0"
@@ -135,7 +135,7 @@ export default function RatingCluster({
             {label}
           </span>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black leading-none" style={{ color: getRatingHex(Number(displayScore)) }}>{displayScore}</span>
+            <span className="text-lg sm:text-2xl font-black leading-none" style={{ color: getRatingHex(Number(displayScore)) }}>{displayScore}</span>
             <span className="text-[10px] text-white/25">/ 10</span>
           </div>
         </m.div>

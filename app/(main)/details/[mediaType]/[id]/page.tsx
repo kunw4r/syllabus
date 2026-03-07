@@ -877,7 +877,7 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
               {/* Season header */}
               <button
                 onClick={() => setExpandedSeason(isExpanded ? null : season.season_number)}
-                className="w-full text-left px-5 py-4 hover:bg-white/[0.02] transition-colors duration-200"
+                className="w-full text-left px-3 sm:px-5 py-3 sm:py-4 hover:bg-white/[0.02] transition-colors duration-200"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
@@ -962,12 +962,12 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
                         return (
                           <div
                             key={ep.id}
-                            className={`flex gap-4 sm:gap-5 py-5 px-5 ${i > 0 ? 'border-t border-white/[0.04]' : ''} hover:bg-white/[0.03] transition-colors`}
+                            className={`flex gap-2.5 sm:gap-4 lg:gap-5 py-3 sm:py-5 px-3 sm:px-5 ${i > 0 ? 'border-t border-white/[0.04]' : ''} hover:bg-white/[0.03] transition-colors`}
                           >
-                            <div className="shrink-0 w-7 flex items-center justify-center">
-                              <span className="text-xl font-bold text-white/10">{ep.episode_number}</span>
+                            <div className="shrink-0 w-5 sm:w-7 flex items-center justify-center">
+                              <span className="text-base sm:text-xl font-bold text-white/10">{ep.episode_number}</span>
                             </div>
-                            <div className="shrink-0 w-[160px] sm:w-[200px] aspect-[16/9] rounded-lg overflow-hidden bg-white/[0.03]">
+                            <div className="shrink-0 w-[90px] sm:w-[160px] lg:w-[200px] aspect-[16/9] rounded-lg overflow-hidden bg-white/[0.03]">
                               {ep.still_path ? (
                                 <img src={`${TMDB_IMG}${ep.still_path}`} alt={ep.name} className="w-full h-full object-cover" loading="lazy" />
                               ) : (
@@ -1011,7 +1011,7 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
                       {omdbEps.map((ep: any) => (
                         <div
                           key={ep.imdbID || ep.number}
-                          className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.03] border-b border-white/[0.02] last:border-b-0 transition-colors"
+                          className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 hover:bg-white/[0.03] border-b border-white/[0.02] last:border-b-0 transition-colors"
                         >
                           <span className="text-[11px] text-white/15 w-7 flex-shrink-0 tabular-nums font-medium">E{ep.number}</span>
                           <div className="w-16 flex-shrink-0">
@@ -1227,7 +1227,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             {/* Back button — overlaid top-left on hero */}
             <button
               onClick={() => router.back()}
-              className="absolute top-14 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-black/60 transition-all text-sm font-medium"
+              className="absolute top-3 sm:top-14 left-3 sm:left-4 z-20 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white/70 hover:text-white hover:bg-black/60 transition-all text-xs sm:text-sm font-medium"
             >
               <ChevronLeft size={16} strokeWidth={2.5} /> Back
             </button>
@@ -1255,15 +1255,15 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
 
             {/* Title overlaid at bottom-left */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-10 z-10">
-              <h1 className="font-serif text-3xl sm:text-4xl lg:text-6xl text-white drop-shadow-lg mb-4">{title}</h1>
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 lg:p-10 z-10">
+              <h1 className="font-serif text-2xl sm:text-4xl lg:text-6xl text-white drop-shadow-lg mb-3 sm:mb-4">{title}</h1>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 {trailer && (
                   <button
                     onClick={() => setShowTrailer(!showTrailer)}
-                    className="inline-flex items-center gap-2.5 bg-white text-black font-bold text-base px-7 py-3 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+                    className="inline-flex items-center gap-2 sm:gap-2.5 bg-white text-black font-bold text-sm sm:text-base px-5 sm:px-7 py-2.5 sm:py-3 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
                   >
-                    <Play size={20} fill="black" /> {showTrailer ? 'Close' : 'Play'}
+                    <Play size={18} fill="black" className="sm:w-5 sm:h-5" /> {showTrailer ? 'Close' : 'Play'}
                   </button>
                 )}
                 <button
@@ -1399,7 +1399,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                   rel="noopener noreferrer"
                   className="flex-shrink-0 group/vid"
                 >
-                  <div className="relative w-[320px] sm:w-[380px] aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
+                  <div className="relative w-[260px] sm:w-[320px] lg:w-[380px] aspect-video rounded-xl overflow-hidden border border-white/[0.06] bg-dark-700">
                     <img
                       src={`https://img.youtube.com/vi/${vid.key}/hqdefault.jpg`}
                       alt={vid.name}
@@ -1416,7 +1416,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                       {vid.official && <span className="text-[9px] font-medium bg-white/10 text-white/60 px-1.5 py-0.5 rounded">Official</span>}
                     </div>
                   </div>
-                  <p className="text-xs text-white/50 mt-2 max-w-[320px] sm:max-w-[380px] truncate group-hover/vid:text-white/70 transition-colors">{vid.name}</p>
+                  <p className="text-xs text-white/50 mt-2 max-w-[260px] sm:max-w-[320px] lg:max-w-[380px] truncate group-hover/vid:text-white/70 transition-colors">{vid.name}</p>
                 </a>
               ))}
             </div>
@@ -1714,7 +1714,7 @@ function PosterSliderRow({ title, items, mediaType, getRatingHex }: {
             <Link
               key={r.id}
               href={`/details/${r.media_type || mediaType}/${r.id}`}
-              className="group/poster shrink-0 w-[160px] sm:w-[185px]"
+              className="group/poster shrink-0 w-[130px] sm:w-[160px] lg:w-[185px]"
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 {poster ? (

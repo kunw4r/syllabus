@@ -90,7 +90,7 @@ function AwardCard({
 
   return (
     <div
-      className="group relative cursor-pointer shrink-0 w-[320px] sm:w-[360px]"
+      className="group relative cursor-pointer shrink-0 w-[260px] sm:w-[320px] lg:w-[360px]"
       onClick={() => router.push(`/details/${mediaType}/${entry.tmdb_id}`)}
     >
       <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/[0.06] group-hover:ring-accent/50 group-hover:scale-[1.02] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300">
@@ -339,7 +339,7 @@ export default function AwardsPage() {
               <div className="h-5 w-20 bg-white/[0.04] rounded mb-3 animate-pulse" />
               <div className="flex gap-4 overflow-hidden">
                 {Array.from({ length: 5 }, (_, j) => (
-                  <div key={j} className="shrink-0 w-[320px] aspect-[16/9] rounded-xl bg-white/[0.02] animate-pulse" />
+                  <div key={j} className="shrink-0 w-[260px] sm:w-[320px] aspect-[16/9] rounded-xl bg-white/[0.02] animate-pulse" />
                 ))}
               </div>
             </div>

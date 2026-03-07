@@ -151,7 +151,7 @@ export default function MediaCard({
     return (
       <div
         className={`group/card relative cursor-pointer min-w-0 z-0 hover:z-40 ${
-          variant ? 'w-full' : `shrink-0 ${size === 'small' ? 'w-[240px] sm:w-[280px]' : 'w-[320px] sm:w-[380px]'}`
+          variant ? 'w-full' : `shrink-0 ${size === 'small' ? 'w-[200px] sm:w-[240px] lg:w-[280px]' : 'w-[260px] sm:w-[320px] lg:w-[380px]'}`
         }`}
         style={{ perspective: '800px' }}
         onClick={handleClick}
@@ -296,7 +296,7 @@ export default function MediaCard({
   // ── Poster card (2:3 vertical) — premium book style ──
   return (
     <div
-      className={`group cursor-pointer ${variant ? 'w-full' : 'shrink-0 w-[150px] sm:w-[170px]'}`}
+      className={`group cursor-pointer ${variant ? 'w-full' : 'shrink-0 w-[130px] sm:w-[150px] lg:w-[170px]'}`}
       onClick={handleClick}
     >
       <div

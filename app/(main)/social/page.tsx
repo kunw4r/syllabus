@@ -398,17 +398,17 @@ export default function SocialPage() {
           </p>
 
           {/* Stats row */}
-          <div className="flex gap-4">
-            <div className="bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
-              <p className="text-xl font-black text-white">{following.length}</p>
+          <div className="flex gap-2 sm:gap-4">
+            <div className="flex-1 bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-3 sm:px-5 py-3 text-center">
+              <p className="text-lg sm:text-xl font-black text-white">{following.length}</p>
               <p className="text-[10px] text-white/30 uppercase tracking-wider">Following</p>
             </div>
-            <div className="bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
-              <p className="text-xl font-black text-white">{followers.length}</p>
+            <div className="flex-1 bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-3 sm:px-5 py-3 text-center">
+              <p className="text-lg sm:text-xl font-black text-white">{followers.length}</p>
               <p className="text-[10px] text-white/30 uppercase tracking-wider">Followers</p>
             </div>
-            <div className="bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-5 py-3 text-center">
-              <p className="text-xl font-black text-white">{activity.length}</p>
+            <div className="flex-1 bg-black/20 backdrop-blur-sm border border-white/[0.08] rounded-xl px-3 sm:px-5 py-3 text-center">
+              <p className="text-lg sm:text-xl font-black text-white">{activity.length}</p>
               <p className="text-[10px] text-white/30 uppercase tracking-wider">Updates</p>
             </div>
           </div>

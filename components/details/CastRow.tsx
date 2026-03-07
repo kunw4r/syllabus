@@ -39,7 +39,7 @@ export default function CastRow({ cast }: CastRowProps) {
               onClick={() => router.push(`/actors/${actor.id}`)}
               className="flex-shrink-0 group/actor cursor-pointer"
             >
-              <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2.5 hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200 w-[200px]">
+              <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2.5 hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200 w-[170px] sm:w-[200px]">
                 {actor.profile_path ? (
                   <img
                     src={`${TMDB_PROFILE}${actor.profile_path}`}

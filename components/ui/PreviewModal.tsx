@@ -347,9 +347,9 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
               {/* Title + actions at bottom */}
               {!playingTrailer && (
-                <div className="absolute bottom-0 left-0 right-0 px-10 pb-8 z-10">
+                <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-8 lg:px-10 pb-5 sm:pb-8 z-10">
                   <h2
-                    className="text-4xl sm:text-5xl font-black text-white leading-[1.1] mb-5"
+                    className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-[1.1] mb-3 sm:mb-5"
                     style={{
                       textShadow: isBright
                         ? '0 2px 8px rgba(0,0,0,1), 0 4px 30px rgba(0,0,0,1), 0 0 60px rgba(0,0,0,0.8)'
@@ -359,12 +359,12 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                     {title}
                   </h2>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <button
                       onClick={handlePlayTrailer}
-                      className="flex items-center gap-2 bg-white text-black font-bold px-8 py-3 rounded-md hover:bg-white/85 transition-all active:scale-[0.97] text-base"
+                      className="flex items-center gap-2 bg-white text-black font-bold px-5 sm:px-8 py-2.5 sm:py-3 rounded-md hover:bg-white/85 transition-all active:scale-[0.97] text-sm sm:text-base"
                     >
-                      <Play size={22} className="fill-black" />
+                      <Play size={18} className="fill-black sm:w-[22px] sm:h-[22px]" />
                       {trailerKey ? 'Trailer' : 'Play'}
                     </button>
 
@@ -389,8 +389,8 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             </div>
 
             {/* ── Details body ── */}
-            <div className="relative z-[1] px-10 pb-10 pt-3">
-              <div className="flex gap-10">
+            <div className="relative z-[1] px-4 sm:px-8 lg:px-10 pb-8 sm:pb-10 pt-3">
+              <div className="flex gap-6 sm:gap-10">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-5 flex-wrap">
                     {year && <span className="text-sm text-white/60 font-medium">{year}</span>}
@@ -442,10 +442,10 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
             {/* ── Episodes (TV) ── */}
             {mediaType === 'tv' && seasonsList.length > 0 && (
-              <div className="relative z-[1] px-10 pb-10">
-                <div className="border-t border-white/[0.05] pt-8">
+              <div className="relative z-[1] px-4 sm:px-8 lg:px-10 pb-8 sm:pb-10">
+                <div className="border-t border-white/[0.05] pt-6 sm:pt-8">
                   <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-2xl font-bold text-white">Episodes</h3>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white">Episodes</h3>
                     <div className="relative">
                       <button
                         onClick={() => setSeasonDropdownOpen(!seasonDropdownOpen)}
@@ -506,10 +506,10 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                           key={ep.id}
                           className={`flex gap-4 sm:gap-5 py-5 ${i > 0 ? 'border-t border-white/[0.05]' : ''} hover:bg-white/[0.04] transition-colors rounded-lg px-3 -mx-3`}
                         >
-                          <div className="shrink-0 w-8 flex items-center justify-center">
-                            <span className="text-2xl font-bold text-white/15">{ep.episode_number}</span>
+                          <div className="shrink-0 w-6 sm:w-8 flex items-center justify-center">
+                            <span className="text-lg sm:text-2xl font-bold text-white/15">{ep.episode_number}</span>
                           </div>
-                          <div className="shrink-0 w-[160px] sm:w-[200px] aspect-[16/9] rounded-lg overflow-hidden" style={{ background: CARD_BG }}>
+                          <div className="shrink-0 w-[100px] sm:w-[160px] lg:w-[200px] aspect-[16/9] rounded-lg overflow-hidden" style={{ background: CARD_BG }}>
                             {ep.still_path ? (
                               <img src={`${TMDB_IMG}${ep.still_path}`} alt={ep.name} className="w-full h-full object-cover" loading="lazy" />
                             ) : (
@@ -548,9 +548,9 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                 recScrollRef.current?.scrollBy({ left: dir * 400, behavior: 'smooth' });
               };
               return (
-                <div className="relative z-[1] px-10 pb-4">
-                  <div className="border-t border-white/[0.05] pt-8">
-                    <h3 className="text-2xl font-bold text-white mb-5">More Like This</h3>
+                <div className="relative z-[1] px-4 sm:px-8 lg:px-10 pb-4">
+                  <div className="border-t border-white/[0.05] pt-6 sm:pt-8">
+                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-5">More Like This</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       {visibleRecs.map((rec: any) => {
                         const recRuntime = rec.runtime
@@ -618,9 +618,9 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
             {/* ── About (Movies) ── */}
             {mediaType === 'movie' && details && (
-              <div className="relative z-[1] px-10 pb-10">
-                <div className="border-t border-white/[0.05] pt-8">
-                  <h3 className="text-2xl font-bold text-white mb-5">About {title}</h3>
+              <div className="relative z-[1] px-4 sm:px-8 lg:px-10 pb-8 sm:pb-10">
+                <div className="border-t border-white/[0.05] pt-6 sm:pt-8">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-5">About {title}</h3>
                   <div className="space-y-2.5 text-sm">
                     {directors.length > 0 && (
                       <p><span className="text-white/30">Director: </span><span className="text-white/60">{directors.join(', ')}</span></p>
@@ -652,9 +652,9 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
             {/* ── About (TV) ── */}
             {mediaType === 'tv' && details && (
-              <div className="relative z-[1] px-10 pb-10">
-                <div className="border-t border-white/[0.05] pt-8">
-                  <h3 className="text-2xl font-bold text-white mb-5">About {title}</h3>
+              <div className="relative z-[1] px-4 sm:px-8 lg:px-10 pb-8 sm:pb-10">
+                <div className="border-t border-white/[0.05] pt-6 sm:pt-8">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-5">About {title}</h3>
                   <div className="space-y-2.5 text-sm">
                     {creators.length > 0 && (
                       <p><span className="text-white/30">Creator: </span><span className="text-white/60">{creators.join(', ')}</span></p>
