@@ -46,12 +46,16 @@ import {
   searchByScenario,
   getMovieDetails,
   getTVDetails,
+  getTrendingMovies,
+  getTrendingTV,
 } from '@/lib/api/tmdb';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { getRatingHex, getRatingBg, getRatingGlow, getUserRatingRed, getUserRatingGlow, getUserRatingBg, sampleImageBrightness } from '@/lib/utils/rating-colors';
 import { loadStaticScoreDB, getSyllabusScore, applyStoredScores } from '@/lib/scoring';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
+import MediaCard from '@/components/ui/MediaCard';
+import ScrollRow from '@/components/ui/ScrollRow';
 import DragDropShelf from '@/components/library/DragDropShelf';
 import VirtualShelf from '@/components/library/VirtualShelf';
 
@@ -307,77 +311,6 @@ function StatsPanel({ items }: { items: any[] }) {
   );
 }
 
-/* ================================================================
-   REC CARD (shared between ForYou sections)
-   ================================================================ */
-
-function RecCard({
-  item,
-  onClick,
-  onAdd,
-}: {
-  item: any;
-  onClick: () => void;
-  onAdd: () => void;
-}) {
-  const title = item.title || item.name;
-  const score = Number(item.unified_rating ?? item.vote_average);
-  return (
-    <div
-      className="min-w-[150px] max-w-[150px] sm:min-w-[160px] sm:max-w-[160px] group relative cursor-pointer shrink-0"
-      onClick={onClick}
-    >
-      <div className="relative aspect-[2/3] rounded-lg overflow-hidden transition-all duration-300 group-hover:scale-[1.04] group-hover:shadow-2xl group-hover:shadow-black/50"
-        style={{ boxShadow: '4px 4px 12px rgba(0,0,0,0.4), -1px -1px 4px rgba(255,255,255,0.03)' }}
-      >
-        {item.poster_path ? (
-          <img
-            src={
-              item.poster_path?.startsWith('http')
-                ? item.poster_path
-                : `${TMDB_IMG}${item.poster_path}`
-            }
-            alt={title}
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-dark-600 to-dark-800 flex items-center justify-center text-white/15 text-xs p-3 text-center">
-            {title}
-          </div>
-        )}
-        {score > 0 && (
-          <div className="absolute top-2 right-2 backdrop-blur-md border border-white/10 rounded-md px-1.5 py-0.5 flex items-center gap-0.5 text-xs font-semibold" style={{ background: getRatingBg(score), boxShadow: getRatingGlow(score) }}>
-            <Star size={9} className="fill-current" style={{ color: getRatingHex(score) }} />
-            <span className="text-[11px] drop-shadow-sm" style={{ color: getRatingHex(score) }}>{score.toFixed(1)}</span>
-          </div>
-        )}
-        {item._source && (
-          <div className="absolute top-2 left-2 bg-accent/80 backdrop-blur-md rounded-md px-1.5 py-0.5 text-[9px] font-medium max-w-[110px] truncate">
-            {item._source}
-          </div>
-        )}
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdd();
-          }}
-          className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 active:scale-90 z-10"
-        >
-          <Plus size={14} />
-        </button>
-      </div>
-      <div className="mt-2 px-0.5">
-        <p className="text-[13px] font-medium text-white/80 truncate group-hover:text-white transition-colors leading-tight">{title}</p>
-        <p className="text-[11px] text-white/25 capitalize mt-0.5">
-          {item.media_type}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 /* ================================================================
    FOR YOU PANEL (AI recs + curated + mood + scenario search)
@@ -388,10 +321,19 @@ function ForYouPanel({ items }: { items: any[] }) {
   const toast = useToast();
   const { user } = useAuth();
 
-  const [recs, setRecs] = useState<any[]>([]);
+  // "Because you watched X" grouped recs
+  const [becauseGroups, setBecauseGroups] = useState<{ source: string; sourceId: number; sourceType: string; items: any[] }[]>([]);
+  const [topPick, setTopPick] = useState<any>(null);
+  const [loadingRecs, setLoadingRecs] = useState(true);
+
+  // Trending (personalized by filtering out library items)
+  const [trendingMovies, setTrendingMovies] = useState<any[]>([]);
+  const [trendingTV, setTrendingTV] = useState<any[]>([]);
+  const [loadingTrending, setLoadingTrending] = useState(true);
+
+  // Mood picks
   const [moodPicks, setMoodPicks] = useState<any[]>([]);
   const [activeMood, setActiveMood] = useState<string | null>(null);
-  const [loadingRecs, setLoadingRecs] = useState(true);
   const [loadingMood, setLoadingMood] = useState(false);
 
   // Curated picks
@@ -406,48 +348,12 @@ function ForYouPanel({ items }: { items: any[] }) {
   const [searchedFor, setSearchedFor] = useState('');
 
   const moods = [
-    {
-      key: 'light',
-      label: 'Something Light',
-      icon: Sun,
-      color: 'text-yellow-400',
-      desc: 'Comedy, family, feel-good',
-    },
-    {
-      key: 'dark',
-      label: 'Dark & Intense',
-      icon: Zap,
-      color: 'text-red-400',
-      desc: 'Action, thriller, horror',
-    },
-    {
-      key: 'mind',
-      label: 'Mind-Bending',
-      icon: Brain,
-      color: 'text-purple-400',
-      desc: 'Sci-fi, mystery, fantasy',
-    },
-    {
-      key: 'feel',
-      label: 'Feel Good',
-      icon: Heart,
-      color: 'text-pink-400',
-      desc: 'Romance, drama, heartfelt',
-    },
-    {
-      key: 'adventure',
-      label: 'Adventure',
-      icon: Compass,
-      color: 'text-emerald-400',
-      desc: 'Epic journeys & quests',
-    },
-    {
-      key: 'chill',
-      label: 'Chill & Learn',
-      icon: Coffee,
-      color: 'text-sky-400',
-      desc: 'Docs, history, reality',
-    },
+    { key: 'light', label: 'Something Light', icon: Sun, color: 'text-yellow-400', bg: 'from-yellow-500/15 to-orange-500/10' },
+    { key: 'dark', label: 'Dark & Intense', icon: Zap, color: 'text-red-400', bg: 'from-red-500/15 to-rose-500/10' },
+    { key: 'mind', label: 'Mind-Bending', icon: Brain, color: 'text-purple-400', bg: 'from-purple-500/15 to-violet-500/10' },
+    { key: 'feel', label: 'Feel Good', icon: Heart, color: 'text-pink-400', bg: 'from-pink-500/15 to-rose-500/10' },
+    { key: 'adventure', label: 'Adventure', icon: Compass, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-teal-500/10' },
+    { key: 'chill', label: 'Chill & Learn', icon: Coffee, color: 'text-sky-400', bg: 'from-sky-500/15 to-blue-500/10' },
   ];
 
   const genreTabs = [
@@ -466,39 +372,93 @@ function ForYouPanel({ items }: { items: any[] }) {
   const scenarioExamples = [
     'Date night movie',
     'Family film for the weekend',
-    'Something to take my mind off things',
     'Feel good comedy',
     'Mind-bending sci-fi',
-    'True story drama',
     'Heist thriller',
+    'Bollywood drama',
+    'Korean thriller',
   ];
 
-  // Load AI recs
+  const libIds = useMemo(() => new Set(items.map((i) => String(i.tmdb_id))), [items]);
+
+  // Load grouped recs + top pick hero
   useEffect(() => {
-    if (items.length > 0) {
-      setLoadingRecs(true);
-      getSmartRecommendations(items).then((d) => {
-        applyStoredScores(d.filter((r: any) => r.media_type !== 'tv'), 'movie');
-        applyStoredScores(d.filter((r: any) => r.media_type === 'tv'), 'tv');
-        setRecs(d);
-        setLoadingRecs(false);
-      });
-    } else setLoadingRecs(false);
-  }, [items]);
+    if (items.length === 0) { setLoadingRecs(false); return; }
+
+    setLoadingRecs(true);
+
+    const rated = items
+      .filter((i) => i.status === 'finished' && i.media_type !== 'book')
+      .sort((a, b) => (b.user_rating || b.external_rating || 0) - (a.user_rating || a.external_rating || 0))
+      .slice(0, 5);
+    const watching = items
+      .filter((i) => i.status === 'watching' && i.media_type !== 'book')
+      .slice(0, 3);
+    const seeds = [...rated, ...watching].slice(0, 6);
+
+    if (seeds.length === 0) { setLoadingRecs(false); return; }
+
+    const globalSeen = new Set<string>();
+
+    Promise.all(
+      seeds.map(async (seed) => {
+        try {
+          const mt = seed.media_type === 'tv' ? 'tv' : 'movie';
+          const data = await (mt === 'tv' ? getTVDetails(seed.tmdb_id) : getMovieDetails(seed.tmdb_id));
+          const recItems = (data.recommendations?.results || [])
+            .map((r: any) => ({ ...r, media_type: r.media_type || mt }))
+            .filter((r: any) => {
+              const key = `${r.media_type}-${r.id}`;
+              if (globalSeen.has(key) || libIds.has(String(r.id))) return false;
+              globalSeen.add(key);
+              return true;
+            });
+          applyStoredScores(recItems.filter((r: any) => r.media_type !== 'tv'), 'movie');
+          applyStoredScores(recItems.filter((r: any) => r.media_type === 'tv'), 'tv');
+          return { source: seed.title, sourceId: seed.tmdb_id, sourceType: mt, items: recItems.slice(0, 15) };
+        } catch {
+          return { source: seed.title, sourceId: seed.tmdb_id, sourceType: 'movie', items: [] };
+        }
+      })
+    ).then((groups) => {
+      const validGroups = groups.filter((g) => g.items.length >= 3);
+      setBecauseGroups(validGroups);
+
+      // Pick the highest-rated rec across all groups as hero
+      const allItems = validGroups.flatMap((g) => g.items);
+      if (allItems.length > 0) {
+        const best = allItems.sort((a, b) => (b.unified_rating || b.vote_average || 0) - (a.unified_rating || a.vote_average || 0))[0];
+        setTopPick(best);
+      }
+      setLoadingRecs(false);
+    });
+  }, [items, libIds]);
+
+  // Load trending
+  useEffect(() => {
+    setLoadingTrending(true);
+    Promise.all([getTrendingMovies(), getTrendingTV()]).then(([movies, tv]) => {
+      applyStoredScores(movies, 'movie');
+      applyStoredScores(tv, 'tv');
+      setTrendingMovies(movies.filter((m: any) => !libIds.has(String(m.id))).slice(0, 15));
+      setTrendingTV(tv.filter((t: any) => !libIds.has(String(t.id))).slice(0, 15));
+      setLoadingTrending(false);
+    });
+  }, [libIds]);
 
   // Load curated picks when genre changes
   useEffect(() => {
     setLoadingCurated(true);
     getCuratedPicks(curatedGenre).then((d) => {
-      const libIds = new Set(items.map((i) => String(i.tmdb_id)));
       const filtered = d.filter((r: any) => !libIds.has(String(r.id))).slice(0, 20);
       applyStoredScores(filtered, 'movie');
       setCuratedPicks(filtered);
       setLoadingCurated(false);
     });
-  }, [curatedGenre, items]);
+  }, [curatedGenre, libIds]);
 
   const handleMood = async (mood: string) => {
+    if (activeMood === mood) { setActiveMood(null); setMoodPicks([]); return; }
     setActiveMood(mood);
     setLoadingMood(true);
     const [movies, tv] = await Promise.all([
@@ -509,7 +469,6 @@ function ForYouPanel({ items }: { items: any[] }) {
       ...movies.map((m: any) => ({ ...m, media_type: 'movie' })),
       ...tv.map((t: any) => ({ ...t, media_type: 'tv' })),
     ].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
-    const libIds = new Set(items.map((i) => String(i.tmdb_id)));
     const filtered = combined.filter((r) => !libIds.has(String(r.id))).slice(0, 20);
     applyStoredScores(filtered.filter((r: any) => r.media_type !== 'tv'), 'movie');
     applyStoredScores(filtered.filter((r: any) => r.media_type === 'tv'), 'tv');
@@ -517,159 +476,187 @@ function ForYouPanel({ items }: { items: any[] }) {
     setLoadingMood(false);
   };
 
-  const handleScenarioSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const q = scenarioQuery.trim();
-    if (!q) return;
+  const runScenario = useCallback(async (q: string) => {
+    if (!q.trim()) return;
     setLoadingScenario(true);
     setSearchedFor(q);
     const results = await searchByScenario(q);
-    const libIds = new Set(items.map((i) => String(i.tmdb_id)));
     const filtered = results.filter((r: any) => !libIds.has(String(r.id)));
     applyStoredScores(filtered.filter((r: any) => r.media_type !== 'tv'), 'movie');
     applyStoredScores(filtered.filter((r: any) => r.media_type === 'tv'), 'tv');
     setScenarioResults(filtered);
     setLoadingScenario(false);
-  };
+  }, [libIds]);
 
-  const handleQuickAdd = async (item: any) => {
-    if (!user) return toast('Please log in first', 'error');
-    const title = item.title || item.name;
-    try {
-      const syllabusScore = getSyllabusScore(item.media_type || 'movie', item.id);
-      await addToLibrary({
-        tmdb_id: item.id,
-        media_type: item.media_type || 'movie',
-        title,
-        poster_url: item.poster_path
-          ? `${TMDB_IMG}${item.poster_path}`
-          : null,
-        external_rating: syllabusScore ?? item.vote_average ?? null,
-        genres: item.genre_ids ? item.genre_ids.join(',') : '',
-      });
-      toast(`Added "${title}" to your library!`, 'success');
-    } catch (err: any) {
-      toast(
-        err?.message === 'Already in your library'
-          ? `"${title}" is already in your library`
-          : 'Could not add',
-        'error',
-      );
-    }
+  const handleScenarioSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    runScenario(scenarioQuery);
   };
-
-  const handleClick = (item: any) =>
-    router.push(`/details/${item.media_type || 'movie'}/${item.id}`);
 
   const SkeletonRowLocal = () => (
-    <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-      {[...Array(6)].map((_, i) => (
-        <div
-          key={i}
-          className="min-w-[160px] aspect-[2/3] rounded-2xl bg-dark-700 animate-pulse"
-        />
+    <div className="flex gap-3 overflow-hidden pb-2">
+      {[...Array(7)].map((_, i) => (
+        <div key={i} className="shrink-0 w-[260px] sm:w-[320px] lg:w-[380px] aspect-[16/9] rounded-lg bg-dark-700 animate-pulse" />
       ))}
     </div>
   );
 
   return (
-    <div className="space-y-12">
-      {/* ── AI Scenario Search ── */}
+    <div className="space-y-10">
+      {/* ── Top Pick Hero ── */}
+      {topPick && topPick.backdrop_path && (
+        <FadeInView>
+          <div
+            className="relative -mx-5 sm:-mx-8 lg:-mx-14 rounded-2xl overflow-hidden cursor-pointer group"
+            onClick={() => router.push(`/details/${topPick.media_type || 'movie'}/${topPick.id}`)}
+          >
+            <div className="relative h-[280px] sm:h-[340px] lg:h-[400px]">
+              <img
+                src={`${TMDB_IMG_ORIGINAL}${topPick.backdrop_path}`}
+                alt=""
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/50 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-900/70 via-transparent to-transparent" />
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 lg:p-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-accent" />
+                <span className="text-xs font-semibold text-accent uppercase tracking-wider">Top Pick For You</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-2 leading-tight">
+                {topPick.title || topPick.name}
+              </h2>
+              <div className="flex items-center gap-3 text-sm text-white/50 mb-3">
+                {(topPick.unified_rating ?? topPick.vote_average) > 0 && (() => {
+                  const val = Number(topPick.unified_rating ?? topPick.vote_average);
+                  return (
+                    <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5" style={{ background: getRatingBg(val), boxShadow: getRatingGlow(val) }}>
+                      <Star size={12} className="fill-current" style={{ color: getRatingHex(val) }} />
+                      <span className="text-xs font-bold" style={{ color: getRatingHex(val) }}>{val.toFixed(1)}</span>
+                    </span>
+                  );
+                })()}
+                <span>{(topPick.release_date || topPick.first_air_date || '').slice(0, 4)}</span>
+                <span className="capitalize text-white/30">{topPick.media_type}</span>
+              </div>
+              {topPick.overview && (
+                <p className="text-white/40 text-sm leading-relaxed line-clamp-2 max-w-xl">{topPick.overview}</p>
+              )}
+            </div>
+          </div>
+        </FadeInView>
+      )}
+
+      {/* ── Because You Watched X ── */}
+      {loadingRecs ? (
+        <section>
+          <div className="h-6 w-64 bg-dark-700 rounded animate-pulse mb-4" />
+          <SkeletonRowLocal />
+        </section>
+      ) : becauseGroups.length > 0 ? (
+        becauseGroups.map((group) => (
+          <ScrollRow
+            key={`because-${group.sourceId}`}
+            title={
+              <span className="flex items-center gap-2">
+                Because you watched
+                <button
+                  onClick={(e) => { e.stopPropagation(); router.push(`/details/${group.sourceType}/${group.sourceId}`); }}
+                  className="text-accent hover:text-accent/80 transition-colors"
+                >
+                  {group.source}
+                </button>
+              </span>
+            }
+          >
+            {group.items.map((item: any) => (
+              <MediaCard key={`${item.media_type}-${item.id}`} item={item} mediaType={item.media_type === 'tv' ? 'tv' : 'movie'} />
+            ))}
+          </ScrollRow>
+        ))
+      ) : items.length > 0 ? null : (
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-10 text-center">
+          <Sparkles size={28} className="text-white/10 mx-auto mb-3" />
+          <p className="text-white/40 text-sm">Add and rate items to get personalized recommendations</p>
+        </div>
+      )}
+
+      {/* ── Trending Now (filtered) ── */}
+      {loadingTrending ? (
+        <section>
+          <div className="h-6 w-48 bg-dark-700 rounded animate-pulse mb-4" />
+          <SkeletonRowLocal />
+        </section>
+      ) : (
+        <>
+          {trendingMovies.length > 0 && (
+            <ScrollRow title={<span className="flex items-center gap-2"><TrendingUp size={18} className="text-orange-400" /> Trending Movies</span>}>
+              {trendingMovies.map((m: any) => (
+                <MediaCard key={m.id} item={m} mediaType="movie" />
+              ))}
+            </ScrollRow>
+          )}
+          {trendingTV.length > 0 && (
+            <ScrollRow title={<span className="flex items-center gap-2"><TrendingUp size={18} className="text-blue-400" /> Trending TV Shows</span>}>
+              {trendingTV.map((t: any) => (
+                <MediaCard key={t.id} item={t} mediaType="tv" />
+              ))}
+            </ScrollRow>
+          )}
+        </>
+      )}
+
+      {/* ── Switch It Up — Mood Discovery ── */}
       <section>
         <div className="mb-5">
-          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-              <Search size={16} className="text-accent" />
-            </div>
-            What Are You In The Mood For?
-          </h2>
-          <p className="text-sm text-white/35 ml-[42px]">
-            Describe what you&apos;re looking for and we&apos;ll find the perfect pick
-          </p>
+          <h2 className="text-xl font-bold mb-1 flex items-center gap-2.5">Switch It Up</h2>
+          <p className="text-sm text-white/30">Pick a vibe</p>
         </div>
-
-        <form onSubmit={handleScenarioSearch} className="flex gap-2 mb-3">
-          <div className="flex-1 relative">
-            <Search
-              size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30"
-            />
-            <input
-              type="text"
-              value={scenarioQuery}
-              onChange={(e) => setScenarioQuery(e.target.value)}
-              placeholder="e.g. date night, family film, something mind-bending..."
-              className="input-field pl-10 w-full"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loadingScenario || !scenarioQuery.trim()}
-            className="btn-primary px-5 flex items-center gap-2 whitespace-nowrap disabled:opacity-40"
-          >
-            <Sparkles size={16} />
-            Find
-          </button>
-        </form>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {scenarioExamples.map((ex) => (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+          {moods.map((mood) => (
             <button
-              key={ex}
-              onClick={() => setScenarioQuery(ex)}
-              className="text-xs px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-white/40 hover:text-white hover:border-white/15 hover:bg-white/[0.05] transition-all"
+              key={mood.key}
+              onClick={() => handleMood(mood.key)}
+              className={`rounded-xl p-3 text-left transition-all duration-200 hover:scale-[1.03] border bg-gradient-to-br ${mood.bg} ${
+                activeMood === mood.key
+                  ? 'border-accent/50 ring-1 ring-accent/20'
+                  : 'border-white/[0.06] hover:border-white/15'
+              }`}
             >
-              {ex}
+              <mood.icon size={18} className={`${mood.color} mb-1.5`} />
+              <p className="text-[11px] sm:text-xs font-semibold leading-tight">{mood.label}</p>
             </button>
           ))}
         </div>
 
-        {loadingScenario ? (
+        {loadingMood ? (
           <SkeletonRowLocal />
-        ) : scenarioResults.length > 0 ? (
-          <div>
-            <p className="text-xs text-white/30 mb-3">
-              Results for &ldquo;
-              <span className="text-white/60">{searchedFor}</span>&rdquo;
-            </p>
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-              {scenarioResults.map((item) => (
-                <RecCard
-                  key={`${item.media_type}-${item.id}`}
-                  item={item}
-                  onClick={() => handleClick(item)}
-                  onAdd={() => handleQuickAdd(item)}
-                />
-              ))}
-            </div>
-          </div>
-        ) : searchedFor ? (
-          <p className="text-sm text-white/30 text-center py-4">
-            No results -- try describing it differently!
-          </p>
+        ) : moodPicks.length > 0 ? (
+          <ScrollRow title={moods.find((m) => m.key === activeMood)?.label || 'Mood Picks'}>
+            {moodPicks.map((item: any) => (
+              <MediaCard key={`${item.media_type}-${item.id}`} item={item} mediaType={item.media_type === 'tv' ? 'tv' : 'movie'} />
+            ))}
+          </ScrollRow>
         ) : null}
       </section>
 
-      {/* ── Curated Must-Watch ── */}
+      {/* ── Must Watch — Curated picks with genre tabs ── */}
       <section>
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center">
-              <Flame size={16} className="text-orange-400" />
-            </div>
+        <div className="mb-4">
+          <h2 className="text-xl font-bold mb-1 flex items-center gap-2.5">
+            <Flame size={18} className="text-orange-400" />
             Must Watch
           </h2>
-          <p className="text-sm text-white/35 ml-[42px]">
-            Highly-rated films loved by critics and audiences
-          </p>
+          <p className="text-sm text-white/30">Highly-rated films loved by critics and audiences</p>
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-2 mb-5">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-2 mb-4">
           {genreTabs.map((gTab) => (
             <button
               key={gTab.key}
               onClick={() => setCuratedGenre(gTab.key)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 curatedGenre === gTab.key
                   ? 'bg-accent text-white'
                   : 'bg-white/[0.04] text-white/35 hover:text-white/70 hover:bg-white/[0.08]'
@@ -683,106 +670,69 @@ function ForYouPanel({ items }: { items: any[] }) {
         {loadingCurated ? (
           <SkeletonRowLocal />
         ) : curatedPicks.length > 0 ? (
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-            {curatedPicks.map((item) => (
-              <RecCard
-                key={`curated-${item.id}`}
-                item={{ ...item, media_type: 'movie' }}
-                onClick={() => router.push(`/details/movie/${item.id}`)}
-                onAdd={() =>
-                  handleQuickAdd({ ...item, media_type: 'movie' })
-                }
-              />
+          <ScrollRow>
+            {curatedPicks.map((item: any) => (
+              <MediaCard key={`curated-${item.id}`} item={item} mediaType="movie" />
             ))}
-          </div>
+          </ScrollRow>
         ) : (
-          <p className="text-sm text-white/30 text-center py-6">
-            No picks found for this genre
-          </p>
+          <p className="text-sm text-white/30 text-center py-6">No picks found for this genre</p>
         )}
       </section>
 
-      {/* ── AI Recommendations ── */}
+      {/* ── Quick Find ── */}
       <section>
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-              <Sparkles size={16} className="text-accent" />
-            </div>
-            Recommended For You
+        <div className="mb-4">
+          <h2 className="text-xl font-bold mb-1 flex items-center gap-2.5">
+            <Search size={18} className="text-accent" />
+            Quick Find
           </h2>
-          <p className="text-sm text-white/35 ml-[42px]">
-            Based on your highest-rated and currently watching
-          </p>
+          <p className="text-sm text-white/30">Describe what you&apos;re looking for</p>
         </div>
 
-        {loadingRecs ? (
-          <SkeletonRowLocal />
-        ) : recs.length > 0 ? (
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-            {recs.map((item) => (
-              <RecCard
-                key={`${item.media_type}-${item.id}`}
-                item={item}
-                onClick={() => handleClick(item)}
-                onAdd={() => handleQuickAdd(item)}
-              />
-            ))}
+        <form onSubmit={handleScenarioSearch} className="flex gap-2 mb-3">
+          <div className="flex-1 relative">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+            <input
+              type="text"
+              value={scenarioQuery}
+              onChange={(e) => setScenarioQuery(e.target.value)}
+              placeholder="e.g. date night, bollywood drama, heist thriller..."
+              className="input-field pl-10 w-full"
+            />
           </div>
-        ) : (
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-10 text-center">
-            <Sparkles size={28} className="text-white/10 mx-auto mb-3" />
-            <p className="text-white/40 text-sm">
-              Finish and rate some items to get personalized picks
-            </p>
-          </div>
-        )}
-      </section>
+          <button
+            type="submit"
+            disabled={loadingScenario || !scenarioQuery.trim()}
+            className="btn-primary px-5 flex items-center gap-2 whitespace-nowrap disabled:opacity-40"
+          >
+            <Sparkles size={16} />
+            Find
+          </button>
+        </form>
 
-      {/* ── Mood Discovery ── */}
-      <section>
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold mb-1">Switch It Up</h2>
-          <p className="text-sm text-white/35">
-            Pick a vibe and discover something new
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          {moods.map((mood) => (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {scenarioExamples.map((ex) => (
             <button
-              key={mood.key}
-              onClick={() => handleMood(mood.key)}
-              className={`rounded-2xl p-4 text-left transition-all duration-200 hover:scale-[1.02] border ${
-                activeMood === mood.key
-                  ? 'border-accent/40 bg-accent/10'
-                  : 'border-white/[0.06] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]'
-              }`}
+              key={ex}
+              onClick={() => { setScenarioQuery(ex); runScenario(ex); }}
+              className="text-[11px] px-2.5 py-1 rounded-full border border-white/[0.06] bg-white/[0.02] text-white/35 hover:text-white hover:border-white/15 hover:bg-white/[0.05] transition-all"
             >
-              <mood.icon size={22} className={`${mood.color} mb-2`} />
-              <p className="text-sm font-semibold">{mood.label}</p>
-              <p className="text-[10px] text-white/25 mt-0.5">{mood.desc}</p>
+              {ex}
             </button>
           ))}
         </div>
 
-        {loadingMood ? (
+        {loadingScenario ? (
           <SkeletonRowLocal />
-        ) : moodPicks.length > 0 ? (
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-            {moodPicks.map((item) => (
-              <RecCard
-                key={`${item.media_type}-${item.id}`}
-                item={item}
-                onClick={() => handleClick(item)}
-                onAdd={() => handleQuickAdd(item)}
-              />
+        ) : scenarioResults.length > 0 ? (
+          <ScrollRow title={<span>Results for &ldquo;<span className="text-white/70">{searchedFor}</span>&rdquo;</span>}>
+            {scenarioResults.map((item: any) => (
+              <MediaCard key={`${item.media_type}-${item.id}`} item={item} mediaType={item.media_type === 'tv' ? 'tv' : 'movie'} />
             ))}
-          </div>
-        ) : activeMood ? (
-          <p className="text-sm text-white/30 text-center py-8">
-            No picks found -- try another mood!
-          </p>
+          </ScrollRow>
+        ) : searchedFor ? (
+          <p className="text-sm text-white/30 text-center py-4">No results — try describing it differently!</p>
         ) : null}
       </section>
     </div>
