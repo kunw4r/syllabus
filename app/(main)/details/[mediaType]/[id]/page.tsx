@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Star, Clock, Eye, CheckCircle2, Play, ExternalLink, Globe, Award,
   DollarSign, Film, Tv, BookOpen, Users, Calendar, X, Heart, Plus, Minus,
-  ChevronLeft, Check, Trash2, Info, Sparkles, Lightbulb, ShoppingCart,
+  ChevronLeft, ChevronRight, Check, Trash2, Info, Sparkles, Lightbulb, ShoppingCart,
   BookCopy, BookMarked, PenLine, ChevronDown,
 } from 'lucide-react';
 import { m, useSpring, useTransform } from 'framer-motion';
@@ -1584,28 +1584,16 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                   >
                     <div className="relative aspect-video overflow-hidden">
                       {backdrop ? (
-                        <img
-                          src={backdrop}
-                          alt={r.title || r.name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105"
-                          loading="lazy"
-                        />
+                        <img src={backdrop} alt={r.title || r.name} className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105" loading="lazy" />
                       ) : (
-                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
-                          {r.title || r.name}
-                        </div>
+                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">{r.title || r.name}</div>
                       )}
                     </div>
                     <div className="p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           {rating && (
-                            <span
-                              className="text-xs font-bold px-1.5 py-0.5 rounded"
-                              style={{ color: getRatingHex(parseFloat(rating)), background: `${getRatingHex(parseFloat(rating))}20` }}
-                            >
-                              {rating}
-                            </span>
+                            <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: getRatingHex(parseFloat(rating)), background: `${getRatingHex(parseFloat(rating))}20` }}>{rating}</span>
                           )}
                           {year && <span className="text-[11px] text-white/30">{year}</span>}
                         </div>
@@ -1648,28 +1636,16 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                   >
                     <div className="relative aspect-video overflow-hidden">
                       {backdrop ? (
-                        <img
-                          src={backdrop}
-                          alt={r.title || r.name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105"
-                          loading="lazy"
-                        />
+                        <img src={backdrop} alt={r.title || r.name} className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105" loading="lazy" />
                       ) : (
-                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
-                          {r.title || r.name}
-                        </div>
+                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">{r.title || r.name}</div>
                       )}
                     </div>
                     <div className="p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           {rating && (
-                            <span
-                              className="text-xs font-bold px-1.5 py-0.5 rounded"
-                              style={{ color: getRatingHex(parseFloat(rating)), background: `${getRatingHex(parseFloat(rating))}20` }}
-                            >
-                              {rating}
-                            </span>
+                            <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: getRatingHex(parseFloat(rating)), background: `${getRatingHex(parseFloat(rating))}20` }}>{rating}</span>
                           )}
                           {year && <span className="text-[11px] text-white/30">{year}</span>}
                         </div>
@@ -1689,6 +1665,93 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           </FadeInView>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PosterSliderRow — Netflix-style poster horizontal slider with arrows
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function PosterSliderRow({ title, items, mediaType, getRatingHex }: {
+  title: string;
+  items: any[];
+  mediaType: string;
+  getRatingHex: (v: number) => string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: number) => {
+    scrollRef.current?.scrollBy({ left: dir * 600, behavior: 'smooth' });
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-white">{title}</h2>
+        <div className="flex gap-1">
+          <button
+            onClick={() => scroll(-1)}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={() => scroll(1)}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+      >
+        {items.map((r: any) => {
+          const poster = r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null;
+          const rating = r.vote_average ? r.vote_average.toFixed(1) : null;
+          return (
+            <Link
+              key={r.id}
+              href={`/details/${r.media_type || mediaType}/${r.id}`}
+              className="group/poster shrink-0 w-[160px] sm:w-[185px]"
+            >
+              <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
+                {poster ? (
+                  <img
+                    src={poster}
+                    alt={r.title || r.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover/poster:scale-105"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
+                    {r.title || r.name}
+                  </div>
+                )}
+                {/* Gradient overlay at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+                {/* Title at bottom of poster */}
+                <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                  <p className="text-[12px] font-semibold text-white leading-tight line-clamp-2 drop-shadow-lg">
+                    {r.title || r.name}
+                  </p>
+                </div>
+                {/* Rating badge top-right */}
+                {rating && (
+                  <span
+                    className="absolute top-2 right-2 text-[11px] font-bold px-1.5 py-0.5 rounded backdrop-blur-md"
+                    style={{ color: getRatingHex(parseFloat(rating)), background: `${getRatingHex(parseFloat(rating))}20`, border: `1px solid ${getRatingHex(parseFloat(rating))}30` }}
+                  >
+                    {rating}
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }
