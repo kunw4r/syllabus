@@ -1500,36 +1500,56 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         <div id="recommendations" className="px-4 sm:px-6 lg:px-10 mt-12 pb-10 max-w-7xl mx-auto scroll-mt-16">
           <FadeInView>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-5">You Might Also Like</h2>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-4">
-              {recommendations.map((r: any) => {
-                const img = r.poster_path
-                  ? `${TMDB_IMG}${r.poster_path}`
-                  : r.backdrop_path
-                    ? `${TMDB_IMG_ORIGINAL}${r.backdrop_path}`
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {recommendations.slice(0, 12).map((r: any) => {
+                const backdrop = r.backdrop_path
+                  ? `${TMDB_IMG}${r.backdrop_path}`
+                  : r.poster_path
+                    ? `${TMDB_IMG}${r.poster_path}`
                     : null;
+                const rating = r.vote_average ? r.vote_average.toFixed(1) : null;
+                const year = (r.release_date || r.first_air_date || '').slice(0, 4);
                 return (
                   <Link
                     key={r.id}
-                    href={`/details/${mediaType}/${r.id}`}
-                    className="shrink-0 group/rec relative w-[160px] sm:w-[185px] aspect-[2/3] rounded-xl overflow-hidden"
+                    href={`/details/${r.media_type || mediaType}/${r.id}`}
+                    className="group/rec rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all"
                   >
-                    {img ? (
-                      <img
-                        src={img}
-                        alt={r.title || r.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
-                        {r.title || r.name}
+                    <div className="relative aspect-video overflow-hidden">
+                      {backdrop ? (
+                        <img
+                          src={backdrop}
+                          alt={r.title || r.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
+                          {r.title || r.name}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {rating && (
+                            <span
+                              className="text-xs font-bold px-1.5 py-0.5 rounded"
+                              style={{ color: getRatingHex(parseFloat(rating)), background: `${getRatingHex(parseFloat(rating))}20` }}
+                            >
+                              {rating}
+                            </span>
+                          )}
+                          {year && <span className="text-[11px] text-white/30">{year}</span>}
+                        </div>
+                        <Plus size={16} className="text-white/25 shrink-0 group-hover/rec:text-white/50 transition-colors" />
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-sm font-semibold text-white drop-shadow-lg line-clamp-2 leading-tight">
-                        {r.title || r.name}
-                      </p>
+                      <p className="text-sm font-semibold text-white/90 leading-tight line-clamp-1">{r.title || r.name}</p>
+                      {r.overview && (
+                        <div className="max-h-[3.6em] overflow-y-auto scrollbar-hide hover:max-h-[8em] transition-all duration-300">
+                          <p className="text-[11px] text-white/35 leading-relaxed">{r.overview}</p>
+                        </div>
+                      )}
                     </div>
                   </Link>
                 );
@@ -1544,36 +1564,56 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         <div className="px-4 sm:px-6 lg:px-10 mt-8 pb-10 max-w-7xl mx-auto">
           <FadeInView>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-5">Trending Now</h2>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-4">
-              {trending.map((r: any) => {
-                const img = r.poster_path
-                  ? `${TMDB_IMG}${r.poster_path}`
-                  : r.backdrop_path
-                    ? `${TMDB_IMG_ORIGINAL}${r.backdrop_path}`
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {trending.slice(0, 12).map((r: any) => {
+                const backdrop = r.backdrop_path
+                  ? `${TMDB_IMG}${r.backdrop_path}`
+                  : r.poster_path
+                    ? `${TMDB_IMG}${r.poster_path}`
                     : null;
+                const rating = r.vote_average ? r.vote_average.toFixed(1) : null;
+                const year = (r.release_date || r.first_air_date || '').slice(0, 4);
                 return (
                   <Link
                     key={r.id}
-                    href={`/details/${mediaType}/${r.id}`}
-                    className="shrink-0 group/rec relative w-[160px] sm:w-[185px] aspect-[2/3] rounded-xl overflow-hidden"
+                    href={`/details/${r.media_type || mediaType}/${r.id}`}
+                    className="group/rec rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all"
                   >
-                    {img ? (
-                      <img
-                        src={img}
-                        alt={r.title || r.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
-                        {r.title || r.name}
+                    <div className="relative aspect-video overflow-hidden">
+                      {backdrop ? (
+                        <img
+                          src={backdrop}
+                          alt={r.title || r.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover/rec:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-dark-700 flex items-center justify-center text-white/20 text-sm p-3 text-center">
+                          {r.title || r.name}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {rating && (
+                            <span
+                              className="text-xs font-bold px-1.5 py-0.5 rounded"
+                              style={{ color: getRatingHex(parseFloat(rating)), background: `${getRatingHex(parseFloat(rating))}20` }}
+                            >
+                              {rating}
+                            </span>
+                          )}
+                          {year && <span className="text-[11px] text-white/30">{year}</span>}
+                        </div>
+                        <Plus size={16} className="text-white/25 shrink-0 group-hover/rec:text-white/50 transition-colors" />
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-sm font-semibold text-white drop-shadow-lg line-clamp-2 leading-tight">
-                        {r.title || r.name}
-                      </p>
+                      <p className="text-sm font-semibold text-white/90 leading-tight line-clamp-1">{r.title || r.name}</p>
+                      {r.overview && (
+                        <div className="max-h-[3.6em] overflow-y-auto scrollbar-hide hover:max-h-[8em] transition-all duration-300">
+                          <p className="text-[11px] text-white/35 leading-relaxed">{r.overview}</p>
+                        </div>
+                      )}
                     </div>
                   </Link>
                 );
