@@ -316,9 +316,102 @@ const TIER_REGIONAL = [
     accent: 'rgba(120,50,180,0.10)',
     streakColor: 'rgba(160,80,240,0.05)',
   },
+  {
+    slug: 'chinese',
+    name: 'Chinese Cinema',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(100,30,10,0.5) 0%, rgba(50,15,5,0.8) 50%, rgba(20,8,4,0.95) 100%)',
+    border: 'rgba(220,80,40,0.22)',
+    glow: '0 0 40px rgba(180,60,20,0.12), 0 0 80px rgba(140,40,15,0.06)',
+    accent: 'rgba(200,70,30,0.10)',
+    streakColor: 'rgba(240,100,50,0.05)',
+  },
+  {
+    slug: 'tamil',
+    name: 'Tamil Cinema',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(90,70,10,0.5) 0%, rgba(45,35,5,0.8) 50%, rgba(18,14,4,0.95) 100%)',
+    border: 'rgba(220,180,40,0.22)',
+    glow: '0 0 40px rgba(180,140,20,0.12), 0 0 80px rgba(140,110,15,0.06)',
+    accent: 'rgba(200,160,30,0.10)',
+    streakColor: 'rgba(240,200,50,0.05)',
+  },
+  {
+    slug: 'french',
+    name: 'French Cinema',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,30,80,0.5) 0%, rgba(10,15,45,0.8) 50%, rgba(6,8,25,0.95) 100%)',
+    border: 'rgba(60,80,200,0.20)',
+    glow: '0 0 40px rgba(40,60,160,0.12), 0 0 80px rgba(30,40,120,0.06)',
+    accent: 'rgba(50,70,180,0.10)',
+    streakColor: 'rgba(80,100,240,0.05)',
+  },
 ];
 
-type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof TIER_3)[number] | (typeof TIER_REGIONAL)[number];
+const TIER_BOLLYWOOD = [
+  {
+    slug: 'dharma',
+    name: 'Dharma Productions',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(90,65,15,0.5) 0%, rgba(45,32,8,0.8) 50%, rgba(18,13,5,0.95) 100%)',
+    border: 'rgba(210,160,50,0.22)',
+    glow: '0 0 40px rgba(170,120,30,0.12), 0 0 80px rgba(130,90,20,0.06)',
+    accent: 'rgba(190,140,40,0.10)',
+    streakColor: 'rgba(230,180,60,0.05)',
+  },
+  {
+    slug: 'yash-raj',
+    name: 'Yash Raj Films',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(100,30,15,0.5) 0%, rgba(50,15,8,0.8) 50%, rgba(20,8,5,0.95) 100%)',
+    border: 'rgba(220,80,50,0.22)',
+    glow: '0 0 40px rgba(180,60,30,0.12), 0 0 80px rgba(140,40,20,0.06)',
+    accent: 'rgba(200,70,40,0.10)',
+    streakColor: 'rgba(240,100,60,0.05)',
+  },
+  {
+    slug: 'red-chillies',
+    name: 'Red Chillies',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(110,15,15,0.5) 0%, rgba(55,8,8,0.8) 50%, rgba(22,5,5,0.95) 100%)',
+    border: 'rgba(220,50,50,0.22)',
+    glow: '0 0 40px rgba(180,30,30,0.15), 0 0 80px rgba(140,20,20,0.08)',
+    accent: 'rgba(200,40,40,0.10)',
+    streakColor: 'rgba(240,70,70,0.05)',
+  },
+  {
+    slug: 't-series',
+    name: 'T-Series Films',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(20,35,90,0.5) 0%, rgba(10,18,50,0.8) 50%, rgba(6,10,28,0.95) 100%)',
+    border: 'rgba(60,90,210,0.20)',
+    glow: '0 0 40px rgba(40,70,170,0.12), 0 0 80px rgba(25,50,130,0.06)',
+    accent: 'rgba(50,80,190,0.10)',
+    streakColor: 'rgba(70,110,240,0.05)',
+  },
+  {
+    slug: 'excel',
+    name: 'Excel Entertainment',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(15,60,60,0.5) 0%, rgba(8,30,30,0.8) 50%, rgba(5,14,14,0.95) 100%)',
+    border: 'rgba(50,180,180,0.20)',
+    glow: '0 0 40px rgba(30,140,140,0.12), 0 0 80px rgba(20,100,100,0.06)',
+    accent: 'rgba(40,160,160,0.10)',
+    streakColor: 'rgba(60,200,200,0.05)',
+  },
+  {
+    slug: 'hbo',
+    name: 'HBO Films',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(50,20,80,0.5) 0%, rgba(25,10,45,0.8) 50%, rgba(12,6,22,0.95) 100%)',
+    border: 'rgba(130,60,200,0.20)',
+    glow: '0 0 40px rgba(100,40,160,0.12), 0 0 80px rgba(70,20,120,0.06)',
+    accent: 'rgba(120,50,180,0.10)',
+    streakColor: 'rgba(160,80,240,0.05)',
+  },
+  {
+    slug: 'amazon',
+    name: 'Amazon Studios',
+    gradient: 'radial-gradient(ellipse at 50% 40%, rgba(15,50,70,0.5) 0%, rgba(8,25,38,0.8) 50%, rgba(5,12,18,0.95) 100%)',
+    border: 'rgba(50,160,200,0.20)',
+    glow: '0 0 40px rgba(30,120,160,0.12), 0 0 80px rgba(20,90,120,0.06)',
+    accent: 'rgba(40,140,180,0.10)',
+    streakColor: 'rgba(60,180,220,0.05)',
+  },
+];
+
+type StudioEntry = (typeof TIER_1)[number] | (typeof TIER_2)[number] | (typeof TIER_3)[number] | (typeof TIER_REGIONAL)[number] | (typeof TIER_BOLLYWOOD)[number];
 
 // ── Tier aspect ratios ──
 
@@ -617,6 +710,16 @@ export default function StudiosPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5">
         {TIER_REGIONAL.map((s) => (
           <StudioCard key={s.slug} studio={s} tier={2} />
+        ))}
+      </div>
+
+      <SectionDivider />
+
+      {/* Bollywood & Streaming Studios */}
+      <SectionLabel>Bollywood Studios & More</SectionLabel>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        {TIER_BOLLYWOOD.map((s) => (
+          <StudioCard key={s.slug} studio={s} tier={3} />
         ))}
       </div>
     </>

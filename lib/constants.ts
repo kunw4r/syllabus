@@ -189,13 +189,23 @@ export const STUDIOS: Studio[] = [
   { slug: 'studiocanal', name: 'StudioCanal', tmdb_id: 694, color: 'from-blue-400 to-indigo-500', tint: '#121624', icon: '' },
   // Regional cinema
   { slug: 'bollywood', name: 'Bollywood', tmdb_id: null, language: 'hi', color: 'from-orange-400 to-pink-500', tint: '#221410', icon: '' },
+  { slug: 'dharma', name: 'Dharma Productions', tmdb_id: 6735, color: 'from-orange-300 to-amber-500', tint: '#1e1810', icon: '' },
+  { slug: 'yash-raj', name: 'Yash Raj Films', tmdb_id: 2096, color: 'from-red-400 to-orange-500', tint: '#201210', icon: '' },
+  { slug: 'red-chillies', name: 'Red Chillies', tmdb_id: 78526, color: 'from-red-500 to-red-700', tint: '#1e0e0e', icon: '' },
+  { slug: 't-series', name: 'T-Series Films', tmdb_id: 85103, color: 'from-blue-400 to-indigo-600', tint: '#121828', icon: '' },
+  { slug: 'excel', name: 'Excel Entertainment', tmdb_id: 15741, color: 'from-teal-400 to-cyan-600', tint: '#0e1a1e', icon: '' },
   { slug: 'korean', name: 'Korean Cinema', tmdb_id: null, language: 'ko', color: 'from-rose-400 to-pink-600', tint: '#201418', icon: '' },
+  { slug: 'chinese', name: 'Chinese Cinema', tmdb_id: null, language: 'zh', color: 'from-red-500 to-amber-500', tint: '#1e1210', icon: '' },
+  { slug: 'tamil', name: 'Tamil Cinema', tmdb_id: null, language: 'ta', color: 'from-yellow-400 to-orange-500', tint: '#1c1610', icon: '' },
   { slug: 'anime', name: 'Anime Films', tmdb_id: null, language: 'ja', color: 'from-pink-400 to-fuchsia-600', tint: '#1e1220', icon: '' },
+  { slug: 'french', name: 'French Cinema', tmdb_id: null, language: 'fr', color: 'from-blue-300 to-blue-500', tint: '#101828', icon: '' },
   { slug: 'toei', name: 'Toei Animation', tmdb_id: 5542, color: 'from-red-400 to-rose-600', tint: '#201214', icon: '' },
   { slug: 'apple-studios', name: 'Apple TV+', tmdb_id: 194232, color: 'from-gray-300 to-gray-500', tint: '#161616', icon: '' },
   { slug: 'toho', name: 'Toho', tmdb_id: 882, color: 'from-red-500 to-red-700', tint: '#1e1010', icon: '' },
   { slug: 'netflix', name: 'Netflix', tmdb_id: 213, color: 'from-red-500 to-red-700', tint: '#1a0808', icon: '' },
   { slug: 'columbia', name: 'Columbia Pictures', tmdb_id: 5, color: 'from-amber-400 to-amber-600', tint: '#1a1610', icon: '' },
+  { slug: 'hbo', name: 'HBO Films', tmdb_id: 7429, color: 'from-violet-400 to-purple-600', tint: '#181428', icon: '' },
+  { slug: 'amazon', name: 'Amazon Studios', tmdb_id: 20580, color: 'from-cyan-400 to-blue-500', tint: '#0e1822', icon: '' },
 ];
 
 // ─── Streaming provider ID → name + URL (Where to Watch) ───
