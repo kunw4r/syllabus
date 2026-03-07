@@ -21,7 +21,7 @@ import {
   getLibraryItemByMediaId,
 } from '@/lib/api/library';
 import { computeUnifiedRating, setSyllabusScore, getSyllabusScore } from '@/lib/scoring';
-import { TMDB_IMG, TMDB_IMG_ORIGINAL, STREAMING_PROVIDERS, SCENARIO_KEYWORDS } from '@/lib/constants';
+import { TMDB_IMG, TMDB_IMG_ORIGINAL, TMDB_BACKDROP, STREAMING_PROVIDERS, SCENARIO_KEYWORDS } from '@/lib/constants';
 import BookCover from '@/components/ui/BookCover';
 import MediaCard from '@/components/ui/MediaCard';
 import ScrollRow from '@/components/ui/ScrollRow';
@@ -1649,7 +1649,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {recommendations.slice(0, 12).map((r: any) => {
                 const backdrop = r.backdrop_path
-                  ? `${TMDB_IMG}${r.backdrop_path}`
+                  ? `${TMDB_BACKDROP}${r.backdrop_path}`
                   : r.poster_path
                     ? `${TMDB_IMG}${r.poster_path}`
                     : null;
@@ -1713,7 +1713,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {trending.slice(0, 12).map((r: any) => {
                 const backdrop = r.backdrop_path
-                  ? `${TMDB_IMG}${r.backdrop_path}`
+                  ? `${TMDB_BACKDROP}${r.backdrop_path}`
                   : r.poster_path
                     ? `${TMDB_IMG}${r.poster_path}`
                     : null;
