@@ -179,7 +179,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className={`space-y-2 ${heroItems.length > 0 ? '-mt-16 relative z-10' : ''}`}>
+      <div className={`space-y-0 ${heroItems.length > 0 ? '-mt-16 relative z-10' : ''}`}>
         {/* Search — only show standalone when hero isn't visible */}
         {heroItems.length === 0 && (
           <FadeInView>

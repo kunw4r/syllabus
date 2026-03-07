@@ -41,7 +41,7 @@ export default function EditorialRow({ title, items, mediaType = 'movie' }: Edit
         </div>
       </div>
 
-      <div ref={ref} className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide pt-10 pb-12 -mt-8 -mb-10 px-5 sm:px-8 lg:px-14 -mx-5 sm:-mx-8 lg:-mx-14">
+      <div ref={ref} className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide pt-14 pb-16 -mt-12 -mb-14 px-5 sm:px-8 lg:px-14 -mx-5 sm:-mx-8 lg:-mx-14">
         {items.map((item: any) => (
           <MediaCard
             key={item.id || item.key || item.google_books_id}

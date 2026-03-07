@@ -161,7 +161,7 @@ export default function MediaCard({
           className="transition-all duration-200 ease-[cubic-bezier(0.25,0.1,0.25,1)] origin-center group-hover/card:delay-150"
           style={{ transformStyle: 'preserve-3d' }}
         >
-          <div className="relative aspect-[16/9] rounded-lg overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/card:rounded-xl group-hover/card:shadow-[0_14px_50px_rgba(0,0,0,0.95),0_0_0_1px_rgba(255,255,255,0.08)] group-hover/card:scale-[1.3] group-hover/card:-translate-y-2 group-hover/card:delay-200">
+          <div className="relative aspect-[16/9] rounded-lg overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/card:rounded-xl group-hover/card:shadow-[0_14px_50px_rgba(0,0,0,0.95),0_0_0_1px_rgba(255,255,255,0.08)] group-hover/card:scale-[1.15] group-hover/card:-translate-y-2 group-hover/card:delay-300">
             {/* Image */}
             {displayImg ? (
               <img
