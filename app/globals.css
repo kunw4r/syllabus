@@ -102,6 +102,13 @@
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

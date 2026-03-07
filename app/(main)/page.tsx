@@ -19,7 +19,7 @@ import EditorialRow from '@/components/ui/EditorialRow';
 import SearchBar from '@/components/ui/SearchBar';
 import HeroBanner from '@/components/ui/HeroBanner';
 import RecommendationRow from '@/components/ui/RecommendationRow';
-import { SkeletonRow } from '@/components/ui/SkeletonCard';
+import { SkeletonRow, HomePageSkeleton } from '@/components/ui/SkeletonCard';
 import { FadeInView } from '@/components/motion/FadeInView';
 import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 
@@ -165,10 +165,14 @@ export default function Home() {
     .slice(0, 5)
     .map((m) => ({ ...m, media_type: 'movie' }));
 
+  if (loading) {
+    return <HomePageSkeleton />;
+  }
+
   return (
     <div>
       {/* Hero Banner — full bleed edge-to-edge */}
-      {!loading && heroItems.length > 0 && (
+      {heroItems.length > 0 && (
         <div className="-mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-6 lg:-mt-4 mb-10">
           <HeroBanner items={heroItems} />
         </div>
@@ -176,7 +180,7 @@ export default function Home() {
 
       <div className="space-y-10">
         {/* Search — only show standalone when hero isn't visible */}
-        {(loading || heroItems.length === 0) && (
+        {heroItems.length === 0 && (
           <FadeInView>
             <SearchBar onSearch={handleSearch} placeholder="Search movies, TV shows & books..." />
           </FadeInView>
@@ -306,59 +310,49 @@ export default function Home() {
         )}
 
         {/* Trending */}
-        {loading ? (
-          <>
-            <SkeletonRow />
-            <SkeletonRow />
-            <SkeletonRow />
-          </>
-        ) : (
-          <>
-            <FadeInView>
-              <EditorialRow title="Trending Movies" items={trendingMovies} mediaType="movie" />
-            </FadeInView>
-            <FadeInView delay={0.05}>
-              <EditorialRow title="Trending TV Shows" items={trendingTV} mediaType="tv" />
-            </FadeInView>
-            {nowPlaying.length > 0 && (
-              <FadeInView delay={0.1}>
-                <EditorialRow title="Now Playing in Theaters" items={nowPlaying} mediaType="movie" />
-              </FadeInView>
-            )}
-            {upcoming.length > 0 && (
-              <FadeInView delay={0.12}>
-                <EditorialRow title="Coming Soon" items={upcoming} mediaType="movie" />
-              </FadeInView>
-            )}
-            {popularMovies.length > 0 && (
-              <FadeInView delay={0.14}>
-                <EditorialRow title="Popular Movies" items={popularMovies} mediaType="movie" />
-              </FadeInView>
-            )}
-            {topRatedMovies.length > 0 && (
-              <FadeInView delay={0.16}>
-                <EditorialRow title="Top Rated Movies" items={topRatedMovies} mediaType="movie" />
-              </FadeInView>
-            )}
-            {popularTV.length > 0 && (
-              <FadeInView delay={0.18}>
-                <EditorialRow title="Popular TV Shows" items={popularTV} mediaType="tv" />
-              </FadeInView>
-            )}
-            {topRatedTV.length > 0 && (
-              <FadeInView delay={0.2}>
-                <EditorialRow title="Top Rated TV Shows" items={topRatedTV} mediaType="tv" />
-              </FadeInView>
-            )}
-            <FadeInView delay={0.22}>
-              <ScrollRow title="Trending Books">
-                {trendingBooks.map((b: any) => (
-                  <MediaCard key={b.key || b.google_books_id} item={b} mediaType="book" />
-                ))}
-              </ScrollRow>
-            </FadeInView>
-          </>
+        <FadeInView>
+          <EditorialRow title="Trending Movies" items={trendingMovies} mediaType="movie" />
+        </FadeInView>
+        <FadeInView delay={0.05}>
+          <EditorialRow title="Trending TV Shows" items={trendingTV} mediaType="tv" />
+        </FadeInView>
+        {nowPlaying.length > 0 && (
+          <FadeInView delay={0.1}>
+            <EditorialRow title="Now Playing in Theaters" items={nowPlaying} mediaType="movie" />
+          </FadeInView>
         )}
+        {upcoming.length > 0 && (
+          <FadeInView delay={0.12}>
+            <EditorialRow title="Coming Soon" items={upcoming} mediaType="movie" />
+          </FadeInView>
+        )}
+        {popularMovies.length > 0 && (
+          <FadeInView delay={0.14}>
+            <EditorialRow title="Popular Movies" items={popularMovies} mediaType="movie" />
+          </FadeInView>
+        )}
+        {topRatedMovies.length > 0 && (
+          <FadeInView delay={0.16}>
+            <EditorialRow title="Top Rated Movies" items={topRatedMovies} mediaType="movie" />
+          </FadeInView>
+        )}
+        {popularTV.length > 0 && (
+          <FadeInView delay={0.18}>
+            <EditorialRow title="Popular TV Shows" items={popularTV} mediaType="tv" />
+          </FadeInView>
+        )}
+        {topRatedTV.length > 0 && (
+          <FadeInView delay={0.2}>
+            <EditorialRow title="Top Rated TV Shows" items={topRatedTV} mediaType="tv" />
+          </FadeInView>
+        )}
+        <FadeInView delay={0.22}>
+          <ScrollRow title="Trending Books">
+            {trendingBooks.map((b: any) => (
+              <MediaCard key={b.key || b.google_books_id} item={b} mediaType="book" />
+            ))}
+          </ScrollRow>
+        </FadeInView>
       </div>
     </div>
   );
