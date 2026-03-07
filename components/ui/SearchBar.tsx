@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, type FormEvent, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Search, X, Sparkles } from 'lucide-react';
 import { fetchSuggestions, type Suggestion } from '@/lib/api/ai-search';
@@ -167,9 +168,9 @@ export default function SearchBar({
         )}
       </form>
 
-      {/* Suggestions dropdown */}
+      {/* Suggestions dropdown — rendered via portal to escape clipping contexts */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl shadow-black/50 z-50 animate-fade-in">
+        <DropdownPortal anchorRef={containerRef}>
           {suggestions.map((s, i) => (
             <button
               key={`${s.type}-${s.text}-${i}`}
@@ -232,8 +233,53 @@ export default function SearchBar({
             <Search size={14} className="text-accent shrink-0" />
             <span className="text-sm text-accent/80 font-medium">Search all for &ldquo;{query}&rdquo;</span>
           </button>
-        </div>
+        </DropdownPortal>
       )}
     </div>
+  );
+}
+
+/** Portal-based dropdown that escapes clipping contexts (backdrop-blur, rounded nav, etc.) */
+function DropdownPortal({
+  anchorRef,
+  children,
+}: {
+  anchorRef: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}) {
+  const [style, setStyle] = useState<React.CSSProperties>({ opacity: 0 });
+
+  useEffect(() => {
+    function update() {
+      const el = anchorRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setStyle({
+        position: 'fixed',
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width,
+        opacity: 1,
+      });
+    }
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [anchorRef]);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      style={style}
+      className="bg-dark-800/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl shadow-black/50 z-[200] animate-fade-in"
+    >
+      {children}
+    </div>,
+    document.body
   );
 }
