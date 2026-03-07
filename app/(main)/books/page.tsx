@@ -136,7 +136,7 @@ export default function BooksPage() {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_50%,rgba(217,119,6,0.08),transparent_60%)]" />
 
             {/* Bottom fade */}
-            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#0e1117] via-[#0e1117]/80 to-transparent z-[1]" />
+            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-dark-900 via-dark-900/80 to-transparent z-[1]" />
 
             {/* Content */}
             <div className="absolute inset-0 z-[2] flex items-end">
@@ -214,43 +214,6 @@ export default function BooksPage() {
           </div>
         </div>
       )}
-
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search
-            size={16}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
-          />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by title, author, or ISBN..."
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-accent/40 transition-colors"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={searching}
-          className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2"
-        >
-          {searching ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Search size={14} />
-          )}
-          Search
-        </button>
-        {results && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            className="text-white/40 hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
-        )}
-      </form>
 
       {results ? (
         <>

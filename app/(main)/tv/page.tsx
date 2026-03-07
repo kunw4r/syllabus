@@ -40,6 +40,7 @@ export default function TVPage() {
   const router = useRouter();
   const [hero, setHero] = useState<any>(null);
   const [heroTrailer, setHeroTrailer] = useState<string | null>(null);
+  const [playingTrailer, setPlayingTrailer] = useState(false);
   const [trending, setTrending] = useState<any[]>([]);
   const [topRated, setTopRated] = useState<any[]>([]);
   const [anime, setAnime] = useState<any[]>([]);
@@ -217,17 +218,32 @@ export default function TVPage() {
                     More Info
                   </button>
                   {heroTrailer && (
-                    <a
-                      href={`https://www.youtube.com/watch?v=${heroTrailer}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => setPlayingTrailer(true)}
                       className="bg-white/10 backdrop-blur-md border border-white/10 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"
                     >
                       <Play size={16} /> Trailer
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
+              {/* Inline trailer */}
+              {playingTrailer && heroTrailer && (
+                <div className="absolute inset-0 z-10 bg-black">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${heroTrailer}?autoplay=1&rel=0`}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                  <button
+                    onClick={() => setPlayingTrailer(false)}
+                    className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
