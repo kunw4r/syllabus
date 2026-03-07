@@ -167,7 +167,7 @@ export default function Home() {
       {/* Hero Banner — full bleed edge-to-edge */}
       {!loading && heroItems.length > 0 && (
         <div className="-mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-6 lg:-mt-4 mb-10">
-          <HeroBanner items={heroItems} onSearch={handleSearch} />
+          <HeroBanner items={heroItems} />
         </div>
       )}
 
