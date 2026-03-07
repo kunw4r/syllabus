@@ -243,8 +243,8 @@ export default function Home() {
                   item={{
                     id: item.tmdb_id,
                     title: item.title,
-                    backdrop_path: null,
-                    poster_path: item.poster_url || null,
+                    backdrop_path: undefined,
+                    poster_path: item.poster_url || undefined,
                     vote_average: item.external_rating,
                     media_type: item.media_type || 'movie',
                   }}
@@ -276,8 +276,8 @@ export default function Home() {
                   item={{
                     id: item.tmdb_id,
                     title: item.title,
-                    backdrop_path: null,
-                    poster_path: item.poster_url || null,
+                    backdrop_path: undefined,
+                    poster_path: item.poster_url || undefined,
                     vote_average: item.external_rating,
                     media_type: item.media_type || 'movie',
                   }}

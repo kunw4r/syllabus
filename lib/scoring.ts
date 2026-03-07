@@ -430,7 +430,7 @@ export async function enrichChart(
         title,
         name,
         poster_path,
-        backdrop_path,
+        backdrop_path: (typeof backdrop_path === 'string' ? backdrop_path : undefined) as string | undefined,
         release_date,
         first_air_date,
         vote_average,
