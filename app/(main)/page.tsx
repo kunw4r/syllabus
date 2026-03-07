@@ -178,7 +178,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="space-y-10">
+      <div className="space-y-4">
         {/* Search — only show standalone when hero isn't visible */}
         {heroItems.length === 0 && (
           <FadeInView>
