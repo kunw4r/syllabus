@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Info, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Star, Info, Play, Pause, Volume2, VolumeX, Library, Eye, CheckCircle2 } from 'lucide-react';
 import { AnimatePresence, m } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { extractDominantColor } from '@/lib/utils/color-extract';
@@ -24,8 +24,16 @@ interface HeroItem {
   first_air_date?: string;
 }
 
+interface LibraryStats {
+  total: number;
+  inProgress: number;
+  finished: number;
+}
+
 interface HeroBannerProps {
   items: HeroItem[];
+  stats?: LibraryStats | null;
+  onStatsClick?: () => void;
 }
 
 const GENRE_MAP: Record<number, string> = {
@@ -48,7 +56,7 @@ function ytCommand(iframe: HTMLIFrameElement | null, func: string) {
   );
 }
 
-export default function HeroBanner({ items }: HeroBannerProps) {
+export default function HeroBanner({ items, stats, onStatsClick }: HeroBannerProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [ambientColor, setAmbientColor] = useState('233, 69, 96');
@@ -328,27 +336,53 @@ export default function HeroBanner({ items }: HeroBannerProps) {
         </div>
       </div>
 
-      {/* Progress indicators */}
-      {heroItems.length > 1 && (
-        <div className="absolute bottom-5 sm:bottom-6 right-0 z-[3] flex gap-1.5 sm:gap-2 items-center pr-4 sm:pr-[clamp(36px,6vw,80px)]">
-          {heroItems.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goToSlide(i)}
-              className="relative h-1 rounded-full overflow-hidden transition-all duration-300"
-              style={{ width: i === currentIndex ? '36px' : '12px' }}
-            >
-              <div className="absolute inset-0 bg-white/20 rounded-full" />
-              {i === currentIndex && (
-                <div
-                  key={progressKey}
-                  className="absolute inset-0 bg-white rounded-full animate-progress-fill"
-                />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Stats pills + Progress indicators — bottom row */}
+      <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 z-[3] flex items-center justify-between px-4 sm:px-[clamp(36px,6vw,80px)]">
+        {/* Compact stats pills */}
+        {stats && stats.total > 0 ? (
+          <button
+            onClick={onStatsClick}
+            className="flex items-center gap-3 sm:gap-4 bg-black/30 backdrop-blur-xl border border-white/[0.08] rounded-full px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-black/50 transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              <Library size={12} className="text-accent" />
+              <span className="text-xs sm:text-sm font-bold">{stats.total}</span>
+            </span>
+            <span className="w-px h-3 bg-white/10" />
+            <span className="flex items-center gap-1.5">
+              <Eye size={12} className="text-blue-400" />
+              <span className="text-xs sm:text-sm font-bold">{stats.inProgress}</span>
+            </span>
+            <span className="w-px h-3 bg-white/10" />
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={12} className="text-green-400" />
+              <span className="text-xs sm:text-sm font-bold">{stats.finished}</span>
+            </span>
+          </button>
+        ) : <div />}
+
+        {/* Progress dots */}
+        {heroItems.length > 1 && (
+          <div className="flex gap-1.5 sm:gap-2 items-center">
+            {heroItems.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goToSlide(i)}
+                className="relative h-1 rounded-full overflow-hidden transition-all duration-300"
+                style={{ width: i === currentIndex ? '36px' : '12px' }}
+              >
+                <div className="absolute inset-0 bg-white/20 rounded-full" />
+                {i === currentIndex && (
+                  <div
+                    key={progressKey}
+                    className="absolute inset-0 bg-white rounded-full animate-progress-fill"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

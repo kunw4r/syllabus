@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Library, Eye, CheckCircle2, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { getLibrary, removeFromLibrary } from '@/lib/api/library';
 import {
@@ -21,7 +21,6 @@ import HeroBanner from '@/components/ui/HeroBanner';
 import RecommendationRow from '@/components/ui/RecommendationRow';
 import { SkeletonRow, HomePageSkeleton } from '@/components/ui/SkeletonCard';
 import { FadeInView } from '@/components/motion/FadeInView';
-import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 
 interface LibraryItem {
   id: string;
@@ -186,7 +185,11 @@ export default function Home() {
       {/* Hero Banner — full bleed edge-to-edge, seamless fade into content */}
       {heroItems.length > 0 && (
         <div className="-mx-5 sm:-mx-8 lg:-mx-14 xl:-mx-20 2xl:-mx-28 -mt-6 lg:-mt-4">
-          <HeroBanner items={heroItems} />
+          <HeroBanner
+            items={heroItems}
+            stats={user && library.length > 0 ? { total: library.length, inProgress: continueWatching.length, finished: finishedCount } : null}
+            onStatsClick={() => router.push('/library')}
+          />
         </div>
       )}
 
@@ -198,49 +201,7 @@ export default function Home() {
           </FadeInView>
         )}
 
-        {/* Stats row */}
-        {user && library.length > 0 && (
-          <StaggerContainer className="grid grid-cols-3 gap-2 sm:gap-3">
-            <StaggerItem>
-              <div
-                className="rounded-xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
-                onClick={() => router.push('/library')}
-              >
-                <Library size={18} className="text-accent shrink-0" />
-                <div>
-                  <p className="text-lg sm:text-xl font-black">{library.length}</p>
-                  <p className="text-[9px] sm:text-[10px] text-white/35 uppercase tracking-wider">In Library</p>
-                </div>
-              </div>
-            </StaggerItem>
-            <StaggerItem>
-              <div
-                className="rounded-xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
-                onClick={() => router.push('/library')}
-              >
-                <Eye size={18} className="text-blue-400 shrink-0" />
-                <div>
-                  <p className="text-lg sm:text-xl font-black">{continueWatching.length}</p>
-                  <p className="text-[9px] sm:text-[10px] text-white/35 uppercase tracking-wider">In Progress</p>
-                </div>
-              </div>
-            </StaggerItem>
-            <StaggerItem>
-              <div
-                className="rounded-xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
-                onClick={() => router.push('/library')}
-              >
-                <CheckCircle2 size={18} className="text-green-400 shrink-0" />
-                <div>
-                  <p className="text-lg sm:text-xl font-black">{finishedCount}</p>
-                  <p className="text-[9px] sm:text-[10px] text-white/35 uppercase tracking-wider">Finished</p>
-                </div>
-              </div>
-            </StaggerItem>
-          </StaggerContainer>
-        )}
-
-        {/* Continue Watching */}
+        {/* Continue Watching — first row, highest priority */}
         {continueWatching.length > 0 && (
           <FadeInView>
             <ScrollRow
