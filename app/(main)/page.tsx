@@ -179,7 +179,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className={`space-y-0 ${heroItems.length > 0 ? '-mt-16 relative z-10' : ''}`}>
+      <div className={`space-y-0 ${heroItems.length > 0 ? '-mt-32 sm:-mt-36 lg:-mt-40 relative z-10' : ''}`}>
         {/* Search — only show standalone when hero isn't visible */}
         {heroItems.length === 0 && (
           <FadeInView>
@@ -189,40 +189,40 @@ export default function Home() {
 
         {/* Stats row */}
         {user && library.length > 0 && (
-          <StaggerContainer className="grid grid-cols-3 gap-3">
+          <StaggerContainer className="grid grid-cols-3 gap-2 sm:gap-3">
             <StaggerItem>
               <div
-                className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
+                className="rounded-xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
                 onClick={() => router.push('/library')}
               >
-                <Library size={20} className="text-accent" />
+                <Library size={18} className="text-accent shrink-0" />
                 <div>
-                  <p className="text-xl font-black">{library.length}</p>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">In Library</p>
+                  <p className="text-lg sm:text-xl font-black">{library.length}</p>
+                  <p className="text-[9px] sm:text-[10px] text-white/35 uppercase tracking-wider">In Library</p>
                 </div>
               </div>
             </StaggerItem>
             <StaggerItem>
               <div
-                className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
+                className="rounded-xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
                 onClick={() => router.push('/library')}
               >
-                <Eye size={20} className="text-blue-400" />
+                <Eye size={18} className="text-blue-400 shrink-0" />
                 <div>
-                  <p className="text-xl font-black">{continueWatching.length}</p>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">In Progress</p>
+                  <p className="text-lg sm:text-xl font-black">{continueWatching.length}</p>
+                  <p className="text-[9px] sm:text-[10px] text-white/35 uppercase tracking-wider">In Progress</p>
                 </div>
               </div>
             </StaggerItem>
             <StaggerItem>
               <div
-                className="glass rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors"
+                className="rounded-xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
                 onClick={() => router.push('/library')}
               >
-                <CheckCircle2 size={20} className="text-green-400" />
+                <CheckCircle2 size={18} className="text-green-400 shrink-0" />
                 <div>
-                  <p className="text-xl font-black">{finishedCount}</p>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider">Finished</p>
+                  <p className="text-lg sm:text-xl font-black">{finishedCount}</p>
+                  <p className="text-[9px] sm:text-[10px] text-white/35 uppercase tracking-wider">Finished</p>
                 </div>
               </div>
             </StaggerItem>
