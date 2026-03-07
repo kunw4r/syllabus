@@ -84,8 +84,7 @@ function AnimatedNumber({ value }: { value: number }) {
 const GENRE_COLORS = ['bg-rose-400', 'bg-cyan-400', 'bg-amber-400', 'bg-violet-400', 'bg-emerald-400'];
 const GENRE_TEXT_COLORS = ['text-rose-400', 'text-cyan-400', 'text-amber-400', 'text-violet-400', 'text-emerald-400'];
 
-function StatsPanel({ items, onFilterByStatus }: { items: any[]; onFilterByStatus?: (status: string) => void }) {
-  const router = useRouter();
+function StatsPanel({ items, onFilterByStatus, onRate }: { items: any[]; onFilterByStatus?: (status: string) => void; onRate?: (item: any) => void }) {
   const stats = useMemo(() => {
     const total = items.length;
     const finished = items.filter((i) => i.status === 'finished');
@@ -309,14 +308,7 @@ function StatsPanel({ items, onFilterByStatus }: { items: any[]; onFilterByStatu
                   <div
                     key={item.id}
                     className="group cursor-pointer"
-                    onClick={() => {
-                      const mt = item.media_type || 'movie';
-                      if (mt === 'book') {
-                        if (item.openlibrary_key) router.push(`/details/book/${item.openlibrary_key}`);
-                      } else {
-                        if (item.tmdb_id) router.push(`/details/${mt}/${item.tmdb_id}`);
-                      }
-                    }}
+                    onClick={() => onRate?.(item)}
                   >
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2 group-hover:scale-[1.03] transition-transform duration-200">
                       {item.poster_url ? (
@@ -1449,7 +1441,7 @@ export default function LibraryPage() {
       {activeTab === 'foryou' && <ForYouPanel items={allItems} />}
 
       {/* Stats Tab */}
-      {activeTab === 'stats' && <StatsPanel items={allItems} onFilterByStatus={(status) => { setFilter(status); setActiveTab('shelf'); }} />}
+      {activeTab === 'stats' && <StatsPanel items={allItems} onFilterByStatus={(status) => { setFilter(status); setActiveTab('shelf'); }} onRate={openReview} />}
 
       {/* Review Modal (decimal slider) */}
       {reviewItem && (
