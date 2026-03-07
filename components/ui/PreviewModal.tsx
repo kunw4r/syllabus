@@ -487,44 +487,125 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
               </div>
             )}
 
-            {/* ── Similar / Recommendations (Movies) ── */}
+            {/* ── More Like This (Movies) — Netflix-style cards ── */}
             {mediaType === 'movie' && details?.recommendations?.results?.length > 0 && (
               <div className="px-8 pb-8">
                 <div className="border-t border-white/[0.06] pt-6">
                   <h3 className="text-xl font-bold text-white mb-4">More Like This</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {details.recommendations.results.slice(0, 9).map((rec: any) => (
-                      <button
-                        key={rec.id}
-                        onClick={() => {
-                          onClose();
-                          router.push(`/details/movie/${rec.id}`);
-                        }}
-                        className="text-left rounded-lg overflow-hidden bg-[#242424] hover:bg-[#2a2a2a] transition-colors"
-                      >
-                        <div className="aspect-[16/9] overflow-hidden">
-                          {rec.backdrop_path ? (
-                            <img
-                              src={`${TMDB_IMG}${rec.backdrop_path}`}
-                              alt={rec.title}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-[#2a2a2a]" />
-                          )}
-                        </div>
-                        <div className="p-2.5">
-                          <p className="text-xs font-medium text-white/70 truncate">{rec.title}</p>
-                          {rec.vote_average > 0 && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Star size={9} className="fill-current text-yellow-500" />
-                              <span className="text-[10px] text-white/40">{rec.vote_average.toFixed(1)}</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {details.recommendations.results
+                      .filter((r: any) => r.backdrop_path)
+                      .slice(0, 9)
+                      .map((rec: any) => {
+                        const recRuntime = rec.runtime
+                          ? `${Math.floor(rec.runtime / 60)}h ${rec.runtime % 60}m`
+                          : null;
+                        const recYear = (rec.release_date || '').slice(0, 4);
+                        return (
+                          <div
+                            key={rec.id}
+                            className="rounded-lg overflow-hidden bg-[#2b2b2b] hover:bg-[#333] transition-colors cursor-pointer"
+                            onClick={() => { onClose(); router.push(`/details/movie/${rec.id}`); }}
+                          >
+                            {/* Backdrop with runtime badge */}
+                            <div className="relative aspect-[16/9] overflow-hidden">
+                              <img
+                                src={`${TMDB_IMG}${rec.backdrop_path}`}
+                                alt={rec.title || rec.name}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                              {recRuntime && (
+                                <span className="absolute top-2 right-2 text-[11px] text-white/70 bg-black/60 backdrop-blur-sm rounded px-1.5 py-0.5">
+                                  {recRuntime}
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+
+                            {/* Meta row: cert, HD, year, + button */}
+                            <div className="px-3 pt-2.5 pb-2 flex items-center justify-between">
+                              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                {rec.vote_average > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Star size={10} className="fill-current text-yellow-500" />
+                                    <span className="text-xs text-white/50">{rec.vote_average.toFixed(1)}</span>
+                                  </div>
+                                )}
+                                <span className="text-[10px] font-bold text-white/40 border border-white/15 rounded px-1 py-px leading-none">
+                                  HD
+                                </span>
+                                {recYear && <span className="text-xs text-white/40">{recYear}</span>}
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); }}
+                                className="shrink-0 w-7 h-7 rounded-full border border-white/30 flex items-center justify-center hover:border-white transition-colors"
+                              >
+                                <Plus size={14} className="text-white/60" />
+                              </button>
+                            </div>
+
+                            {/* Overview blurb */}
+                            {rec.overview && (
+                              <p className="px-3 pb-3 text-xs text-white/40 leading-relaxed line-clamp-3">
+                                {rec.overview}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── About section (Movies) ── */}
+            {mediaType === 'movie' && details && (
+              <div className="px-8 pb-8">
+                <div className="border-t border-white/[0.06] pt-6">
+                  <h3 className="text-xl font-bold text-white mb-4">
+                    About {title}
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    {directors.length > 0 && (
+                      <p>
+                        <span className="text-white/30">Director: </span>
+                        <span className="text-white/60">{directors.join(', ')}</span>
+                      </p>
+                    )}
+                    {(details?.credits?.cast || []).length > 0 && (
+                      <p>
+                        <span className="text-white/30">Cast: </span>
+                        <span className="text-white/60">
+                          {(details.credits.cast || []).slice(0, 10).map((c: any) => c.name).join(', ')}
+                        </span>
+                      </p>
+                    )}
+                    {(details?.credits?.crew || []).filter((c: any) => c.job === 'Screenplay' || c.job === 'Writer').length > 0 && (
+                      <p>
+                        <span className="text-white/30">Writer: </span>
+                        <span className="text-white/60">
+                          {(details.credits.crew || [])
+                            .filter((c: any) => c.job === 'Screenplay' || c.job === 'Writer')
+                            .slice(0, 3)
+                            .map((c: any) => c.name)
+                            .join(', ')}
+                        </span>
+                      </p>
+                    )}
+                    {genreNames.length > 0 && (
+                      <p>
+                        <span className="text-white/30">Genres: </span>
+                        <span className="text-white/60">{genreNames.join(', ')}</span>
+                      </p>
+                    )}
+                    {certification && (
+                      <p>
+                        <span className="text-white/30">Maturity rating: </span>
+                        <span className="text-[11px] font-bold text-white/50 border border-white/20 rounded px-1.5 py-0.5">
+                          {certification}
+                        </span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
