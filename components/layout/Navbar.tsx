@@ -126,7 +126,7 @@ export default function Navbar() {
           </div>
 
           {/* Search */}
-          <div className={`ml-auto flex-1 transition-all duration-500 ${scrolled ? 'max-w-xs mx-2' : 'max-w-md mx-4'}`}>
+          <div className={`ml-auto flex-1 transition-all duration-500 ${scrolled ? 'max-w-sm mx-2' : 'max-w-xl mx-4'}`}>
             <SearchBar variant="navbar" />
           </div>
 
