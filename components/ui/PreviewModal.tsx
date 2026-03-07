@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Play, Plus, Check, Maximize2, ChevronDown, Star } from 'lucide-react';
+import { X, Play, Plus, Check, Maximize2, ChevronDown, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 import { TMDB_IMG_ORIGINAL, TMDB_IMG, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
@@ -107,6 +107,8 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [seasonData, setSeasonData] = useState<any>(null);
   const [seasonDropdownOpen, setSeasonDropdownOpen] = useState(false);
+  const [showAllRecs, setShowAllRecs] = useState(false);
+  const recScrollRef = useRef<HTMLDivElement>(null);
 
   const title = item?.title || item?.name || '';
   const rating = item?.unified_rating || item?.vote_average;
@@ -132,6 +134,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
     setCertification(null);
     setSeasonData(null);
     setSelectedSeason(1);
+    setShowAllRecs(false);
   }, [item?.id]);
 
   useEffect(() => {
@@ -230,8 +233,17 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             className="relative w-full max-w-6xl rounded-2xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.95)] mx-4"
             style={{ background: BG }}
           >
+            {/* ── Extended backdrop behind entire modal ── */}
+            {backdrop && !playingTrailer && (
+              <div className="absolute inset-0 z-0 pointer-events-none">
+                <img src={backdrop} alt="" className="w-full h-[70%] object-cover object-[center_20%]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/95 via-[55%] to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-[30%] to-[#0c0c0c]" />
+              </div>
+            )}
+
             {/* ── Hero ── */}
-            <div className="relative aspect-[16/9] overflow-hidden">
+            <div className="relative aspect-[16/9] overflow-hidden z-[1]">
               {playingTrailer && trailerKey ? (
                 <iframe
                   src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
@@ -247,8 +259,8 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
               {!playingTrailer && (
                 <>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-transparent via-[50%] to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#0c0c0c] to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent via-[40%] to-black/30" />
+                  <div className="absolute bottom-0 left-0 right-0 h-3/5 bg-gradient-to-t from-[#0c0c0c]/90 to-transparent" />
                 </>
               )}
 
@@ -309,7 +321,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             </div>
 
             {/* ── Details body ── */}
-            <div className="px-10 pb-10 pt-3">
+            <div className="relative z-[1] px-10 pb-10 pt-3">
               <div className="flex gap-10">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-5 flex-wrap">
@@ -362,7 +374,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
             {/* ── Episodes (TV) ── */}
             {mediaType === 'tv' && seasonsList.length > 0 && (
-              <div className="px-10 pb-10">
+              <div className="relative z-[1] px-10 pb-10">
                 <div className="border-t border-white/[0.05] pt-8">
                   <div className="flex items-center justify-between mb-5">
                     <h3 className="text-2xl font-bold text-white">Episodes</h3>
@@ -461,15 +473,18 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
             )}
 
             {/* ── More Like This (Movies) ── */}
-            {mediaType === 'movie' && details?.recommendations?.results?.length > 0 && (
-              <div className="px-10 pb-10">
-                <div className="border-t border-white/[0.05] pt-8">
-                  <h3 className="text-2xl font-bold text-white mb-5">More Like This</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {details.recommendations.results
-                      .filter((r: any) => r.backdrop_path)
-                      .slice(0, 9)
-                      .map((rec: any) => {
+            {mediaType === 'movie' && details?.recommendations?.results?.length > 0 && (() => {
+              const allRecs = details.recommendations.results.filter((r: any) => r.backdrop_path);
+              const visibleRecs = showAllRecs ? allRecs : allRecs.slice(0, 9);
+              const scrollRec = (dir: number) => {
+                recScrollRef.current?.scrollBy({ left: dir * 400, behavior: 'smooth' });
+              };
+              return (
+                <div className="px-10 pb-4">
+                  <div className="border-t border-white/[0.05] pt-8">
+                    <h3 className="text-2xl font-bold text-white mb-5">More Like This</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {visibleRecs.map((rec: any) => {
                         const recRuntime = rec.runtime
                           ? `${Math.floor(rec.runtime / 60)}h ${rec.runtime % 60}m`
                           : null;
@@ -477,7 +492,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                         return (
                           <div
                             key={rec.id}
-                            className="rounded-lg overflow-hidden hover:ring-1 hover:ring-white/10 transition-all cursor-pointer"
+                            className="group/mlt rounded-lg overflow-hidden hover:ring-1 hover:ring-white/10 transition-all cursor-pointer"
                             style={{ background: CARD_BG }}
                             onClick={() => { onClose(); router.push(`/details/movie/${rec.id}`); }}
                           >
@@ -508,19 +523,34 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
                               </button>
                             </div>
                             {rec.overview && (
-                              <p className="px-3 pb-3 text-xs text-white/40 leading-relaxed line-clamp-3">{rec.overview}</p>
+                              <div className="px-3 pb-3 relative">
+                                <p className="text-xs text-white/40 leading-relaxed line-clamp-3 group-hover/mlt:line-clamp-none transition-all duration-300">{rec.overview}</p>
+                                <div className="absolute bottom-3 left-3 right-3 h-6 bg-gradient-to-t from-[#151515] to-transparent group-hover/mlt:opacity-0 transition-opacity duration-300 pointer-events-none" />
+                              </div>
                             )}
                           </div>
                         );
                       })}
+                    </div>
+                    {/* Show more / show less chevron */}
+                    {allRecs.length > 9 && (
+                      <div className="flex justify-center mt-6 mb-2">
+                        <button
+                          onClick={() => setShowAllRecs(!showAllRecs)}
+                          className="w-12 h-12 rounded-full border-2 border-white/20 bg-white/[0.04] flex items-center justify-center hover:border-white/40 hover:bg-white/[0.08] transition-all"
+                        >
+                          <ChevronDown size={24} className={`text-white/60 transition-transform duration-300 ${showAllRecs ? 'rotate-180' : ''}`} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* ── About (Movies) ── */}
             {mediaType === 'movie' && details && (
-              <div className="px-10 pb-10">
+              <div className="relative z-[1] px-10 pb-10">
                 <div className="border-t border-white/[0.05] pt-8">
                   <h3 className="text-2xl font-bold text-white mb-5">About {title}</h3>
                   <div className="space-y-2.5 text-sm">
@@ -554,7 +584,7 @@ export default function PreviewModal({ item, mediaType, onClose }: PreviewModalP
 
             {/* ── About (TV) ── */}
             {mediaType === 'tv' && details && (
-              <div className="px-10 pb-10">
+              <div className="relative z-[1] px-10 pb-10">
                 <div className="border-t border-white/[0.05] pt-8">
                   <h3 className="text-2xl font-bold text-white mb-5">About {title}</h3>
                   <div className="space-y-2.5 text-sm">
