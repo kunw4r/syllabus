@@ -115,8 +115,8 @@ export default function Navbar() {
                   href={to}
                   className={`transition-all duration-300 rounded-full font-medium whitespace-nowrap shrink-0 ${
                     scrolled
-                      ? `text-xs px-2 py-1 ${active ? 'text-white bg-white/10' : 'text-white/55 hover:text-white hover:bg-white/[0.06]'}`
-                      : `text-[13px] px-2.5 py-1.5 ${active ? 'text-white font-semibold' : 'text-white/60 hover:text-white/90'}`
+                      ? `text-xs px-1.5 py-1 ${active ? 'text-white bg-white/10' : 'text-white/55 hover:text-white hover:bg-white/[0.06]'}`
+                      : `text-[13px] px-2 py-1.5 ${active ? 'text-white font-semibold' : 'text-white/60 hover:text-white/90'}`
                   }`}
                 >
                   {label}
@@ -126,7 +126,7 @@ export default function Navbar() {
           </div>
 
           {/* Search */}
-          <div className={`ml-auto flex-1 transition-all duration-500 ${scrolled ? 'max-w-xs mx-2' : 'max-w-md mx-3'}`}>
+          <div className={`ml-auto transition-all duration-500 ${scrolled ? 'w-48 mx-1.5' : 'w-56 lg:w-64 mx-2'}`}>
             <SearchBar variant="navbar" />
           </div>
 

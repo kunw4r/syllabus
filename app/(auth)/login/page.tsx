@@ -3,8 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ChevronLeft, Eye, EyeOff, Film, Tv, BookOpen } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff, Film, Tv, BookOpen, Star, Users, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
+
+const FEATURES = [
+  { icon: Film, label: 'Track Movies', description: 'Log and rate every film you watch' },
+  { icon: Tv, label: 'Follow Shows', description: 'Track your episode progress' },
+  { icon: BookOpen, label: 'Catalog Books', description: 'Build your reading library' },
+  { icon: Star, label: 'Rate & Review', description: 'Score everything you consume' },
+  { icon: Users, label: 'Social', description: 'See what friends are watching' },
+  { icon: BarChart3, label: 'Insights', description: 'Get personalized recommendations' },
+];
 
 export default function LoginPage() {
   const { signIn, signUp } = useAuth();
@@ -42,60 +51,64 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex relative overflow-hidden">
-      {/* Background effects */}
+      {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-dark-900" />
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-accent/[0.04] rounded-full blur-[150px]" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-500/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-accent/[0.03] rounded-full blur-[180px]" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-500/[0.02] rounded-full blur-[150px]" />
+        <div className="absolute top-[30%] left-[40%] w-[400px] h-[400px] bg-purple-500/[0.015] rounded-full blur-[120px]" />
       </div>
 
-      {/* Left panel — branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 items-center justify-center p-16">
-        <div className="max-w-md">
+      {/* Left panel — branding */}
+      <div className="hidden lg:flex lg:w-[55%] relative z-10 items-center justify-center p-12 xl:p-20">
+        <div className="max-w-lg">
           <Image
             src="/logo.png"
             alt="Syllabus"
             width={180}
             height={48}
-            className="h-12 w-auto mb-8"
+            className="h-10 w-auto mb-10"
             priority
           />
-          <h1 className="font-serif text-4xl xl:text-5xl text-white leading-tight mb-6">
+
+          <h1 className="font-serif text-4xl xl:text-5xl 2xl:text-6xl text-white leading-[1.08] mb-5">
             Your personal
             <br />
-            <span className="text-accent">entertainment</span>
+            <span className="bg-gradient-to-r from-accent via-rose-400 to-amber-400 bg-clip-text text-transparent">entertainment</span>
             <br />
             library.
           </h1>
-          <p className="text-white/40 text-lg leading-relaxed mb-10">
+          <p className="text-white/35 text-base xl:text-lg leading-relaxed mb-12 max-w-md">
             Track, rate, and discover movies, TV shows, and books — all in one beautifully designed space.
           </p>
 
-          {/* Feature pills */}
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.06]">
-              <Film size={16} className="text-accent/70" />
-              <span className="text-sm text-white/50">Movies</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.06]">
-              <Tv size={16} className="text-cyan-400/70" />
-              <span className="text-sm text-white/50">TV Shows</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.06]">
-              <BookOpen size={16} className="text-amber-400/70" />
-              <span className="text-sm text-white/50">Books</span>
-            </div>
+          {/* Feature grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {FEATURES.map(({ icon: Icon, label, description }) => (
+              <div
+                key={label}
+                className="flex items-start gap-3 px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0 mt-0.5">
+                  <Icon size={15} className="text-white/40" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white/70">{label}</p>
+                  <p className="text-[11px] text-white/25 leading-snug mt-0.5">{description}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Right panel — form */}
       <div className="flex-1 flex items-center justify-center px-6 sm:px-10 relative z-10">
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-[380px]">
           {/* Back button */}
           <button
             onClick={() => router.push('/')}
-            className="inline-flex items-center gap-1.5 text-white/30 hover:text-white/60 text-sm mb-10 transition-colors"
+            className="inline-flex items-center gap-1.5 text-white/25 hover:text-white/60 text-sm mb-8 transition-colors"
           >
             <ChevronLeft size={18} strokeWidth={2.5} /> Back
           </button>
@@ -107,18 +120,18 @@ export default function LoginPage() {
               alt="Syllabus"
               width={120}
               height={36}
-              className="h-8 w-auto mb-2"
+              className="h-8 w-auto mb-3"
               priority
             />
-            <p className="text-white/30 text-sm">Track movies, shows & books you love.</p>
+            <p className="text-white/25 text-sm">Track movies, shows & books you love.</p>
           </div>
 
           {/* Card */}
-          <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-8">
-            <h2 className="text-xl font-bold text-white mb-1">
-              {isSignUp ? 'Create your account' : 'Welcome back'}
+          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-7 sm:p-8 shadow-2xl shadow-black/20">
+            <h2 className="text-2xl font-bold text-white mb-1">
+              {isSignUp ? 'Create account' : 'Welcome back'}
             </h2>
-            <p className="text-sm text-white/30 mb-8">
+            <p className="text-sm text-white/25 mb-7">
               {isSignUp
                 ? 'Start tracking your entertainment journey'
                 : 'Sign in to your Syllabus account'}
@@ -127,7 +140,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignUp && (
                 <div>
-                  <label className="block text-xs font-medium text-white/40 mb-1.5 ml-1">Username</label>
+                  <label className="block text-[11px] font-medium text-white/35 mb-1.5 ml-0.5 uppercase tracking-wider">Username</label>
                   <input
                     type="text"
                     placeholder="Choose a username"
@@ -135,7 +148,7 @@ export default function LoginPage() {
                     onChange={(e) =>
                       setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))
                     }
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-accent/40 focus:bg-white/[0.06] transition-all"
+                    className="w-full bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3 text-sm text-white placeholder-white/15 outline-none focus:border-accent/40 focus:bg-white/[0.05] transition-all"
                     required
                     minLength={3}
                     maxLength={20}
@@ -146,33 +159,33 @@ export default function LoginPage() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-white/40 mb-1.5 ml-1">Email</label>
+                <label className="block text-[11px] font-medium text-white/35 mb-1.5 ml-0.5 uppercase tracking-wider">Email</label>
                 <input
                   type="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-accent/40 focus:bg-white/[0.06] transition-all"
+                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3 text-sm text-white placeholder-white/15 outline-none focus:border-accent/40 focus:bg-white/[0.05] transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-white/40 mb-1.5 ml-1">Password</label>
+                <label className="block text-[11px] font-medium text-white/35 mb-1.5 ml-0.5 uppercase tracking-wider">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder={isSignUp ? 'Min 6 characters' : 'Enter your password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 pr-11 text-sm text-white placeholder-white/20 outline-none focus:border-accent/40 focus:bg-white/[0.06] transition-all"
+                    className="w-full bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3 pr-11 text-sm text-white placeholder-white/15 outline-none focus:border-accent/40 focus:bg-white/[0.05] transition-all"
                     minLength={6}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/15 hover:text-white/40 transition-colors"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -193,7 +206,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-accent hover:bg-accent/90 active:scale-[0.98] text-white font-semibold rounded-xl px-4 py-3 text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-2 shadow-lg shadow-accent/20"
+                className="w-full bg-accent hover:bg-accent/90 active:scale-[0.98] text-white font-semibold rounded-xl px-4 py-3 text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-2 shadow-lg shadow-accent/15"
               >
                 {loading
                   ? 'Loading...'
@@ -205,7 +218,7 @@ export default function LoginPage() {
           </div>
 
           {/* Toggle */}
-          <p className="text-sm text-white/30 mt-6 text-center">
+          <p className="text-sm text-white/25 mt-6 text-center">
             {isSignUp
               ? 'Already have an account?'
               : "Don't have an account?"}{' '}
@@ -219,6 +232,11 @@ export default function LoginPage() {
             >
               {isSignUp ? 'Sign in' : 'Sign up'}
             </button>
+          </p>
+
+          {/* Subtle footer */}
+          <p className="text-[11px] text-white/10 text-center mt-8">
+            By continuing, you agree to our Terms of Service.
           </p>
         </div>
       </div>

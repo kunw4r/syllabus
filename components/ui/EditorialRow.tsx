@@ -23,7 +23,7 @@ export default function EditorialRow({ title, items, mediaType = 'movie' }: Edit
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg sm:text-xl font-bold text-white">{title}</h2>
         <div className="flex gap-1">
           <button
@@ -41,7 +41,7 @@ export default function EditorialRow({ title, items, mediaType = 'movie' }: Edit
         </div>
       </div>
 
-      <div ref={ref} className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide pt-14 pb-16 -mt-12 -mb-12 px-14 -mx-14">
+      <div ref={ref} className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide pt-10 pb-12 -mt-8 -mb-10 px-14 -mx-14">
         {items.map((item: any) => (
           <MediaCard
             key={item.id || item.key || item.google_books_id}

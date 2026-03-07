@@ -172,14 +172,14 @@ export default function Home() {
 
   return (
     <div>
-      {/* Hero Banner — full bleed edge-to-edge */}
+      {/* Hero Banner — full bleed edge-to-edge, seamless fade into content */}
       {heroItems.length > 0 && (
-        <div className="-mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-6 lg:-mt-4 mb-10">
+        <div className="-mx-5 sm:-mx-8 lg:-mx-14 xl:-mx-20 2xl:-mx-28 -mt-6 lg:-mt-4">
           <HeroBanner items={heroItems} />
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className={`space-y-2 ${heroItems.length > 0 ? '-mt-16 relative z-10' : ''}`}>
         {/* Search — only show standalone when hero isn't visible */}
         {heroItems.length === 0 && (
           <FadeInView>

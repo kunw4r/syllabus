@@ -39,7 +39,6 @@ export default function BooksPage() {
   const [searching, setSearching] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
-  // Load trending + first 2 subjects
   useEffect(() => {
     async function loadInitial() {
       try {
@@ -62,7 +61,6 @@ export default function BooksPage() {
     loadInitial();
   }, []);
 
-  // Lazy-load subject rows on scroll
   const loadSubject = useCallback(
     async (key: string) => {
       if (loadedSubjects.has(key)) return;
@@ -95,7 +93,6 @@ export default function BooksPage() {
     [loadSubject]
   );
 
-  // Search
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -111,13 +108,13 @@ export default function BooksPage() {
   };
 
   const hero = trending[0];
+  const heroSecondary = trending.slice(1, 4);
 
   const navigateToBook = (book: any) => {
     const workKey = book.key?.replace('/works/', '') || '';
     if (workKey) router.push(`/details/book/${workKey}`);
   };
 
-  // Loading skeleton
   if (!initialLoaded) {
     return (
       <div className="min-w-0">
@@ -130,6 +127,94 @@ export default function BooksPage() {
 
   return (
     <div className="min-w-0">
+      {/* Hero section */}
+      {hero && (
+        <div className="-mx-5 sm:-mx-8 lg:-mx-14 xl:-mx-20 2xl:-mx-28 -mt-6 lg:-mt-4 mb-8">
+          <div className="relative h-[40vh] sm:h-[48vh] min-h-[300px] max-h-[500px] overflow-hidden">
+            {/* Background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 via-dark-900 to-dark-900" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_50%,rgba(217,119,6,0.08),transparent_60%)]" />
+
+            {/* Bottom fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#0e1117] via-[#0e1117]/80 to-transparent z-[1]" />
+
+            {/* Content */}
+            <div className="absolute inset-0 z-[2] flex items-end">
+              <div className="flex items-end gap-6 sm:gap-8 px-5 sm:px-8 lg:px-14 xl:px-20 2xl:px-28 pb-8 sm:pb-10 w-full">
+                {/* Book cover */}
+                <div
+                  className="shrink-0 cursor-pointer group"
+                  onClick={() => navigateToBook(hero)}
+                >
+                  <div className="relative">
+                    <BookCover
+                      coverUrls={hero.cover_urls}
+                      alt={hero.title}
+                      className="h-40 sm:h-52 lg:h-56 rounded-lg shadow-2xl shadow-black/60 object-contain group-hover:scale-[1.03] transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 rounded-lg ring-1 ring-white/10" />
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="min-w-0 pb-1 flex-1">
+                  <div className="flex items-center gap-2 text-amber-400/80 text-xs font-semibold mb-2 tracking-wide uppercase">
+                    <TrendingUp size={14} /> Trending This Week
+                  </div>
+                  <h1
+                    className="font-serif text-2xl sm:text-3xl lg:text-4xl xl:text-5xl text-white leading-[1.1] mb-2 cursor-pointer hover:text-accent transition-colors line-clamp-2"
+                    onClick={() => navigateToBook(hero)}
+                  >
+                    {hero.title}
+                  </h1>
+                  <p className="text-white/40 text-sm sm:text-base mb-3">
+                    by {hero.author}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-white/40">
+                    {hero.rating > 0 && (
+                      <span
+                        className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 shadow-lg"
+                        style={{ background: getRatingBg(Number(hero.rating)), boxShadow: getRatingGlow(Number(hero.rating)) }}
+                      >
+                        <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(hero.rating)) }} />
+                        <span className="font-bold" style={{ color: getRatingHex(Number(hero.rating)) }}>{hero.rating}</span>
+                      </span>
+                    )}
+                    {hero.first_publish_year && (
+                      <span className="text-white/30">{hero.first_publish_year}</span>
+                    )}
+                  </div>
+
+                  {/* Secondary picks */}
+                  {heroSecondary.length > 0 && (
+                    <div className="hidden lg:flex items-center gap-4 mt-5">
+                      <span className="text-[10px] text-white/20 uppercase tracking-wider">Also trending</span>
+                      {heroSecondary.map((b: any) => (
+                        <div
+                          key={b.key || b.google_books_id}
+                          className="flex items-center gap-2.5 cursor-pointer group/sec"
+                          onClick={() => navigateToBook(b)}
+                        >
+                          <BookCover
+                            coverUrls={b.cover_urls}
+                            alt={b.title}
+                            className="h-10 rounded shadow-lg object-contain"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs text-white/60 group-hover/sec:text-accent truncate max-w-[140px] transition-colors font-medium">{b.title}</p>
+                            <p className="text-[10px] text-white/25 truncate max-w-[140px]">{b.author}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search Bar */}
       <form onSubmit={handleSearch} className="flex items-center gap-3 mb-6">
         <div className="relative flex-1 max-w-md">
@@ -191,48 +276,7 @@ export default function BooksPage() {
           )}
         </>
       ) : (
-        <>
-          {/* Hero Banner */}
-          {hero && (
-            <div
-              className="relative -mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-14 -mt-2 mb-10 h-[36vh] sm:h-[44vh] min-h-[260px] overflow-hidden rounded-b-3xl bg-gradient-to-br from-accent/20 via-dark-800 to-dark-900 cursor-pointer group"
-              onClick={() => navigateToBook(hero)}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent" />
-              <div className="absolute inset-0 flex items-end">
-                <div className="flex items-end gap-6 p-6 sm:p-10 w-full">
-                  <BookCover
-                    coverUrls={hero.cover_urls}
-                    alt={hero.title}
-                    className="h-36 sm:h-48 rounded-xl shadow-2xl flex-shrink-0 object-contain group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="min-w-0 pb-1">
-                    <div className="flex items-center gap-2 text-accent text-xs font-semibold mb-2">
-                      <TrendingUp size={14} /> TRENDING THIS WEEK
-                    </div>
-                    <h1 className="text-xl sm:text-3xl lg:text-4xl font-black mb-2 leading-tight line-clamp-2">
-                      {hero.title}
-                    </h1>
-                    <p className="text-white/50 text-sm mb-1">
-                      by {hero.author}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs text-white/40">
-                      {hero.rating > 0 && (
-                        <span className="inline-flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg px-2 py-0.5 shadow-lg" style={{ background: getRatingBg(Number(hero.rating)), boxShadow: getRatingGlow(Number(hero.rating)) }}>
-                          <Star size={14} className="fill-current" style={{ color: getRatingHex(Number(hero.rating)) }} />{' '}
-                          <span className="drop-shadow-sm" style={{ color: getRatingHex(Number(hero.rating)) }}>{hero.rating}</span>
-                        </span>
-                      )}
-                      {hero.first_publish_year && (
-                        <span>{hero.first_publish_year}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
+        <div className="space-y-2">
           {/* Trending Row */}
           {trending.length > 0 && (
             <ScrollRow title="Trending This Week">
@@ -242,7 +286,7 @@ export default function BooksPage() {
             </ScrollRow>
           )}
 
-          {/* Subject Rows -- lazy loaded on scroll */}
+          {/* Subject Rows */}
           {SUBJECTS.map((s) => {
             const books = subjectData[s.key];
             const loaded = loadedSubjects.has(s.key);
@@ -253,7 +297,7 @@ export default function BooksPage() {
                 data-subject={s.key}
               >
                 {!loaded ? (
-                  <div className="mt-8">
+                  <div className="mt-6">
                     <h2 className="text-lg sm:text-xl font-bold text-white mb-4">
                       {s.name}
                     </h2>
@@ -269,7 +313,7 @@ export default function BooksPage() {
               </div>
             );
           })}
-        </>
+        </div>
       )}
     </div>
   );

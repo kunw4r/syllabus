@@ -2,16 +2,17 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Award, Film, Tv, Grid3X3, Rows3 } from 'lucide-react';
+import { Star, Award, Tv } from 'lucide-react';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
+import ScrollRow from '@/components/ui/ScrollRow';
 import {
   enrichChart,
   applyStoredScores,
   loadStaticScoreDB,
 } from '@/lib/scoring';
 
-// ─── Types ───
+// --- Types ---
 
 interface AwardEntry {
   year: number;
@@ -29,19 +30,7 @@ interface EnrichedEntry extends AwardEntry {
   [key: string]: unknown;
 }
 
-// ─── Tab definitions ───
-
-const TABS = [
-  { key: 'oscars', label: 'Oscars', icon: Award },
-  { key: 'emmys', label: 'Emmys', icon: Tv },
-] as const;
-
-const EMMY_SUBTABS = [
-  { key: 'drama', label: 'Outstanding Drama' },
-  { key: 'comedy', label: 'Outstanding Comedy' },
-] as const;
-
-// ─── Fetch TMDB details in batches ───
+// --- Fetch TMDB details in batches ---
 
 async function fetchTmdbDetails(
   entries: AwardEntry[],
@@ -56,9 +45,7 @@ async function fetchTmdbDetails(
     const fetched = await Promise.all(
       batch.map(async (entry) => {
         try {
-          const res = await fetch(
-            `/api/tmdb/${mediaType}/${entry.tmdb_id}`
-          );
+          const res = await fetch(`/api/tmdb/${mediaType}/${entry.tmdb_id}`);
           const data = await res.json();
           return {
             ...entry,
@@ -74,10 +61,7 @@ async function fetchTmdbDetails(
             genre_ids: data.genre_ids || (data.genres || []).map((g: any) => g.id),
           } as EnrichedEntry;
         } catch {
-          return {
-            ...entry,
-            id: entry.tmdb_id,
-          } as EnrichedEntry;
+          return { ...entry, id: entry.tmdb_id } as EnrichedEntry;
         }
       })
     );
@@ -88,36 +72,28 @@ async function fetchTmdbDetails(
   return results;
 }
 
-// ─── View layout type ───
-
-type ViewLayout = 'poster' | 'landscape';
-
-// ─── AwardCard sub-component ───
+// --- AwardCard ---
 
 function AwardCard({
   entry,
   mediaType,
-  layout,
 }: {
   entry: EnrichedEntry;
   mediaType: 'movie' | 'tv';
-  layout: ViewLayout;
 }) {
   const router = useRouter();
   const [imgBroken, setImgBroken] = useState(false);
-
   const rating = entry.unified_rating ?? entry.vote_average;
-  const poster = entry.poster_path ? `${TMDB_IMG}${entry.poster_path}` : null;
   const backdrop = entry.backdrop_path ? `${TMDB_IMG_ORIGINAL}${entry.backdrop_path}` : null;
-  const isLandscape = layout === 'landscape';
-  const displayImg = isLandscape && backdrop ? backdrop : poster;
+  const poster = entry.poster_path ? `${TMDB_IMG}${entry.poster_path}` : null;
+  const displayImg = backdrop || poster;
 
   return (
     <div
-      className="group relative cursor-pointer"
+      className="group relative cursor-pointer shrink-0 w-[320px] sm:w-[360px]"
       onClick={() => router.push(`/details/${mediaType}/${entry.tmdb_id}`)}
     >
-      <div className={`relative ${isLandscape ? 'aspect-[16/9]' : 'aspect-[2/3]'} rounded-xl overflow-hidden ring-1 ring-white/[0.06] group-hover:ring-accent/50 group-hover:scale-[1.02] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300`}>
+      <div className="relative aspect-[16/9] rounded-xl overflow-hidden ring-1 ring-white/[0.06] group-hover:ring-accent/50 group-hover:scale-[1.02] group-hover:shadow-xl group-hover:shadow-black/40 transition-all duration-300">
         {displayImg && !imgBroken ? (
           <img
             src={displayImg}
@@ -132,36 +108,35 @@ function AwardCard({
           </div>
         )}
 
-        {/* Bottom gradient */}
-        <div className={`absolute inset-x-0 bottom-0 ${isLandscape ? 'h-3/4' : 'h-2/3'} bg-gradient-to-t from-black/90 via-black/40 to-transparent`} />
+        <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-        {/* Year badge — top-left */}
-        <div className={`absolute ${isLandscape ? 'top-3 left-3' : 'top-2.5 left-2.5'}`}>
-          <span className={`inline-flex items-center gap-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg ${isLandscape ? 'px-2.5 py-1 text-sm' : 'px-2 py-0.5 text-xs'} font-bold text-gold`}>
-            <Award size={isLandscape ? 14 : 12} className="text-gold" />
+        {/* Year badge */}
+        <div className="absolute top-3 left-3">
+          <span className="inline-flex items-center gap-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-2.5 py-1 text-sm font-bold text-gold">
+            <Award size={14} className="text-gold" />
             {entry.year}
           </span>
         </div>
 
-        {/* Rating badge — top-right */}
+        {/* Rating badge */}
         {rating != null && rating > 0 && (
           <div
-            className={`absolute ${isLandscape ? 'top-3 right-3 px-2 py-1' : 'top-2.5 right-2.5 px-1.5 py-0.5'} flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg`}
+            className="absolute top-3 right-3 px-2 py-1 flex items-center gap-1 backdrop-blur-md border border-white/10 rounded-lg"
             style={{ background: getRatingBg(Number(rating)), boxShadow: getRatingGlow(Number(rating)) }}
           >
-            <Star size={isLandscape ? 12 : 10} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
-            <span className={`${isLandscape ? 'text-sm' : 'text-xs'} font-bold`} style={{ color: getRatingHex(Number(rating)) }}>
+            <Star size={12} className="fill-current" style={{ color: getRatingHex(Number(rating)) }} />
+            <span className="text-sm font-bold" style={{ color: getRatingHex(Number(rating)) }}>
               {Number(rating).toFixed(1)}
             </span>
           </div>
         )}
 
-        {/* Title + overview — bottom */}
-        <div className={`absolute bottom-0 left-0 right-0 ${isLandscape ? 'p-4' : 'p-3'}`}>
-          <p className={`font-bold ${isLandscape ? 'text-base sm:text-lg' : 'text-sm'} text-white truncate drop-shadow-lg group-hover:text-accent transition-colors`}>
+        {/* Title + overview */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <p className="font-bold text-base text-white truncate drop-shadow-lg group-hover:text-accent transition-colors">
             {entry.title}
           </p>
-          {isLandscape && entry.overview && (
+          {entry.overview && (
             <p className="text-xs text-white/40 mt-1 line-clamp-2 leading-relaxed">
               {entry.overview}
             </p>
@@ -172,12 +147,35 @@ function AwardCard({
   );
 }
 
-// ─── Main Page ───
+// --- Tab definitions ---
+
+const TABS = [
+  { key: 'oscars', label: 'Oscars', icon: Award },
+  { key: 'emmys', label: 'Emmys', icon: Tv },
+] as const;
+
+const EMMY_SUBTABS = [
+  { key: 'drama', label: 'Outstanding Drama' },
+  { key: 'comedy', label: 'Outstanding Comedy' },
+] as const;
+
+// --- Group items by decade ---
+
+function groupByDecade(items: EnrichedEntry[]): Record<string, EnrichedEntry[]> {
+  const groups: Record<string, EnrichedEntry[]> = {};
+  for (const item of items) {
+    const decade = `${Math.floor(item.year / 10) * 10}s`;
+    if (!groups[decade]) groups[decade] = [];
+    groups[decade].push(item);
+  }
+  return groups;
+}
+
+// --- Main Page ---
 
 export default function AwardsPage() {
   const [tab, setTab] = useState<string>('oscars');
   const [emmyTab, setEmmyTab] = useState<string>('drama');
-  const [viewLayout, setViewLayout] = useState<ViewLayout>('poster');
   const [awardsData, setAwardsData] = useState<any>(null);
   const [items, setItems] = useState<EnrichedEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -256,6 +254,8 @@ export default function AwardsPage() {
   }, [tab, emmyTab, fetchEntries]);
 
   const mediaType = tab === 'oscars' ? 'movie' : 'tv';
+  const decades = groupByDecade(items);
+  const sortedDecades = Object.keys(decades).sort((a, b) => parseInt(b) - parseInt(a));
 
   return (
     <div className="min-w-0">
@@ -271,7 +271,7 @@ export default function AwardsPage() {
       </div>
 
       {/* Tab Switch */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-6">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -289,7 +289,7 @@ export default function AwardsPage() {
 
       {/* Emmy Sub-tabs */}
       {tab === 'emmys' && (
-        <div className="flex gap-1.5 mb-4">
+        <div className="flex gap-1.5 mb-6">
           {EMMY_SUBTABS.map((st) => (
             <button
               key={st.key}
@@ -306,32 +306,14 @@ export default function AwardsPage() {
         </div>
       )}
 
-      {/* Category label + View Toggle */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-xs text-white/20">
-          {tab === 'oscars'
-            ? 'Academy Award for Best Picture'
-            : emmyTab === 'drama'
-              ? 'Primetime Emmy for Outstanding Drama Series'
-              : 'Primetime Emmy for Outstanding Comedy Series'}
-        </p>
-        <div className="flex gap-1 shrink-0 bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06]">
-          <button
-            onClick={() => setViewLayout('poster')}
-            className={`p-1.5 rounded-md transition-all ${viewLayout === 'poster' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
-            title="Poster view"
-          >
-            <Grid3X3 size={16} />
-          </button>
-          <button
-            onClick={() => setViewLayout('landscape')}
-            className={`p-1.5 rounded-md transition-all ${viewLayout === 'landscape' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
-            title="Landscape view"
-          >
-            <Rows3 size={16} />
-          </button>
-        </div>
-      </div>
+      {/* Category label */}
+      <p className="text-xs text-white/20 mb-4">
+        {tab === 'oscars'
+          ? 'Academy Award for Best Picture'
+          : emmyTab === 'drama'
+            ? 'Primetime Emmy for Outstanding Drama Series'
+            : 'Primetime Emmy for Outstanding Comedy Series'}
+      </p>
 
       {/* Progress bar */}
       {progress !== null && progress < 100 && (
@@ -349,14 +331,18 @@ export default function AwardsPage() {
         </div>
       )}
 
-      {/* Grid */}
+      {/* Horizontal scroll rows grouped by decade */}
       {loading ? (
-        <div className={viewLayout === 'poster'
-          ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
-          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-        }>
-          {Array.from({ length: viewLayout === 'poster' ? 10 : 9 }, (_, i) => (
-            <div key={i} className={`${viewLayout === 'poster' ? 'aspect-[2/3]' : 'aspect-[16/9]'} rounded-xl bg-white/[0.02] animate-pulse`} />
+        <div className="space-y-6">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i}>
+              <div className="h-5 w-20 bg-white/[0.04] rounded mb-3 animate-pulse" />
+              <div className="flex gap-4 overflow-hidden">
+                {Array.from({ length: 5 }, (_, j) => (
+                  <div key={j} className="shrink-0 w-[320px] aspect-[16/9] rounded-xl bg-white/[0.02] animate-pulse" />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -364,17 +350,17 @@ export default function AwardsPage() {
           <p className="text-lg">No data available</p>
         </div>
       ) : (
-        <div className={viewLayout === 'poster'
-          ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
-          : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-        }>
-          {items.map((entry) => (
-            <AwardCard
-              key={`${entry.year}-${entry.tmdb_id}`}
-              entry={entry}
-              mediaType={mediaType as 'movie' | 'tv'}
-              layout={viewLayout}
-            />
+        <div className="space-y-2">
+          {sortedDecades.map((decade) => (
+            <ScrollRow key={decade} title={decade}>
+              {decades[decade].map((entry) => (
+                <AwardCard
+                  key={`${entry.year}-${entry.tmdb_id}`}
+                  entry={entry}
+                  mediaType={mediaType as 'movie' | 'tv'}
+                />
+              ))}
+            </ScrollRow>
           ))}
         </div>
       )}
