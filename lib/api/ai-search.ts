@@ -1,6 +1,36 @@
 import { searchMovies, searchTV, searchByScenario, multiSearchTMDB } from '@/lib/api/tmdb';
 import { searchBooks } from '@/lib/api/books';
 
+// ─── Query Variation Helpers ───
+
+/** Generate alternate query forms to improve fuzzy matching */
+function generateQueryVariations(query: string): string[] {
+  const variations: string[] = [];
+  const q = query.trim();
+
+  // "and" ↔ "&"
+  if (/\band\b/i.test(q)) variations.push(q.replace(/\band\b/gi, '&'));
+  if (q.includes('&')) variations.push(q.replace(/&/g, 'and'));
+
+  // Remove common suffixes/prefixes people add: "movie", "film", "show", "series", "the"
+  const stripped = q.replace(/\b(the|movie|film|show|series|tv)\b/gi, '').replace(/\s+/g, ' ').trim();
+  if (stripped && stripped !== q) variations.push(stripped);
+
+  // Try without punctuation
+  const noPunct = q.replace(/[''"".,!?:;-]/g, '').replace(/\s+/g, ' ').trim();
+  if (noPunct !== q) variations.push(noPunct);
+
+  // Common double letter misspellings: try collapsing double letters
+  const collapsed = q.replace(/(.)\1+/g, '$1');
+  if (collapsed !== q.toLowerCase()) variations.push(collapsed);
+
+  // Remove trailing 's' for plurals (e.g. "kappoors" → "kappoor")
+  const depluralized = q.replace(/(\w{3,})s\b/gi, '$1');
+  if (depluralized !== q) variations.push(depluralized);
+
+  return [...new Set(variations.filter(v => v.length >= 2 && v !== q))];
+}
+
 // ─── Types ───
 
 export interface ParsedIntent {
@@ -128,22 +158,54 @@ export function aiSearchProgressive(
     // Kick off EVERYTHING in parallel — don't wait for intent before starting AI searches
     const titleMoviesP = searchMovies(query);
     const titleTVP = searchTV(query);
+    const multiP = multiSearchTMDB(query).catch(() => [] as any[]);
     const titleBooksP = searchBooks(query);
     const intentP = parseIntent(query);
     const scenarioP = searchByScenario(query).catch(() => [] as any[]);
     const semanticP = semanticSearch(query).catch(() => [] as any[]);
 
     // ── Phase 1: show title results as soon as they arrive ──
-    const [titleMovies, titleTV, titleBooks] = await Promise.all([titleMoviesP, titleTVP, titleBooksP]);
+    const [titleMovies, titleTV, multiResults, titleBooks] = await Promise.all([titleMoviesP, titleTVP, multiP, titleBooksP]);
     if (cancelled) return;
+
+    // Merge multi-search results into movie/tv buckets
+    const multiMovies = multiResults.filter((r: any) => r.media_type === 'movie');
+    const multiTV = multiResults.filter((r: any) => r.media_type === 'tv');
+    const mergedMovies = deduplicateById([...titleMovies, ...multiMovies]);
+    const mergedTV = deduplicateById([...titleTV, ...multiTV]);
 
     onProgress({
       intent: titleIntent,
-      movies: titleMovies,
-      tv: titleTV,
+      movies: mergedMovies,
+      tv: mergedTV,
       books: titleBooks,
       semantic: [],
     });
+
+    // ── Phase 1.5: If few results, try query variations for better fuzzy matching ──
+    if (mergedMovies.length + mergedTV.length < 3) {
+      const variations = generateQueryVariations(query);
+      if (variations.length > 0) {
+        const varResults = await Promise.all(
+          variations.slice(0, 3).map((v) => multiSearchTMDB(v).catch(() => [] as any[]))
+        );
+        if (cancelled) return;
+        const allVarResults = varResults.flat();
+        const varMovies = allVarResults.filter((r: any) => r.media_type === 'movie');
+        const varTV = allVarResults.filter((r: any) => r.media_type === 'tv');
+        const betterMovies = deduplicateById([...mergedMovies, ...varMovies]);
+        const betterTV = deduplicateById([...mergedTV, ...varTV]);
+        if (betterMovies.length > mergedMovies.length || betterTV.length > mergedTV.length) {
+          onProgress({
+            intent: titleIntent,
+            movies: betterMovies,
+            tv: betterTV,
+            books: titleBooks,
+            semantic: [],
+          });
+        }
+      }
+    }
 
     // ── Phase 2: wait for AI results (already in-flight) ──
     const [intent, scenarioResults, semantic] = await Promise.all([intentP, scenarioP, semanticP]);
@@ -151,20 +213,20 @@ export function aiSearchProgressive(
 
     // For plain title searches, we're done
     if (intent.type === 'title_search') {
-      logSearch(query, intent, titleMovies.length + titleTV.length + titleBooks.length);
+      logSearch(query, intent, mergedMovies.length + mergedTV.length + titleBooks.length);
       return;
     }
 
-    let movies: any[] = titleMovies;
-    let tv: any[] = titleTV;
+    let movies: any[] = mergedMovies;
+    let tv: any[] = mergedTV;
 
     if (intent.type === 'similar_to') {
       // For "similar to X" — try to get recommendations
       const refTitle = intent.similarTo || query;
       try {
-        const multiResults = await multiSearchTMDB(refTitle);
-        if (multiResults.length > 0) {
-          const ref = multiResults[0];
+        const simResults = await multiSearchTMDB(refTitle);
+        if (simResults.length > 0) {
+          const ref = simResults[0];
           const mt = ref.media_type === 'tv' ? 'tv' : 'movie';
           const res = await fetch(`/api/tmdb/${mt}/${ref.id}?append_to_response=recommendations`);
           const data = await res.json();
@@ -184,11 +246,11 @@ export function aiSearchProgressive(
       const scenarioTV = scenarioResults.filter((r: any) => r.media_type === 'tv');
 
       if (intent.type === 'mood' || intent.type === 'scenario') {
-        movies = scenarioMovies.length > 0 ? scenarioMovies : titleMovies;
-        tv = scenarioTV.length > 0 ? scenarioTV : titleTV;
+        movies = scenarioMovies.length > 0 ? scenarioMovies : mergedMovies;
+        tv = scenarioTV.length > 0 ? scenarioTV : mergedTV;
       } else {
-        movies = deduplicateById([...scenarioMovies, ...titleMovies]);
-        tv = deduplicateById([...scenarioTV, ...titleTV]);
+        movies = deduplicateById([...scenarioMovies, ...mergedMovies]);
+        tv = deduplicateById([...scenarioTV, ...mergedTV]);
       }
     }
 
