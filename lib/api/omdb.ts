@@ -12,23 +12,13 @@ function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   });
 }
 
-// Persistent OMDb cache (localStorage) — 24h TTL
+// Persistent OMDb cache (localStorage)
 const OMDB_STORE_KEY = 'syllabus_omdb';
-const OMDB_STORE_TS_KEY = 'syllabus_omdb_ts';
-const OMDB_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 let _omdbCache: Record<string, any> | null = null;
 
 function getOmdbStore() {
   if (!_omdbCache) {
     try {
-      // Expire the entire cache after TTL
-      const ts = parseInt(localStorage.getItem(OMDB_STORE_TS_KEY) || '0', 10);
-      if (Date.now() - ts > OMDB_CACHE_TTL) {
-        localStorage.removeItem(OMDB_STORE_KEY);
-        localStorage.setItem(OMDB_STORE_TS_KEY, String(Date.now()));
-        _omdbCache = {};
-        return _omdbCache;
-      }
       _omdbCache = JSON.parse(localStorage.getItem(OMDB_STORE_KEY) || '{}');
       let purged = false;
       for (const k of Object.keys(_omdbCache!)) {
