@@ -1739,6 +1739,24 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         year={year}
         backdropPath={data.backdrop_path}
         backdropImages={data.images?.backdrops?.slice(0, 8).map((b: any) => b.file_path) || []}
+        seasons={mediaType === 'tv' ? data.seasons?.filter((s: any) => s.season_number > 0).map((s: any) => ({
+          season_number: s.season_number,
+          episode_count: s.episode_count,
+        })) : undefined}
+        onStartWatching={() => {
+          // Auto-add to library as "watching" if not already added
+          if (user && !quickAdded) {
+            addToLibrary({
+              tmdb_id: data.id,
+              media_type: mediaType,
+              title: data.title || data.name,
+              poster_url: data.poster_path ? `${TMDB_IMG}${data.poster_path}` : null,
+              external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
+              genres: data.genres?.map((g: any) => g.name).join(', '),
+              status: 'watching',
+            }).then(() => setQuickAdded(true)).catch(() => {});
+          }
+        }}
       />
     </div>
   );
