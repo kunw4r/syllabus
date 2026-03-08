@@ -12,7 +12,7 @@ async function qbAuth(): Promise<string> {
   const res = await fetch(`${QB_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'username=admin&password=ZU4C2CcRY',
+    body: 'username=admin&password=h2RbHNJHs',
   });
   const cookie = res.headers.get('set-cookie');
   if (cookie) sessionCookie = cookie.split(';')[0];

@@ -16,6 +16,7 @@ interface TorrentSource {
   source: string;
   type: string;
   codec?: string;
+  audio?: string; // e.g. "Dual Audio", "English", "Japanese"
 }
 
 interface DownloadModalProps {
@@ -28,13 +29,14 @@ interface DownloadModalProps {
   episode?: number;
   backdropPath?: string;
   tmdbId?: number | string;
+  isAnime?: boolean;
 }
 
 type ModalPhase = 'loading' | 'select' | 'downloading' | 'error';
 
 export default function DownloadModal({
   isOpen, onClose, imdbId, mediaType, title,
-  season, episode, backdropPath, tmdbId,
+  season, episode, backdropPath, tmdbId, isAnime,
 }: DownloadModalProps) {
   const { activeDownload, startDownload, cancelDownload } = useDownload();
   const [phase, setPhase] = useState<ModalPhase>('loading');
@@ -59,9 +61,10 @@ export default function DownloadModal({
     setSources([]);
     setSelectedIdx(0);
 
-    const params = new URLSearchParams({ imdbId, mediaType });
+    const params = new URLSearchParams({ imdbId, mediaType, title });
     if (mediaType === 'tv' && season) params.set('season', String(season));
     if (mediaType === 'tv' && episode) params.set('episode', String(episode));
+    if (isAnime) params.set('isAnime', '1');
 
     fetch(`/api/sources?${params}`)
       .then(r => r.json())
@@ -206,6 +209,7 @@ export default function DownloadModal({
                         <span className={`text-sm font-bold ${qualityColor(src.quality)}`}>{src.quality}</span>
                         {src.codec && <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">{src.codec}</span>}
                         <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded uppercase">{src.type}</span>
+                        {src.audio && <span className="text-[10px] text-cyan-400/70 bg-cyan-400/10 px-1.5 py-0.5 rounded">{src.audio}</span>}
                       </div>
                       <p className="text-[11px] text-white/40 truncate">{src.title}</p>
                     </div>

@@ -13,6 +13,7 @@ interface TorrentSource {
   source: string;
   type: string;
   codec?: string;
+  audio?: string;
 }
 
 const YTS_TRACKERS = [
@@ -98,27 +99,133 @@ async function searchEZTV(imdbId: string, season?: number, episode?: number): Pr
   });
 }
 
+// ─── TPB API — General + Anime torrents ───
+function detectAudio(title: string): string | undefined {
+  const lower = title.toLowerCase();
+  if (lower.includes('dual audio') || lower.includes('dual-audio') || lower.includes(' dual ')) return 'Dual Audio';
+  if (lower.includes('multi audio') || lower.includes('multi-audio')) return 'Multi Audio';
+  if (lower.includes('eng dub') || lower.includes('english dub')) return 'English Dub';
+  if (lower.includes('eng sub') || lower.includes('english sub') || lower.includes('engsub')) return 'Japanese + Subs';
+  return undefined;
+}
+
+async function searchTPB(query: string): Promise<TorrentSource[]> {
+  try {
+    const res = await fetch(
+      `https://apibay.org/q.php?q=${encodeURIComponent(query)}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    const data = await res.json();
+
+    // TPB returns [{ name: "No results returned", info_hash: "000..." }] when empty
+    if (!Array.isArray(data)) return [];
+
+    return data
+      .filter((t: any) => t.info_hash && !t.info_hash.match(/^0+$/))
+      .slice(0, 30)
+      .map((t: any): TorrentSource => {
+        const quality = extractQuality(t.name);
+        const audio = detectAudio(t.name);
+        const sizeBytes = parseInt(t.size) || 0;
+        const codec = t.name.includes('HEVC') || t.name.includes('x265') || t.name.includes('H.265')
+          ? 'HEVC'
+          : t.name.includes('AV1') ? 'AV1' : undefined;
+
+        return {
+          title: t.name,
+          quality,
+          size: formatBytes(sizeBytes),
+          sizeBytes,
+          seeders: parseInt(t.seeders) || 0,
+          leechers: parseInt(t.leechers) || 0,
+          magnetUrl: buildMagnet(t.info_hash, t.name),
+          source: 'tpb',
+          type: codec ? 'bluray' : 'web',
+          codec,
+          audio,
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
+async function searchAnime(title: string, season?: number, episode?: number): Promise<TorrentSource[]> {
+  // Build targeted search queries for anime
+  const queries: string[] = [];
+
+  if (season !== undefined && episode !== undefined) {
+    const epStr = String(episode).padStart(2, '0');
+    const sStr = String(season).padStart(2, '0');
+    queries.push(`${title} S${sStr}E${epStr} 1080p`);
+    queries.push(`${title} S${sStr}E${epStr}`);
+  } else if (season !== undefined) {
+    queries.push(`${title} Season ${season} 1080p`);
+    queries.push(`${title} S${String(season).padStart(2, '0')} complete`);
+  } else {
+    queries.push(`${title} 1080p dual audio`);
+    queries.push(`${title} 1080p`);
+    queries.push(title);
+  }
+
+  const allSources: TorrentSource[] = [];
+  const seenHashes = new Set<string>();
+
+  for (const q of queries) {
+    const results = await searchTPB(q);
+    for (const r of results) {
+      const hash = r.magnetUrl.match(/btih:([a-fA-F0-9]+)/i)?.[1]?.toLowerCase();
+      if (hash && !seenHashes.has(hash)) {
+        seenHashes.add(hash);
+        allSources.push(r);
+      }
+    }
+    // If we have enough good results, stop searching
+    if (allSources.filter(s => s.seeders > 5).length >= 10) break;
+  }
+
+  return allSources;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const imdbId = searchParams.get('imdbId');
   const mediaType = searchParams.get('mediaType') as 'movie' | 'tv';
+  const title = searchParams.get('title') || '';
   const season = searchParams.get('season');
   const episode = searchParams.get('episode');
+  const isAnime = searchParams.get('isAnime') === '1';
 
   if (!imdbId || !mediaType) {
     return NextResponse.json({ error: 'Missing imdbId or mediaType' }, { status: 400 });
   }
 
   try {
-    let sources: TorrentSource[];
-    if (mediaType === 'movie') {
+    let sources: TorrentSource[] = [];
+
+    if (isAnime && title) {
+      // For anime, search TPB by title + also try YTS/EZTV as fallback
+      const [animeSources, fallbackSources] = await Promise.all([
+        searchAnime(title, season ? parseInt(season) : undefined, episode ? parseInt(episode) : undefined),
+        mediaType === 'movie'
+          ? searchYTS(imdbId)
+          : searchEZTV(imdbId, season ? parseInt(season) : undefined, episode ? parseInt(episode) : undefined),
+      ]);
+      sources = [...animeSources, ...fallbackSources];
+    } else if (mediaType === 'movie') {
       sources = await searchYTS(imdbId);
     } else {
       sources = await searchEZTV(imdbId, season ? parseInt(season) : undefined, episode ? parseInt(episode) : undefined);
     }
 
-    // Sort by quality then seeders
+    // Sort: dual audio first, then by quality, then seeders
     sources.sort((a, b) => {
+      // Prefer dual audio for anime
+      if (isAnime) {
+        const aDA = a.audio?.includes('Dual') ? 1 : 0;
+        const bDA = b.audio?.includes('Dual') ? 1 : 0;
+        if (bDA !== aDA) return bDA - aDA;
+      }
       const qualityOrder: Record<string, number> = { '2160p': 4, '1080p': 3, '720p': 2, '480p': 1, 'Unknown': 0 };
       const qDiff = (qualityOrder[b.quality] || 0) - (qualityOrder[a.quality] || 0);
       if (qDiff !== 0) return qDiff;

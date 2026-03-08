@@ -1204,6 +1204,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   const { user } = useAuth();
   const [quickAdded, setQuickAdded] = useState(false);
   const [quickAdding, setQuickAdding] = useState(false);
+  const [libraryItemId, setLibraryItemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (avgScore != null && data?.id) {
@@ -1224,7 +1225,10 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   useEffect(() => {
     if (!user || !data?.id) return;
     getLibraryItemByMediaId({ tmdb_id: data.id }).then((item) => {
-      if (item) setQuickAdded(true);
+      if (item) {
+        setQuickAdded(true);
+        setLibraryItemId(item.id);
+      }
     }).catch(() => {});
   }, [user, data?.id]);
 
@@ -1824,6 +1828,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           season_number: s.season_number,
           episode_count: s.episode_count,
         })) : undefined}
+        libraryItemId={libraryItemId}
         onStartWatching={() => {
           // Auto-add to library as "watching" if not already added
           if (user && !quickAdded) {
@@ -1835,7 +1840,10 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
               external_rating: avgScore ? parseFloat(String(avgScore)) : data.vote_average,
               genres: data.genres?.map((g: any) => g.name).join(', '),
               status: 'watching',
-            }).then(() => setQuickAdded(true)).catch(() => {});
+            }).then((item) => {
+              setQuickAdded(true);
+              if (item?.id) setLibraryItemId(item.id);
+            }).catch(() => {});
           }
         }}
       />
@@ -1849,6 +1857,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         title={title}
         backdropPath={data.backdrop_path}
         tmdbId={data.id}
+        isAnime={isAnime}
       />
     </div>
   );
