@@ -12,13 +12,23 @@ function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   });
 }
 
-// Persistent OMDb cache (localStorage)
+// Persistent OMDb cache (localStorage) — 24h TTL
 const OMDB_STORE_KEY = 'syllabus_omdb';
+const OMDB_STORE_TS_KEY = 'syllabus_omdb_ts';
+const OMDB_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 let _omdbCache: Record<string, any> | null = null;
 
 function getOmdbStore() {
   if (!_omdbCache) {
     try {
+      // Expire the entire cache after TTL
+      const ts = parseInt(localStorage.getItem(OMDB_STORE_TS_KEY) || '0', 10);
+      if (Date.now() - ts > OMDB_CACHE_TTL) {
+        localStorage.removeItem(OMDB_STORE_KEY);
+        localStorage.setItem(OMDB_STORE_TS_KEY, String(Date.now()));
+        _omdbCache = {};
+        return _omdbCache;
+      }
       _omdbCache = JSON.parse(localStorage.getItem(OMDB_STORE_KEY) || '{}');
       let purged = false;
       for (const k of Object.keys(_omdbCache!)) {
@@ -145,6 +155,11 @@ export function getOMDbByTitle(title: string, year?: string, type = 'movie') {
       if (year) params += `&y=${year}`;
       const data = await omdbProxy(params);
       if (data.Error === 'Request limit reached!') throw new Error('OMDB_RATE_LIMIT');
+      // Validate year — OMDb may return a different movie with the same title
+      if (year && data.Year && Math.abs(parseInt(data.Year) - parseInt(year)) > 1) {
+        saveOmdbEntry(storedKey, null);
+        return null;
+      }
       const result = parseOMDbResponse(data);
       saveOmdbEntry(storedKey, result);
       return result;
