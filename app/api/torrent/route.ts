@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { homedir } from 'os';
+import { join } from 'path';
 
 export const dynamic = 'force-dynamic';
 
 const QB_BASE = 'http://localhost:8080/api/v2';
+const DOWNLOAD_PATH = join(homedir(), 'Downloads');
 let sessionCookie: string | null = null;
 
 async function qbAuth(): Promise<string> {
@@ -45,6 +48,7 @@ export async function POST(req: NextRequest) {
     const formBody = new URLSearchParams();
     formBody.set('urls', magnetUrl);
     formBody.set('category', category || 'syllabus');
+    formBody.set('savepath', DOWNLOAD_PATH);
     formBody.set('sequentialDownload', 'true');
     formBody.set('firstLastPiecePrio', 'true');
 
