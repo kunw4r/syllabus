@@ -11,12 +11,334 @@ interface ExtractedStream {
   provider: string;
   subtitles?: { label: string; file: string; language?: string }[];
   skips?: { intro?: { start: number; end: number }; outro?: { start: number; end: number } };
+  qualities?: Record<string, string>; // e.g. { "1080p": "url", "720p": "url" }
 }
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+const XPRIME_BACKEND = 'https://backend.xprime.tv';
+const XPRIME_HEADERS = {
+  'User-Agent': UA,
+  'Origin': 'https://xprime.stream',
+  'Referer': 'https://xprime.stream/',
+};
+
+// ─── Helper: Parse xprime subtitles ───
+
+function parseSubtitles(data: any): ExtractedStream['subtitles'] {
+  if (!data?.subtitles || !Array.isArray(data.subtitles)) return [];
+  return data.subtitles.map((s: any) => ({
+    label: s.label || s.language || 'English',
+    file: s.file || s.url,
+    language: s.language || 'en',
+  }));
+}
+
+// ─── XPrime: Primenet ───
+// ?id=<tmdb> → { url: "...m3u8" }
+
+async function extractPrimenet(
+  tmdbId: string,
+  mediaType: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    const params = new URLSearchParams({ id: tmdbId });
+    if (mediaType === 'tv') {
+      params.set('season', season || '1');
+      params.set('episode', episode || '1');
+    }
+
+    const res = await fetch(`${XPRIME_BACKEND}/primenet?${params}`, {
+      headers: XPRIME_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    if (data?.url) {
+      return {
+        url: data.url,
+        format: 'hls',
+        provider: 'Primenet',
+        subtitles: parseSubtitles(data),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] primenet failed:', err);
+    return null;
+  }
+}
+
+// ─── XPrime: Primebox ───
+// ?name=<title>&year=<year> → { streams: { "1080p": "url", ... }, available_qualities: [...] }
+
+async function extractPrimebox(
+  mediaType: string,
+  title?: string,
+  year?: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    if (!title) return null;
+    const params = new URLSearchParams({ name: title });
+    if (year) {
+      params.set('year', year);
+      params.set('fallback_year', year);
+    }
+    if (mediaType === 'tv') {
+      params.set('season', season || '1');
+      params.set('episode', episode || '1');
+    }
+
+    const res = await fetch(`${XPRIME_BACKEND}/primebox?${params}`, {
+      headers: XPRIME_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    const streams = data?.streams;
+    const qualities = data?.available_qualities || [];
+
+    if (streams && qualities.length > 0) {
+      const bestQuality = qualities[0];
+      const bestUrl = streams[bestQuality];
+      if (!bestUrl) return null;
+
+      return {
+        url: bestUrl,
+        format: 'mp4',
+        provider: 'Primebox',
+        qualities: streams,
+        subtitles: parseSubtitles(data),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] primebox failed:', err);
+    return null;
+  }
+}
+
+// ─── XPrime: Fox ───
+// ?name=<title>&pstream=true → { url: "...m3u8" }
+
+async function extractFox(
+  mediaType: string,
+  title?: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    if (!title) return null;
+    const params = new URLSearchParams({ name: title, pstream: 'true' });
+    if (mediaType === 'tv') {
+      params.set('season', season || '1');
+      params.set('episode', episode || '1');
+    }
+
+    const res = await fetch(`${XPRIME_BACKEND}/fox?${params}`, {
+      headers: XPRIME_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    if (data?.url) {
+      return {
+        url: data.url,
+        format: 'hls',
+        provider: 'Fox',
+        subtitles: parseSubtitles(data),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] fox failed:', err);
+    return null;
+  }
+}
+
+// ─── XPrime: Phoenix ───
+// ?id=<tmdb>&imdb=<imdb> → { url: "...m3u8" }
+
+async function extractPhoenix(
+  tmdbId: string,
+  imdbId?: string,
+  mediaType?: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    const params = new URLSearchParams({ id: tmdbId });
+    if (imdbId) params.set('imdb', imdbId);
+    if (mediaType === 'tv') {
+      params.set('season', season || '1');
+      params.set('episode', episode || '1');
+    }
+
+    const res = await fetch(`${XPRIME_BACKEND}/phoenix?${params}`, {
+      headers: XPRIME_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    if (data?.url) {
+      return {
+        url: data.url,
+        format: 'hls',
+        provider: 'Phoenix',
+        subtitles: parseSubtitles(data),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] phoenix failed:', err);
+    return null;
+  }
+}
+
+// ─── XPrime: Harbour ───
+// ?name=<title>&year=<year> → { url: "...m3u8" }
+
+async function extractHarbour(
+  mediaType: string,
+  title?: string,
+  year?: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    if (!title) return null;
+    const params = new URLSearchParams({ name: title });
+    if (year) params.set('year', year);
+    if (mediaType === 'tv') {
+      params.set('season', season || '1');
+      params.set('episode', episode || '1');
+    }
+
+    const res = await fetch(`${XPRIME_BACKEND}/harbour?${params}`, {
+      headers: XPRIME_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    if (data?.url) {
+      return {
+        url: data.url,
+        format: 'hls',
+        provider: 'Harbour',
+        subtitles: parseSubtitles(data),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] harbour failed:', err);
+    return null;
+  }
+}
+
+// ─── XPrime: Marant ───
+// ?id=<tmdb> → { url: "...m3u8" }
+
+async function extractMarant(
+  tmdbId: string,
+  mediaType: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    const params = new URLSearchParams({ id: tmdbId });
+    if (mediaType === 'tv') {
+      params.set('season', season || '1');
+      params.set('episode', episode || '1');
+    }
+
+    const res = await fetch(`${XPRIME_BACKEND}/marant?${params}`, {
+      headers: XPRIME_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    if (data?.url) {
+      return {
+        url: data.url,
+        format: 'hls',
+        provider: 'Marant',
+        subtitles: parseSubtitles(data),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] marant failed:', err);
+    return null;
+  }
+}
+
+// ─── XPrime: Volkswagen ───
+// ?name=<title>&year=<year> → { streams: { "1080p": "url", ... } } or { url: "..." }
+
+async function extractVolkswagen(
+  mediaType: string,
+  title?: string,
+  year?: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    if (!title) return null;
+    const params = new URLSearchParams({ name: title });
+    if (year) params.set('year', year);
+    if (mediaType === 'tv') {
+      params.set('season', season || '1');
+      params.set('episode', episode || '1');
+    }
+
+    const res = await fetch(`${XPRIME_BACKEND}/volkswagen?${params}`, {
+      headers: XPRIME_HEADERS,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    const streams = data?.streams;
+    const qualities = data?.available_qualities || [];
+
+    if (streams && qualities.length > 0) {
+      const bestQuality = qualities[0];
+      const bestUrl = streams[bestQuality];
+      if (!bestUrl) return null;
+
+      return {
+        url: bestUrl,
+        format: 'mp4',
+        provider: 'Volkswagen',
+        qualities: streams,
+        subtitles: parseSubtitles(data),
+      };
+    }
+    if (data?.url) {
+      return {
+        url: data.url,
+        format: data.url.includes('.mp4') ? 'mp4' : 'hls',
+        provider: 'Volkswagen',
+        subtitles: parseSubtitles(data),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] volkswagen failed:', err);
+    return null;
+  }
+}
 
 // ─── vidsrc-embed.ru extractor (via @definisi/vidsrc-scraper) ───
-// Uses: vidsrc-embed.ru → cloudnestra.com RCP → prorcp → m3u8
 
 async function extractVidsrcEmbed(
   tmdbId: string,
@@ -53,8 +375,6 @@ async function extractVidsrcEmbed(
 }
 
 // ─── autoembed.cc extractor ───
-// Parses data-server attribute (base64-encoded iframe URL) to get streameeeeee.site URL
-// Then we can potentially extract m3u8 from the Vidcloud player
 
 async function extractAutoembed(
   tmdbId: string,
@@ -75,15 +395,12 @@ async function extractAutoembed(
     if (!res.ok) return null;
     const html = await res.text();
 
-    // Extract data-server base64 attribute
     const serverMatch = html.match(/data-server="([^"]+)"/);
     if (!serverMatch?.[1]) return null;
 
     const streamUrl = Buffer.from(serverMatch[1], 'base64').toString();
     if (!streamUrl.includes('http')) return null;
 
-    // The streamUrl points to e.g. streameeeeee.site which is a Vidcloud player
-    // Fetch that page and look for the source loading mechanism
     const playerRes = await fetch(streamUrl, {
       headers: {
         'User-Agent': UA,
@@ -94,14 +411,10 @@ async function extractAutoembed(
     if (!playerRes.ok) return null;
     const playerHtml = await playerRes.text();
 
-    // Extract the data-id and try to get sources from the Vidcloud API
     const dataIdMatch = playerHtml.match(/data-id="([^"]+)"/);
-    const realIdMatch = playerHtml.match(/data-realid="([^"]+)"/);
 
     if (dataIdMatch?.[1]) {
       const playerHost = new URL(streamUrl).origin;
-
-      // Try the Vidcloud ajax sources endpoint
       const sourcesUrl = `${playerHost}/ajax/embed/episode/${dataIdMatch[1]}/sources`;
       const sourcesRes = await fetch(sourcesUrl, {
         headers: {
@@ -114,12 +427,11 @@ async function extractAutoembed(
 
       if (sourcesRes.ok) {
         const sourcesData = await sourcesRes.json();
-        // Sources typically return encrypted data or direct URLs
         if (sourcesData?.sources?.[0]?.file) {
           return {
             url: sourcesData.sources[0].file,
             format: sourcesData.sources[0].file.includes('.mp4') ? 'mp4' : 'hls',
-            provider: 'Autoembed (Vidcloud)',
+            provider: 'Autoembed',
             subtitles: (sourcesData.tracks || [])
               .filter((t: any) => t.kind === 'captions')
               .map((t: any) => ({
@@ -139,65 +451,6 @@ async function extractAutoembed(
   }
 }
 
-// ─── embed.su extractor ───
-
-async function extractEmbedSu(
-  tmdbId: string,
-  mediaType: string,
-  season?: string,
-  episode?: string
-): Promise<ExtractedStream | null> {
-  try {
-    const path = mediaType === 'movie'
-      ? `/embed/movie/${tmdbId}`
-      : `/embed/tv/${tmdbId}/${season || '1'}/${episode || '1'}`;
-
-    const res = await fetch(`https://embed.su${path}`, {
-      headers: { 'User-Agent': UA },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-
-    const match = html.match(/window\.vConfig\s*=\s*JSON\.parse\(atob\(`(.+?)`\)\)/);
-    if (!match?.[1]) return null;
-
-    const config = JSON.parse(Buffer.from(match[1], 'base64').toString());
-    if (!config.hash) return null;
-
-    const firstDecode = atob(config.hash).split('.').map((item: string) => item.split('').reverse().join(''));
-    const servers = JSON.parse(atob(firstDecode.join('').split('').reverse().join('')));
-
-    if (!servers || servers.length === 0) return null;
-
-    for (const server of servers) {
-      try {
-        const streamRes = await fetch(`https://embed.su/api/e/${server.hash}`, {
-          signal: AbortSignal.timeout(5000),
-        });
-        if (!streamRes.ok) continue;
-        const data = await streamRes.json();
-
-        if (data.source) {
-          return {
-            url: data.source,
-            format: data.format === 'mp4' ? 'mp4' : 'hls',
-            provider: `embed.su (${server.name || 'default'})`,
-            subtitles: data.subtitles || [],
-            skips: data.skips || undefined,
-          };
-        }
-      } catch {
-        continue;
-      }
-    }
-    return null;
-  } catch (err) {
-    console.error('[extract] embed.su failed:', err);
-    return null;
-  }
-}
-
 // ─── Main handler ───
 
 export async function GET(req: NextRequest) {
@@ -206,16 +459,25 @@ export async function GET(req: NextRequest) {
   const mediaType = searchParams.get('mediaType') || 'movie';
   const season = searchParams.get('season') || undefined;
   const episode = searchParams.get('episode') || undefined;
+  const title = searchParams.get('title') || undefined;
+  const year = searchParams.get('year') || undefined;
+  const imdbId = searchParams.get('imdbId') || undefined;
 
   if (!tmdbId) {
     return NextResponse.json({ error: 'Missing tmdbId' }, { status: 400 });
   }
 
-  // Try extractors in parallel — ordered by reliability
+  // All extractors in parallel — xprime sources first
   const extractors = [
-    { name: 'vidsrc-embed', fn: () => extractVidsrcEmbed(tmdbId, mediaType, season, episode) },
+    { name: 'primenet', fn: () => extractPrimenet(tmdbId, mediaType, season, episode) },
+    { name: 'primebox', fn: () => extractPrimebox(mediaType, title, year, season, episode) },
+    { name: 'fox', fn: () => extractFox(mediaType, title, season, episode) },
+    { name: 'phoenix', fn: () => extractPhoenix(tmdbId, imdbId, mediaType, season, episode) },
+    { name: 'harbour', fn: () => extractHarbour(mediaType, title, year, season, episode) },
+    { name: 'marant', fn: () => extractMarant(tmdbId, mediaType, season, episode) },
+    { name: 'volkswagen', fn: () => extractVolkswagen(mediaType, title, year, season, episode) },
+    { name: 'vidsrc', fn: () => extractVidsrcEmbed(tmdbId, mediaType, season, episode) },
     { name: 'autoembed', fn: () => extractAutoembed(tmdbId, mediaType, season, episode) },
-    { name: 'embed.su', fn: () => extractEmbedSu(tmdbId, mediaType, season, episode) },
   ];
 
   const results = await Promise.allSettled(
@@ -231,6 +493,8 @@ export async function GET(req: NextRequest) {
       streams.push(result.value);
     }
   }
+
+  console.log(`[extract-stream] ${tmdbId} (${mediaType}): ${streams.length} sources found — ${streams.map(s => s.provider).join(', ')}`);
 
   if (streams.length > 0) {
     return NextResponse.json({

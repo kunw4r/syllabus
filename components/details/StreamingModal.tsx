@@ -187,11 +187,17 @@ export default function StreamingModal({
       params.set('episode', String(e ?? currentEpisode));
     }
 
+    // Extra params for xprime extractors (need title, year, imdbId)
+    const extractParams = new URLSearchParams(params);
+    if (title) extractParams.set('title', title);
+    if (year) extractParams.set('year', year);
+    if (imdbId) extractParams.set('imdbId', imdbId);
+
     try {
       // Try direct extraction and embed fallback in parallel
       setStatusText('Extracting stream...');
       const [extractRes, resolveRes] = await Promise.allSettled([
-        fetch(`/api/extract-stream?${params}`).then(r => r.json()),
+        fetch(`/api/extract-stream?${extractParams}`).then(r => r.json()),
         fetch(`/api/resolve-stream?${params}`).then(r => r.json()),
       ]);
 

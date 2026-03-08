@@ -17,11 +17,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Some CDNs (e.g. illimitableinkwell) reject requests WITH Referer/Origin
+    // Only send headers for m3u8 manifests from known providers, not for segment CDNs
+    const parsedUrl = new URL(url);
+    const needsHeaders = parsedUrl.hostname.includes('cloudnestra') || parsedUrl.hostname.includes('embed');
     const res = await fetch(url, {
       headers: {
         'User-Agent': UA,
-        'Referer': new URL(url).origin + '/',
-        'Origin': new URL(url).origin,
+        ...(needsHeaders ? {
+          'Referer': parsedUrl.origin + '/',
+          'Origin': parsedUrl.origin,
+        } : {}),
       },
       signal: AbortSignal.timeout(15000),
     });
@@ -37,11 +43,18 @@ export async function GET(req: NextRequest) {
       let body = await res.text();
       const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
 
-      // Rewrite relative URLs in the m3u8 to go through our proxy
-      body = body.replace(/^(?!#)(?!https?:\/\/)(.+)$/gm, (match) => {
-        const absoluteUrl = match.startsWith('/')
-          ? new URL(url).origin + match
-          : baseUrl + match;
+      // Rewrite ALL non-comment lines (both relative and absolute URLs)
+      body = body.replace(/^(?!#)(.+)$/gm, (match) => {
+        const trimmed = match.trim();
+        if (!trimmed) return match;
+        let absoluteUrl: string;
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+          absoluteUrl = trimmed; // Already absolute
+        } else if (trimmed.startsWith('/')) {
+          absoluteUrl = new URL(url).origin + trimmed;
+        } else {
+          absoluteUrl = baseUrl + trimmed;
+        }
         return `/api/proxy-stream?url=${encodeURIComponent(absoluteUrl)}`;
       });
 
