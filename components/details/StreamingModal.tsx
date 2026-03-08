@@ -532,6 +532,12 @@ export default function StreamingModal({
             onEnded={mediaType === 'tv' ? nextEpisode : onClose}
             onBack={onClose}
             onSubtitleRequest={() => loadSubtitles()}
+            onError={() => {
+              // Direct stream failed — auto-fallback to iframe embed
+              if (workingProviders.length > 0) {
+                switchToEmbed(0);
+              }
+            }}
             onSourceChange={(source) => {
               if (source.id.startsWith('embed-')) {
                 const idx = workingProviders.findIndex(p => source.id === `embed-${p.id}`);

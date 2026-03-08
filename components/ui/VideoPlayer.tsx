@@ -57,6 +57,7 @@ interface VideoPlayerProps {
   onBack?: () => void;
   onSubtitleRequest?: () => void; // Trigger external subtitle fetch
   onSourceChange?: (source: SourceOption) => void;
+  onError?: () => void; // Called when playback fails fatally
 }
 
 // ─── Settings Panel Views ───
@@ -92,6 +93,7 @@ export default function VideoPlayer({
   onBack,
   onSubtitleRequest,
   onSourceChange,
+  onError: onErrorCallback,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -224,16 +226,38 @@ export default function VideoPlayer({
     if (src.includes('.m3u8') && !v.canPlayType('application/vnd.apple.mpegurl')) {
       import('hls.js').then(({ default: Hls }) => {
         if (Hls.isSupported()) {
-          const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
+          const hls = new Hls({
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+            enableWorker: true,
+            lowLatencyMode: false,
+            xhrSetup: (xhr: XMLHttpRequest) => {
+              // Some CDNs need specific headers
+              xhr.withCredentials = false;
+            },
+          });
           hlsInstance = hls;
           hls.loadSource(src);
           hls.attachMedia(v);
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            setLoading(false);
+            setError(null);
             if (startPositionSeconds > 0) v.currentTime = startPositionSeconds;
             v.play().catch(() => {});
           });
-          hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal: boolean }) => {
-            if (data.fatal) setError('Playback error. The server may need to transcode this file.');
+          hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal: boolean; type: string; details: string }) => {
+            if (data.fatal) {
+              console.error('[HLS] Fatal error:', data.type, data.details);
+              // Try to recover before showing error
+              if (data.type === 'networkError') {
+                hls.startLoad();
+              } else if (data.type === 'mediaError') {
+                hls.recoverMediaError();
+              } else {
+                setError('Playback error. Try switching to a different source.');
+                onErrorCallback?.();
+              }
+            }
           });
         }
       }).catch(() => {
@@ -831,7 +855,10 @@ export default function VideoPlayer({
         onWaiting={() => setLoading(true)}
         onCanPlay={() => setLoading(false)}
         onEnded={() => onEnded?.()}
-        onError={() => setError('Failed to load video. Check your Jellyfin server connection.')}
+        onError={() => {
+          setError('Failed to load video. Try switching to a different source.');
+          onErrorCallback?.();
+        }}
       />
 
       {/* Subtitle overlay (rendered manually for PiP/style support) */}
