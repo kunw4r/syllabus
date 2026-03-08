@@ -14,12 +14,26 @@ function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
 
 // Persistent OMDb cache (localStorage)
 const OMDB_STORE_KEY = 'syllabus_omdb';
+const OMDB_MIGRATION_KEY = 'syllabus_omdb_v2';
 let _omdbCache: Record<string, any> | null = null;
 
 function getOmdbStore() {
   if (!_omdbCache) {
     try {
       _omdbCache = JSON.parse(localStorage.getItem(OMDB_STORE_KEY) || '{}');
+
+      // One-time migration: purge title-based entries (t:) that may have wrong movie matches
+      if (!localStorage.getItem(OMDB_MIGRATION_KEY)) {
+        let migrated = false;
+        for (const k of Object.keys(_omdbCache!)) {
+          if (k.startsWith('t:')) { delete _omdbCache![k]; migrated = true; }
+        }
+        if (migrated) {
+          try { localStorage.setItem(OMDB_STORE_KEY, JSON.stringify(_omdbCache)); } catch { /* quota */ }
+        }
+        localStorage.setItem(OMDB_MIGRATION_KEY, '1');
+      }
+
       let purged = false;
       for (const k of Object.keys(_omdbCache!)) {
         if (_omdbCache![k] === null) { delete _omdbCache![k]; purged = true; }
