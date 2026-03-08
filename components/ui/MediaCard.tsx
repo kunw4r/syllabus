@@ -158,7 +158,7 @@ export default function MediaCard({
     return (
       <div
         className={`group/card relative cursor-pointer min-w-0 z-0 hover:z-40 ${
-          variant ? 'w-full' : `shrink-0 ${size === 'small' ? 'w-[200px] sm:w-[240px] lg:w-[280px]' : 'w-[260px] sm:w-[320px] lg:w-[380px]'}`
+          variant ? 'w-full' : `shrink-0 ${size === 'small' ? 'w-[160px] sm:w-[200px] lg:w-[240px]' : 'w-[260px] sm:w-[320px] lg:w-[380px]'}`
         }`}
         style={{ perspective: '800px' }}
         onClick={handleClick}

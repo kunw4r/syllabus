@@ -275,7 +275,7 @@ export default function Home() {
                       return (
                         <div
                           key={item.id}
-                          className="shrink-0 w-[240px] sm:w-[280px] lg:w-[320px] group/cw cursor-pointer"
+                          className="shrink-0 w-[180px] sm:w-[220px] lg:w-[260px] group/cw cursor-pointer"
                           onClick={() => router.push(`/details/${mt}/${item.tmdb_id}`)}
                         >
                           <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-dark-800 transition-all duration-300 group-hover/cw:scale-[1.03] group-hover/cw:shadow-xl group-hover/cw:shadow-black/50">
