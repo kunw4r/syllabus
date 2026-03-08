@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Play, Check, Server, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Tv } from 'lucide-react';
+import { X, Play, Check, Server, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Tv, SkipForward } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
+import VideoPlayer, { SubtitleTrack, SourceOption } from '@/components/ui/VideoPlayer';
+import { searchSubtitles, fetchSubtitleAsVttUrl } from '@/lib/api/opensubtitles';
 
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
 const TMDB_STILL = 'https://image.tmdb.org/t/p/w300';
@@ -12,6 +14,14 @@ interface ProviderResult {
   name: string;
   url: string;
   working: boolean;
+}
+
+interface ExtractedStream {
+  url: string;
+  format: 'hls' | 'mp4';
+  provider: string;
+  subtitles?: { label: string; file: string; language?: string }[];
+  skips?: { intro?: { start: number; end: number }; outro?: { start: number; end: number } };
 }
 
 interface EpisodeInfo {
@@ -52,24 +62,39 @@ export default function StreamingModal({
 }: StreamingModalProps) {
   const [phase, setPhase] = useState<'resolving' | 'playing'>('resolving');
   const [statusText, setStatusText] = useState('Finding best server...');
+  const [bgIndex, setBgIndex] = useState(0);
+
+  // Stream state
+  const [directStream, setDirectStream] = useState<ExtractedStream | null>(null);
+  const [allStreams, setAllStreams] = useState<ExtractedStream[]>([]);
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [workingProviders, setWorkingProviders] = useState<ProviderResult[]>([]);
   const [currentProviderIdx, setCurrentProviderIdx] = useState(0);
-  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
+  const [useDirectPlayer, setUseDirectPlayer] = useState(false);
+
+  // Subtitle state
+  const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>([]);
+  const [loadingSubtitles, setLoadingSubtitles] = useState(false);
+
+  // Skip intro state
+  const [skipData, setSkipData] = useState<ExtractedStream['skips']>(undefined);
+  const [showSkipIntro, setShowSkipIntro] = useState(false);
+  const [showSkipOutro, setShowSkipOutro] = useState(false);
+
+  // UI state
   const [showSettings, setShowSettings] = useState(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(false);
-  const [bgIndex, setBgIndex] = useState(0);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // TV episode state
   const [currentSeason, setCurrentSeason] = useState(initialSeason || 1);
   const [currentEpisode, setCurrentEpisode] = useState(initialEpisode || 1);
 
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
   const allBackdrops = (backdropImages?.length ? backdropImages : (backdropPath ? [backdropPath] : []))
     .map(p => `${TMDB_BACKDROP}${p}`);
 
-  // Cycle backdrop images during resolving
+  // ─── Cycle backdrop images during resolving ───
   useEffect(() => {
     if (phase !== 'resolving' || allBackdrops.length <= 1) return;
     const interval = setInterval(() => {
@@ -78,14 +103,21 @@ export default function StreamingModal({
     return () => clearInterval(interval);
   }, [phase, allBackdrops.length]);
 
-  // Reset on open
+  // ─── Reset on open ───
   useEffect(() => {
     if (isOpen) {
       setPhase('resolving');
       setStatusText('Finding best server...');
+      setDirectStream(null);
+      setAllStreams([]);
+      setEmbedUrl(null);
       setWorkingProviders([]);
       setCurrentProviderIdx(0);
-      setEmbedUrl(null);
+      setUseDirectPlayer(false);
+      setSubtitleTracks([]);
+      setSkipData(undefined);
+      setShowSkipIntro(false);
+      setShowSkipOutro(false);
       setShowSettings(false);
       setShowEpisodes(false);
       setControlsVisible(false);
@@ -95,10 +127,59 @@ export default function StreamingModal({
     }
   }, [isOpen, initialSeason, initialEpisode]);
 
-  // Resolve stream server-side when modal opens or episode changes
+  // ─── Load OpenSubtitles ───
+  const loadSubtitles = useCallback(async (s?: number, e?: number) => {
+    if (loadingSubtitles) return;
+    setLoadingSubtitles(true);
+    try {
+      const results = await searchSubtitles({
+        imdbId: imdbId || undefined,
+        tmdbId: tmdbId ? parseInt(tmdbId) : undefined,
+        type: mediaType === 'movie' ? 'movie' : 'episode',
+        season: mediaType === 'tv' ? (s ?? currentSeason) : undefined,
+        episode: mediaType === 'tv' ? (e ?? currentEpisode) : undefined,
+        languages: 'en',
+      });
+
+      const topResults = results.slice(0, 5);
+      const tracks: SubtitleTrack[] = [];
+
+      for (const sub of topResults) {
+        try {
+          const vttUrl = await fetchSubtitleAsVttUrl(sub.fileId);
+          if (vttUrl) {
+            tracks.push({
+              id: `os-${sub.fileId}`,
+              label: `${sub.languageName}${sub.hearingImpaired ? ' (CC)' : ''} — ${sub.release}`,
+              language: sub.language,
+              src: vttUrl,
+              isExternal: true,
+              isDefault: tracks.length === 0,
+            });
+          }
+        } catch {
+          // Skip failed subtitle
+        }
+      }
+
+      setSubtitleTracks(prev => [...prev, ...tracks]);
+    } catch (err) {
+      console.error('[StreamingModal] Subtitle load failed:', err);
+    } finally {
+      setLoadingSubtitles(false);
+    }
+  }, [imdbId, tmdbId, mediaType, currentSeason, currentEpisode, loadingSubtitles]);
+
+  // ─── Resolve stream ───
   const resolveStream = useCallback(async (s?: number, e?: number) => {
     setPhase('resolving');
-    setStatusText('Checking servers...');
+    setStatusText('Extracting stream...');
+    setDirectStream(null);
+    setAllStreams([]);
+    setEmbedUrl(null);
+    setUseDirectPlayer(false);
+    setSubtitleTracks([]);
+    setSkipData(undefined);
 
     const params = new URLSearchParams({ tmdbId, mediaType });
     if (mediaType === 'tv') {
@@ -107,45 +188,112 @@ export default function StreamingModal({
     }
 
     try {
-      const res = await fetch(`/api/resolve-stream?${params}`);
-      const data = await res.json();
-      const all: ProviderResult[] = data.allProviders || [];
-      const working = all.filter(p => p.working);
+      // Try direct extraction and embed fallback in parallel
+      const [extractRes, resolveRes] = await Promise.allSettled([
+        fetch(`/api/extract-stream?${params}`).then(r => r.json()),
+        fetch(`/api/resolve-stream?${params}`).then(r => r.json()),
+      ]);
 
-      setWorkingProviders(working.length > 0 ? working : all);
+      // Check direct extraction result
+      if (extractRes.status === 'fulfilled' && extractRes.value.extracted && extractRes.value.stream) {
+        const stream: ExtractedStream = extractRes.value.stream;
+        setDirectStream(stream);
+        setAllStreams(extractRes.value.allStreams || [stream]);
+        setUseDirectPlayer(true);
+        setSkipData(stream.skips);
 
-      if (working.length > 0) {
-        setStatusText(`Stream ready!`);
-        setCurrentProviderIdx(0);
-        setEmbedUrl(working[0].url);
+        // Use provider subtitles if available
+        if (stream.subtitles?.length) {
+          setSubtitleTracks(stream.subtitles.map((sub: { label?: string; language?: string; file: string }, i: number) => ({
+            id: `provider-${i}`,
+            label: sub.label || sub.language || `Subtitle ${i + 1}`,
+            language: sub.language || 'en',
+            src: sub.file,
+            isExternal: true,
+            isDefault: i === 0,
+          })));
+        }
 
-        // Brief delay for the "Stream ready!" message
-        await new Promise(r => setTimeout(r, 800));
+        // Also store embed providers for fallback switching
+        if (resolveRes.status === 'fulfilled') {
+          const all: ProviderResult[] = resolveRes.value.allProviders || [];
+          setWorkingProviders(all.filter((p: ProviderResult) => p.working));
+        }
+
+        setStatusText('Stream ready!');
+        await new Promise(r => setTimeout(r, 600));
         setPhase('playing');
         onStartWatching?.();
-      } else {
-        // No confirmed working providers — try first one anyway
-        setStatusText('Loading stream...');
-        setEmbedUrl(all[0]?.url || null);
-        await new Promise(r => setTimeout(r, 1000));
-        setPhase('playing');
-        onStartWatching?.();
+
+        // Load OpenSubtitles in background if no provider subs
+        if (!stream.subtitles?.length) {
+          loadSubtitles(s, e);
+        }
+        return;
       }
+
+      // Fallback: use iframe embed providers
+      if (resolveRes.status === 'fulfilled') {
+        const data = resolveRes.value;
+        const all: ProviderResult[] = data.allProviders || [];
+        const working = all.filter((p: ProviderResult) => p.working);
+        setWorkingProviders(working.length > 0 ? working : all);
+
+        const best = working[0] || all[0];
+        if (best) {
+          setCurrentProviderIdx(0);
+          setEmbedUrl(best.url);
+          setStatusText('Stream ready!');
+          await new Promise(r => setTimeout(r, 600));
+          setPhase('playing');
+          onStartWatching?.();
+          return;
+        }
+      }
+
+      setStatusText('No servers available');
+      await new Promise(r => setTimeout(r, 2000));
+      setPhase('playing');
     } catch {
       setStatusText('Connection error. Retrying...');
-      // Retry once after short delay
       await new Promise(r => setTimeout(r, 2000));
       setPhase('playing');
     }
-  }, [tmdbId, mediaType, currentSeason, currentEpisode, onStartWatching]);
+  }, [tmdbId, mediaType, currentSeason, currentEpisode, onStartWatching, loadSubtitles]);
 
   useEffect(() => {
     if (!isOpen) return;
     resolveStream();
   }, [isOpen]); // Only on initial open
 
-  // Auto-hide controls
-  const showControls = () => {
+  // ─── Skip intro/outro detection ───
+  const handleTimeUpdate = useCallback((time: number, _dur: number) => {
+    if (skipData?.intro) {
+      setShowSkipIntro(time >= skipData.intro.start && time < skipData.intro.end);
+    }
+    if (skipData?.outro) {
+      setShowSkipOutro(time >= skipData.outro.start && time < skipData.outro.end);
+    }
+  }, [skipData]);
+
+  const handleSkipIntro = useCallback(() => {
+    if (skipData?.intro) {
+      const video = document.querySelector('video');
+      if (video) video.currentTime = skipData.intro.end;
+      setShowSkipIntro(false);
+    }
+  }, [skipData]);
+
+  const handleSkipOutro = useCallback(() => {
+    if (skipData?.outro) {
+      const video = document.querySelector('video');
+      if (video) video.currentTime = skipData.outro.end;
+      setShowSkipOutro(false);
+    }
+  }, [skipData]);
+
+  // ─── Auto-hide controls (iframe mode) ───
+  const showControlsFn = () => {
     setControlsVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => {
@@ -155,18 +303,42 @@ export default function StreamingModal({
     }, 4000);
   };
 
-  const switchServer = (index: number) => {
-    const providers = workingProviders;
-    if (index >= 0 && index < providers.length) {
-      setCurrentProviderIdx(index);
-      setEmbedUrl(providers[index].url);
-      setPhase('resolving');
-      setStatusText(`Switching to ${providers[index].name}...`);
-      setTimeout(() => setPhase('playing'), 1500);
+  // ─── Server switching ───
+  const switchToDirectStream = (index: number) => {
+    if (index >= 0 && index < allStreams.length) {
+      const stream = allStreams[index];
+      setDirectStream(stream);
+      setUseDirectPlayer(true);
+      setEmbedUrl(null);
+      setSkipData(stream.skips);
+      if (stream.subtitles?.length) {
+        setSubtitleTracks(stream.subtitles.map((sub, i) => ({
+          id: `provider-${i}`,
+          label: sub.label || sub.language || `Subtitle ${i + 1}`,
+          language: sub.language || 'en',
+          src: sub.file,
+          isExternal: true,
+          isDefault: i === 0,
+        })));
+      }
     }
     setShowSettings(false);
   };
 
+  const switchToEmbed = (index: number) => {
+    if (index >= 0 && index < workingProviders.length) {
+      setCurrentProviderIdx(index);
+      setEmbedUrl(workingProviders[index].url);
+      setUseDirectPlayer(false);
+      setDirectStream(null);
+      setPhase('resolving');
+      setStatusText(`Switching to ${workingProviders[index].name}...`);
+      setTimeout(() => setPhase('playing'), 1200);
+    }
+    setShowSettings(false);
+  };
+
+  // ─── Episode navigation ───
   const changeEpisode = (s: number, e: number) => {
     setCurrentSeason(s);
     setCurrentEpisode(e);
@@ -176,17 +348,13 @@ export default function StreamingModal({
   };
 
   const nextEpisode = () => {
-    const currentSeasonData = seasons?.find(s => s.season_number === currentSeason);
-    if (!currentSeasonData) return;
-
-    if (currentEpisode < currentSeasonData.episode_count) {
+    const csData = seasons?.find(s => s.season_number === currentSeason);
+    if (!csData) return;
+    if (currentEpisode < csData.episode_count) {
       changeEpisode(currentSeason, currentEpisode + 1);
     } else {
-      // Next season
-      const nextSeason = seasons?.find(s => s.season_number === currentSeason + 1);
-      if (nextSeason) {
-        changeEpisode(currentSeason + 1, 1);
-      }
+      const ns = seasons?.find(s => s.season_number === currentSeason + 1);
+      if (ns) changeEpisode(currentSeason + 1, 1);
     }
   };
 
@@ -194,10 +362,8 @@ export default function StreamingModal({
     if (currentEpisode > 1) {
       changeEpisode(currentSeason, currentEpisode - 1);
     } else {
-      const prevSeason = seasons?.find(s => s.season_number === currentSeason - 1);
-      if (prevSeason) {
-        changeEpisode(currentSeason - 1, prevSeason.episode_count);
-      }
+      const ps = seasons?.find(s => s.season_number === currentSeason - 1);
+      if (ps) changeEpisode(currentSeason - 1, ps.episode_count);
     }
   };
 
@@ -210,11 +376,84 @@ export default function StreamingModal({
     : title;
   const episodeTitle = currentEpisodeData?.name || '';
 
+  // Build source options for VideoPlayer
+  const sourceOptions: SourceOption[] = allStreams.map((s, i) => ({
+    id: `stream-${i}`,
+    label: s.provider,
+    url: s.url,
+    isDefault: s.url === directStream?.url,
+  }));
+  workingProviders.forEach((p) => {
+    sourceOptions.push({
+      id: `embed-${p.id}`,
+      label: `${p.name} (embed)`,
+      url: p.url,
+    });
+  });
+
+  // ─── Episode browser panel ───
+  const EpisodeBrowser = () => (
+    currentSeasonData ? (
+      <m.div
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -5 }}
+        className="absolute right-0 top-full mt-2 w-80 max-h-[70vh] bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[60]"
+      >
+        {seasons && seasons.filter(s => s.season_number > 0).length > 1 && (
+          <div className="flex gap-1 p-2 border-b border-white/[0.06] overflow-x-auto scrollbar-hide">
+            {seasons.filter(s => s.season_number > 0).map(s => (
+              <button
+                key={s.season_number}
+                onClick={() => setCurrentSeason(s.season_number)}
+                className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  s.season_number === currentSeason
+                    ? 'bg-accent/20 text-accent'
+                    : 'text-white/40 hover:text-white/70 hover:bg-white/5'
+                }`}
+              >
+                S{s.season_number}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="overflow-y-auto max-h-[60vh] p-1.5">
+          {Array.from({ length: currentSeasonData.episode_count }, (_, i) => {
+            const epNum = i + 1;
+            const ep = currentSeasonData.episodes?.find(e => e.episode_number === epNum);
+            const isActive = epNum === currentEpisode && currentSeasonData.season_number === currentSeason;
+            return (
+              <button
+                key={epNum}
+                onClick={() => changeEpisode(currentSeasonData.season_number, epNum)}
+                className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
+                  isActive ? 'bg-accent/15' : 'hover:bg-white/5'
+                }`}
+              >
+                {ep?.still_path && (
+                  <img src={`${TMDB_STILL}${ep.still_path}`} alt="" className="w-24 h-14 rounded-md object-cover bg-white/5 shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold ${isActive ? 'text-accent' : 'text-white/50'}`}>E{epNum}</span>
+                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
+                  </div>
+                  <p className="text-[11px] text-white/70 truncate">{ep?.name || `Episode ${epNum}`}</p>
+                  {ep?.overview && <p className="text-[10px] text-white/30 truncate mt-0.5">{ep.overview}</p>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </m.div>
+    ) : null
+  );
+
   return (
     <div
       className="fixed inset-0 z-[200] bg-black"
-      onMouseMove={showControls}
-      onClick={() => { setShowSettings(false); setShowEpisodes(false); }}
+      onMouseMove={!useDirectPlayer ? showControlsFn : undefined}
+      onClick={!useDirectPlayer ? () => { setShowSettings(false); setShowEpisodes(false); } : undefined}
     >
       {/* ── Resolving / Loading Screen ── */}
       <AnimatePresence>
@@ -279,8 +518,92 @@ export default function StreamingModal({
         )}
       </AnimatePresence>
 
-      {/* ── Embedded Player ── */}
-      {embedUrl && (
+      {/* ── Direct VideoPlayer (custom player with full controls) ── */}
+      {phase === 'playing' && useDirectPlayer && directStream && (
+        <div className="absolute inset-0 z-10">
+          <VideoPlayer
+            src={directStream.url}
+            title={displayTitle}
+            subtitle={episodeTitle}
+            posterUrl={allBackdrops[0]}
+            subtitleTracks={subtitleTracks}
+            sourceOptions={sourceOptions}
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={mediaType === 'tv' ? nextEpisode : onClose}
+            onBack={onClose}
+            onSubtitleRequest={() => loadSubtitles()}
+            onSourceChange={(source) => {
+              if (source.id.startsWith('embed-')) {
+                const idx = workingProviders.findIndex(p => source.id === `embed-${p.id}`);
+                if (idx >= 0) switchToEmbed(idx);
+              } else {
+                const idx = allStreams.findIndex(s => s.url === source.url);
+                if (idx >= 0) switchToDirectStream(idx);
+              }
+            }}
+          />
+
+          {/* Skip Intro Button */}
+          <AnimatePresence>
+            {showSkipIntro && (
+              <m.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onClick={handleSkipIntro}
+                className="absolute bottom-24 right-8 z-50 flex items-center gap-2 px-5 py-2.5 bg-white/95 text-black text-sm font-semibold rounded-lg shadow-2xl hover:bg-white transition-colors"
+              >
+                <SkipForward size={16} />
+                Skip Intro
+              </m.button>
+            )}
+          </AnimatePresence>
+
+          {/* Skip Outro / Next Episode */}
+          <AnimatePresence>
+            {showSkipOutro && (
+              <m.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onClick={mediaType === 'tv' ? nextEpisode : handleSkipOutro}
+                className="absolute bottom-24 right-8 z-50 flex items-center gap-2 px-5 py-2.5 bg-white/95 text-black text-sm font-semibold rounded-lg shadow-2xl hover:bg-white transition-colors"
+              >
+                <SkipForward size={16} />
+                {mediaType === 'tv' ? 'Next Episode' : 'Skip Outro'}
+              </m.button>
+            )}
+          </AnimatePresence>
+
+          {/* TV Episode Controls Overlay (direct player mode) */}
+          {mediaType === 'tv' && (
+            <div className="absolute top-4 right-4 z-50 flex items-center gap-2" onClick={e => e.stopPropagation()}>
+              <button onClick={prevEpisode} className="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white/60 hover:text-white transition-colors backdrop-blur-sm">
+                <ChevronLeft size={16} />
+              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowEpisodes(!showEpisodes)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-black/50 hover:bg-black/70 text-white/80 text-xs font-medium transition-colors backdrop-blur-sm"
+                >
+                  <Tv size={13} />
+                  S{currentSeason}E{currentEpisode}
+                  <ChevronDown size={12} className={`transition-transform ${showEpisodes ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {showEpisodes && <EpisodeBrowser />}
+                </AnimatePresence>
+              </div>
+              <button onClick={nextEpisode} className="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white/60 hover:text-white transition-colors backdrop-blur-sm">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Iframe Embed Fallback ── */}
+      {phase === 'playing' && !useDirectPlayer && embedUrl && (
         <iframe
           key={embedUrl}
           src={embedUrl}
@@ -291,9 +614,9 @@ export default function StreamingModal({
         />
       )}
 
-      {/* ── Top Controls (hover) ── */}
+      {/* ── Top Controls for iframe mode (hover) ── */}
       <AnimatePresence>
-        {phase === 'playing' && controlsVisible && (
+        {phase === 'playing' && !useDirectPlayer && controlsVisible && (
           <m.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -307,18 +630,11 @@ export default function StreamingModal({
               {episodeTitle && <p className="text-white/40 text-[11px] truncate">{episodeTitle}</p>}
             </div>
 
-            {/* TV: Episode navigation */}
             {mediaType === 'tv' && (
               <>
-                <button
-                  onClick={prevEpisode}
-                  className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-                  title="Previous episode"
-                >
+                <button onClick={prevEpisode} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
                   <ChevronLeft size={18} />
                 </button>
-
-                {/* Episodes panel toggle */}
                 <div className="relative">
                   <button
                     onClick={() => { setShowEpisodes(!showEpisodes); setShowSettings(false); }}
@@ -327,79 +643,11 @@ export default function StreamingModal({
                     <Tv size={13} />
                     Episodes
                   </button>
-
-                  {/* Episodes dropdown */}
                   <AnimatePresence>
-                    {showEpisodes && currentSeasonData && (
-                      <m.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-dark-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                      >
-                        {/* Season selector */}
-                        {seasons && seasons.filter(s => s.season_number > 0).length > 1 && (
-                          <div className="flex gap-1 p-2 border-b border-white/[0.06] overflow-x-auto scrollbar-hide">
-                            {seasons.filter(s => s.season_number > 0).map(s => (
-                              <button
-                                key={s.season_number}
-                                onClick={() => setCurrentSeason(s.season_number)}
-                                className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                                  s.season_number === currentSeason
-                                    ? 'bg-accent/20 text-accent'
-                                    : 'text-white/40 hover:text-white/70 hover:bg-white/5'
-                                }`}
-                              >
-                                S{s.season_number}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Episode list */}
-                        <div className="overflow-y-auto max-h-72 p-1.5">
-                          {Array.from({ length: currentSeasonData.episode_count }, (_, i) => {
-                            const epNum = i + 1;
-                            const ep = currentSeasonData.episodes?.find(e => e.episode_number === epNum);
-                            const isActive = currentSeason === (initialSeason || 1) && epNum === currentEpisode;
-                            return (
-                              <button
-                                key={epNum}
-                                onClick={() => changeEpisode(currentSeason, epNum)}
-                                className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
-                                  isActive ? 'bg-accent/15' : 'hover:bg-white/5'
-                                }`}
-                              >
-                                {ep?.still_path && (
-                                  <img
-                                    src={`${TMDB_STILL}${ep.still_path}`}
-                                    alt=""
-                                    className="w-20 h-12 rounded-md object-cover bg-dark-700 shrink-0"
-                                  />
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-bold ${isActive ? 'text-accent' : 'text-white/50'}`}>
-                                      E{epNum}
-                                    </span>
-                                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
-                                  </div>
-                                  <p className="text-[11px] text-white/70 truncate">{ep?.name || `Episode ${epNum}`}</p>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </m.div>
-                    )}
+                    {showEpisodes && <EpisodeBrowser />}
                   </AnimatePresence>
                 </div>
-
-                <button
-                  onClick={nextEpisode}
-                  className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-                  title="Next episode"
-                >
+                <button onClick={nextEpisode} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors">
                   <ChevronRight size={18} />
                 </button>
               </>
@@ -428,14 +676,14 @@ export default function StreamingModal({
                       {workingProviders.map((p, i) => (
                         <button
                           key={p.id}
-                          onClick={() => switchServer(i)}
+                          onClick={() => switchToEmbed(i)}
                           className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors ${
-                            i === currentProviderIdx
+                            i === currentProviderIdx && !useDirectPlayer
                               ? 'bg-accent/15 text-accent'
                               : 'text-white/60 hover:bg-white/5 hover:text-white/80'
                           }`}
                         >
-                          {i === currentProviderIdx ? <Check size={12} /> : <div className="w-3" />}
+                          {i === currentProviderIdx && !useDirectPlayer ? <Check size={12} /> : <div className="w-3" />}
                           <span className="font-medium">{p.name}</span>
                           {p.working && <span className="ml-auto text-[9px] text-green-400/60">online</span>}
                         </button>
