@@ -63,11 +63,14 @@ export default function SearchBar({
   }, []);
 
   // Close suggestions on outside click
+  const dropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
+      const target = e.target as Node;
+      // Don't close if clicking inside the search bar or the portal dropdown
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setShowSuggestions(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -170,7 +173,7 @@ export default function SearchBar({
 
       {/* Suggestions dropdown — rendered via portal to escape clipping contexts */}
       {showSuggestions && suggestions.length > 0 && (
-        <DropdownPortal anchorRef={containerRef}>
+        <DropdownPortal anchorRef={containerRef} dropdownRef={dropdownRef}>
           {suggestions.map((s, i) => (
             <button
               key={`${s.type}-${s.text}-${i}`}
@@ -242,9 +245,11 @@ export default function SearchBar({
 /** Portal-based dropdown that escapes clipping contexts (backdrop-blur, rounded nav, etc.) */
 function DropdownPortal({
   anchorRef,
+  dropdownRef,
   children,
 }: {
   anchorRef: React.RefObject<HTMLDivElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
   children: React.ReactNode;
 }) {
   const [style, setStyle] = useState<React.CSSProperties>({ opacity: 0 });
@@ -275,6 +280,7 @@ function DropdownPortal({
 
   return createPortal(
     <div
+      ref={dropdownRef}
       style={style}
       className="bg-dark-800/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl shadow-black/50 z-[200] animate-fade-in"
     >
