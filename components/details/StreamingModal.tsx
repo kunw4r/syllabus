@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Play, Download, Loader2, HardDrive, Check, Settings, ChevronDown, MonitorPlay, Server } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Play, Check, Server, ChevronDown, RefreshCw } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 
 // ─── Embedded Streaming Providers ───
@@ -65,8 +65,6 @@ const STREAM_PROVIDERS: StreamProvider[] = [
 
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
 
-// ─── Props ───
-
 interface StreamingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -78,87 +76,63 @@ interface StreamingModalProps {
   season?: number;
   episode?: number;
   backdropPath?: string;
-  backdropImages?: string[]; // array of backdrop file_paths from TMDB images
+  backdropImages?: string[];
 }
 
 export default function StreamingModal({
   isOpen, onClose, tmdbId, imdbId, mediaType, title, year, season, episode,
   backdropPath, backdropImages,
 }: StreamingModalProps) {
-  const [phase, setPhase] = useState<'loading' | 'playing'>('loading');
+  const [loading, setLoading] = useState(true);
   const [currentProvider, setCurrentProvider] = useState(0);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [iframeError, setIframeError] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const loadTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [controlsVisible, setControlsVisible] = useState(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Cycle backdrop images during loading
   const allBackdrops = (backdropImages?.length ? backdropImages : (backdropPath ? [backdropPath] : []))
     .map(p => `${TMDB_BACKDROP}${p}`);
 
+  // Cycle backdrop images during loading
   useEffect(() => {
-    if (phase !== 'loading' || allBackdrops.length <= 1) return;
+    if (!loading || allBackdrops.length <= 1) return;
     const interval = setInterval(() => {
       setBgIndex(prev => (prev + 1) % allBackdrops.length);
-    }, 3000);
+    }, 2500);
     return () => clearInterval(interval);
-  }, [phase, allBackdrops.length]);
+  }, [loading, allBackdrops.length]);
 
-  // Start auto-trying providers when modal opens
+  // Reset on open
   useEffect(() => {
-    if (!isOpen) {
-      setPhase('loading');
+    if (isOpen) {
+      setLoading(true);
       setCurrentProvider(0);
-      setIframeLoaded(false);
-      setIframeError(false);
       setShowSettings(false);
       setBgIndex(0);
-      return;
+      setControlsVisible(false);
     }
-    setPhase('loading');
-    setIframeLoaded(false);
-    setIframeError(false);
   }, [isOpen]);
 
-  // When provider changes, give it time to load, then move to next if it fails
+  // Loading screen — show for 3 seconds then reveal player
   useEffect(() => {
-    if (!isOpen || phase === 'playing') return;
+    if (!isOpen || !loading) return;
+    const timer = setTimeout(() => setLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, [isOpen, loading, currentProvider]);
 
-    setIframeLoaded(false);
-    setIframeError(false);
-
-    // Timeout: if iframe doesn't signal load in 8s, try next
-    loadTimerRef.current = setTimeout(() => {
-      if (!iframeLoaded) {
-        tryNextProvider();
-      }
-    }, 8000);
-
-    return () => { if (loadTimerRef.current) clearTimeout(loadTimerRef.current); };
-  }, [currentProvider, isOpen]);
-
-  const tryNextProvider = useCallback(() => {
-    if (currentProvider < STREAM_PROVIDERS.length - 1) {
-      setCurrentProvider(prev => prev + 1);
-    } else {
-      // Cycled through all — stay on last one, user can manually switch
-      setPhase('playing');
-    }
-  }, [currentProvider]);
-
-  const handleIframeLoad = () => {
-    setIframeLoaded(true);
-    if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
-    // Short delay to let the iframe's content actually render
-    setTimeout(() => setPhase('playing'), 500);
+  // Auto-hide controls after 3s
+  const showControls = () => {
+    setControlsVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      setControlsVisible(false);
+      setShowSettings(false);
+    }, 3000);
   };
 
   const switchServer = (index: number) => {
     setCurrentProvider(index);
-    setPhase('loading');
-    setIframeLoaded(false);
+    setLoading(true);
     setShowSettings(false);
   };
 
@@ -168,15 +142,19 @@ export default function StreamingModal({
   const embedUrl = provider.buildUrl({ tmdbId, imdbId, mediaType, season, episode });
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black">
+    <div
+      className="fixed inset-0 z-[200] bg-black"
+      onMouseMove={showControls}
+      onClick={() => { if (showSettings) setShowSettings(false); }}
+    >
       {/* ── Loading Screen ── */}
       <AnimatePresence>
-        {phase === 'loading' && (
+        {loading && (
           <m.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center"
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center"
           >
             {/* Cycling backdrop images */}
             {allBackdrops.length > 0 && (
@@ -184,37 +162,50 @@ export default function StreamingModal({
                 <m.img
                   key={bgIndex}
                   src={allBackdrops[bgIndex]}
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 0.3, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 1.2 }}
+                  initial={{ opacity: 0, scale: 1.08 }}
+                  animate={{ opacity: 0.35, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 1.5, ease: 'easeInOut' }}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               </AnimatePresence>
             )}
 
             {/* Gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/40" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/30" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,black_100%)]" />
 
             {/* Loading content */}
             <div className="relative z-10 flex flex-col items-center text-center px-8">
               <m.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 rounded-full border-2 border-white/10 border-t-accent mb-6"
-              />
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{title}</h2>
-              {year && <p className="text-sm text-white/40 mb-6">{year}{mediaType === 'tv' && season ? ` · Season ${season}, Episode ${episode}` : ''}</p>}
-              <p className="text-sm text-white/30">
-                Finding best server<span className="animate-pulse">...</span>
-              </p>
-              <p className="text-xs text-white/15 mt-2">
-                Trying {provider.name} ({currentProvider + 1}/{STREAM_PROVIDERS.length})
-              </p>
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center mb-8"
+              >
+                <Play size={28} fill="white" className="text-white ml-1" />
+              </m.div>
+
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white mb-2 drop-shadow-lg">{title}</h2>
+              {year && (
+                <p className="text-sm text-white/40 mb-8">
+                  {year}
+                  {mediaType === 'tv' && season ? ` · Season ${season}, Episode ${episode}` : ''}
+                </p>
+              )}
+
+              {/* Loading bar */}
+              <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden">
+                <m.div
+                  className="h-full bg-white/60 rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 2.8, ease: 'easeInOut' }}
+                />
+              </div>
+              <p className="text-[11px] text-white/20 mt-3">Loading {provider.name}</p>
             </div>
 
-            {/* Close button */}
+            {/* Close during loading */}
             <button
               onClick={onClose}
               className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
@@ -225,25 +216,28 @@ export default function StreamingModal({
         )}
       </AnimatePresence>
 
-      {/* ── Iframe (loads in background during loading phase) ── */}
+      {/* ── Iframe — always mounted, hidden behind loading screen ── */}
       <iframe
-        ref={iframeRef}
+        key={`${provider.id}-${tmdbId}`}
         src={embedUrl}
-        className={`w-full h-full border-0 transition-opacity duration-500 ${phase === 'playing' ? 'opacity-100' : 'opacity-0'}`}
+        className="w-full h-full border-0"
         allowFullScreen
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         referrerPolicy="origin"
-        onLoad={handleIframeLoad}
-        onError={() => tryNextProvider()}
       />
 
-      {/* ── Player overlay controls (only when playing) ── */}
-      {phase === 'playing' && (
-        <>
-          {/* Top bar — title + close */}
-          <div className="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 p-3 bg-gradient-to-b from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
+      {/* ── Top controls bar (hover to show) ── */}
+      <AnimatePresence>
+        {!loading && controlsVisible && (
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent"
+          >
             <div className="flex-1 min-w-0">
-              <p className="text-white/80 text-sm font-medium truncate">{title}</p>
+              <p className="text-white/90 text-sm font-medium truncate">{title}</p>
               <p className="text-white/30 text-[10px]">
                 {provider.name}
                 {year ? ` · ${year}` : ''}
@@ -251,44 +245,53 @@ export default function StreamingModal({
               </p>
             </div>
 
-            {/* Server switch button */}
-            <div className="relative">
+            {/* Server switch */}
+            <div className="relative" onClick={e => e.stopPropagation()}>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 text-xs transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 text-xs font-medium transition-colors"
               >
-                <Server size={14} /> Server
+                <Server size={13} />
+                {provider.name}
                 <ChevronDown size={12} className={`transition-transform ${showSettings ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Server dropdown */}
               <AnimatePresence>
                 {showSettings && (
                   <m.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    className="absolute right-0 top-full mt-1.5 w-48 bg-dark-800/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+                    initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 w-44 bg-dark-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                   >
-                    {STREAM_PROVIDERS.map((p, i) => (
-                      <button
-                        key={p.id}
-                        onClick={() => switchServer(i)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-xs transition-colors ${
-                          i === currentProvider
-                            ? 'bg-accent/10 text-accent'
-                            : 'text-white/60 hover:bg-white/5 hover:text-white/80'
-                        }`}
-                      >
-                        {i === currentProvider && <Check size={12} className="text-accent" />}
-                        {i !== currentProvider && <div className="w-3" />}
-                        <span className="font-medium">{p.name}</span>
-                      </button>
-                    ))}
+                    <div className="p-1">
+                      {STREAM_PROVIDERS.map((p, i) => (
+                        <button
+                          key={p.id}
+                          onClick={() => switchServer(i)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors ${
+                            i === currentProvider
+                              ? 'bg-accent/15 text-accent'
+                              : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                          }`}
+                        >
+                          {i === currentProvider ? <Check size={12} /> : <div className="w-3" />}
+                          <span className="font-medium">{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </m.div>
                 )}
               </AnimatePresence>
             </div>
+
+            <button
+              onClick={() => setLoading(true)}
+              className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+              title="Reload"
+            >
+              <RefreshCw size={15} />
+            </button>
 
             <button
               onClick={onClose}
@@ -296,9 +299,9 @@ export default function StreamingModal({
             >
               <X size={18} />
             </button>
-          </div>
-        </>
-      )}
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
