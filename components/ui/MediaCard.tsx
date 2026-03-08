@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, Plus, Check, Play, Info, Trash2 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -9,6 +9,7 @@ import { TMDB_IMG, TMDB_IMG_ORIGINAL, GENRE_ID_TO_NAME } from '@/lib/constants';
 import { getRatingBg, getRatingGlow, getRatingHex, sampleImageBrightness } from '@/lib/utils/rating-colors';
 import { usePreviewModal } from '@/components/providers/PreviewModalProvider';
 import { getStaticRatings } from '@/lib/scoring';
+import { getLogoPath, onLogoUpdate } from '@/lib/api/tmdb';
 
 interface MediaItem {
   id?: number | string;
@@ -26,7 +27,6 @@ interface MediaItem {
   first_publish_year?: string | number;
   poster_path?: string;
   backdrop_path?: string;
-  logo_path?: string;
   cover_url?: string;
   cover_urls?: string[];
   genre_ids?: number[];
@@ -60,6 +60,11 @@ export default function MediaCard({
   const [added, setAdded] = useState(false);
   const [isBright, setIsBright] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
+
+  // Subscribe to global logo store — re-renders when logos are fetched
+  const [logoVersion, setLogoVersion] = useState(0);
+  useEffect(() => onLogoUpdate(() => setLogoVersion((v) => v + 1)), []);
+  const logoPath = mediaType !== 'book' && item.id ? getLogoPath(mediaType, item.id) : undefined;
 
   const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     setIsBright(sampleImageBrightness(e.currentTarget, 'top-right'));
@@ -223,9 +228,9 @@ export default function MediaCard({
 
             {/* Resting state — logo/title + year + progress at bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black via-black/70 via-[40%] to-transparent group-hover/card:opacity-0 transition-opacity duration-200 pointer-events-none">
-              {item.logo_path ? (
+              {logoPath ? (
                 <img
-                  src={`https://image.tmdb.org/t/p/w300${item.logo_path}`}
+                  src={`https://image.tmdb.org/t/p/w300${logoPath}`}
                   alt={title}
                   className="h-6 sm:h-7 w-auto max-w-[80%] object-contain object-left drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
                   loading="lazy"

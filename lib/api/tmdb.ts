@@ -127,33 +127,47 @@ export function getTVSeasonDetails(tvId: number | string, seasonNumber: number) 
   return tmdbCached(`/tv/${tvId}/season/${seasonNumber}`);
 }
 
-// ─── Logo fetching ───
+// ─── Logo fetching (global store) ───
 
-/** Fetch the English title logo for a movie or TV show. Returns path or null. */
-export async function getTitleLogo(mediaType: 'movie' | 'tv', id: number | string): Promise<string | null> {
+/** Global logo cache — keyed by "movie:123" or "tv:456" */
+const logoStore = new Map<string, string>();
+const logoListeners = new Set<() => void>();
+
+export function getLogoPath(mediaType: string, id: number | string): string | undefined {
+  return logoStore.get(`${mediaType}:${id}`);
+}
+
+export function onLogoUpdate(cb: () => void) {
+  logoListeners.add(cb);
+  return () => { logoListeners.delete(cb); };
+}
+
+function notifyLogoListeners() {
+  logoListeners.forEach((cb) => cb());
+}
+
+/** Fetch the English title logo for a movie or TV show. Stores in global cache. */
+async function fetchAndStoreLogo(mediaType: 'movie' | 'tv', id: number | string): Promise<void> {
+  const key = `${mediaType}:${id}`;
+  if (logoStore.has(key)) return;
   try {
     const data = await tmdbCached(`/${mediaType}/${id}/images`, 'include_image_language=en,null');
     const logos = data.logos || [];
-    // Prefer English PNG logos sorted by vote count
     const best = logos
       .filter((l: any) => l.file_path && (l.iso_639_1 === 'en' || !l.iso_639_1))
       .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0))[0];
-    return best?.file_path || null;
-  } catch {
-    return null;
-  }
+    if (best?.file_path) {
+      logoStore.set(key, best.file_path);
+    }
+  } catch { /* ignore */ }
 }
 
-/** Batch fetch logos for an array of items. Mutates items by adding `logo_path`. */
-export async function enrichWithLogos(items: any[], mediaType: 'movie' | 'tv'): Promise<any[]> {
+/** Batch fetch logos for items. Updates global store, then notifies listeners once. */
+export async function enrichWithLogos(items: any[], mediaType: 'movie' | 'tv'): Promise<void> {
   await Promise.all(
-    items.map(async (item) => {
-      if (!item.id) return;
-      const logo = await getTitleLogo(mediaType, item.id);
-      if (logo) item.logo_path = logo;
-    })
+    items.filter((i) => i.id).map((item) => fetchAndStoreLogo(mediaType, item.id))
   );
-  return items;
+  notifyLogoListeners();
 }
 
 // ─── Movie Discovery ───

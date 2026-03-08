@@ -139,11 +139,19 @@ export default function Home() {
     enrichItemsWithRatings(popularTVArr, 'tv').then(setPopularTV);
     enrichItemsWithRatings(topRatedTVArr, 'tv').then(setTopRatedTV);
 
-    // Fetch title logos for top 10 rows (non-blocking)
-    enrichWithLogos(scoredMovies.slice(0, 10), 'movie').then(() => setTrendingMovies([...scoredMovies]));
-    enrichWithLogos(scoredTV.slice(0, 10), 'tv').then(() => setTrendingTV([...scoredTV]));
-    enrichWithLogos(scoredTopRatedMovies.slice(0, 10), 'movie').then(() => setTopRatedMovies([...scoredTopRatedMovies]));
-    enrichWithLogos(scoredTopRatedTV.slice(0, 10), 'tv').then(() => setTopRatedTV([...scoredTopRatedTV]));
+    // Fetch title logos — stored globally, MediaCard subscribes automatically
+    // Top 10 rows first (priority), then other rows
+    Promise.all([
+      enrichWithLogos(scoredMovies.slice(0, 10), 'movie'),
+      enrichWithLogos(scoredTV.slice(0, 10), 'tv'),
+      enrichWithLogos(scoredTopRatedMovies.slice(0, 10), 'movie'),
+      enrichWithLogos(scoredTopRatedTV.slice(0, 10), 'tv'),
+    ]).then(() => Promise.all([
+      enrichWithLogos(scoredNowPlaying, 'movie'),
+      enrichWithLogos(scoredUpcoming, 'movie'),
+      enrichWithLogos(scoredPopularMovies, 'movie'),
+      enrichWithLogos(scoredPopularTV, 'tv'),
+    ]));
 
     if (user) {
       try {
