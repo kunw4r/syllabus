@@ -380,6 +380,16 @@ export default function StreamingModal({
     }
   };
 
+  // ─── Escape key to close ───
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const currentSeasonData = seasons?.find(s => s.season_number === currentSeason);
@@ -625,14 +635,32 @@ export default function StreamingModal({
 
       {/* ── Iframe Embed Fallback ── */}
       {phase === 'playing' && !useDirectPlayer && embedUrl && (
-        <iframe
-          key={embedUrl}
-          src={embedUrl}
-          className="w-full h-full border-0"
-          allowFullScreen
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          referrerPolicy="origin"
-        />
+        <>
+          <iframe
+            key={embedUrl}
+            src={embedUrl}
+            className="absolute inset-0 w-full h-full border-0 z-10"
+            allowFullScreen
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            referrerPolicy="origin"
+          />
+          {/* Invisible hover zone at top — sits above iframe to detect mouse */}
+          <div
+            className="absolute top-0 left-0 right-0 h-14 z-20"
+            onMouseEnter={showControlsFn}
+            onMouseMove={showControlsFn}
+          />
+          {/* Always-visible close button in top-left */}
+          {!controlsVisible && (
+            <button
+              onClick={onClose}
+              className="absolute top-3 left-3 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-black/60 hover:bg-black/80 text-white/70 hover:text-white transition-all backdrop-blur-sm border border-white/10 opacity-60 hover:opacity-100"
+            >
+              <ChevronLeft size={16} />
+              <span className="text-xs font-medium">Back</span>
+            </button>
+          )}
+        </>
       )}
 
       {/* ── Top Controls for iframe mode (hover) ── */}
@@ -644,8 +672,16 @@ export default function StreamingModal({
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
             className="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent"
+            onMouseEnter={showControlsFn}
+            onMouseMove={showControlsFn}
             onClick={e => e.stopPropagation()}
           >
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors shrink-0"
+            >
+              <ChevronLeft size={20} />
+            </button>
             <div className="flex-1 min-w-0">
               <p className="text-white/90 text-sm font-medium truncate">{displayTitle}</p>
               {episodeTitle && <p className="text-white/40 text-[11px] truncate">{episodeTitle}</p>}
