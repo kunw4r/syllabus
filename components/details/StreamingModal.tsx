@@ -189,16 +189,28 @@ export default function StreamingModal({
 
     try {
       // Try direct extraction and embed fallback in parallel
+      setStatusText('Extracting stream...');
       const [extractRes, resolveRes] = await Promise.allSettled([
         fetch(`/api/extract-stream?${params}`).then(r => r.json()),
         fetch(`/api/resolve-stream?${params}`).then(r => r.json()),
       ]);
 
+      console.log('[StreamingModal] extractRes:', extractRes);
+      console.log('[StreamingModal] resolveRes:', resolveRes);
+
       // Check direct extraction result
       if (extractRes.status === 'fulfilled' && extractRes.value.extracted && extractRes.value.stream) {
         const stream: ExtractedStream = extractRes.value.stream;
-        setDirectStream(stream);
-        setAllStreams(extractRes.value.allStreams || [stream]);
+        // Proxy the stream URL through our server to avoid CORS issues
+        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(stream.url)}`;
+        console.log('[StreamingModal] ✅ Using direct player, proxied URL:', proxiedUrl);
+        const proxiedStream = { ...stream, url: proxiedUrl };
+        setDirectStream(proxiedStream);
+        const proxiedAllStreams = (extractRes.value.allStreams || [stream]).map((s: ExtractedStream) => ({
+          ...s,
+          url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}`,
+        }));
+        setAllStreams(proxiedAllStreams);
         setUseDirectPlayer(true);
         setSkipData(stream.skips);
 
@@ -233,6 +245,7 @@ export default function StreamingModal({
       }
 
       // Fallback: use iframe embed providers
+      console.log('[StreamingModal] ⚠️ Direct extraction failed, falling back to iframe');
       if (resolveRes.status === 'fulfilled') {
         const data = resolveRes.value;
         const all: ProviderResult[] = data.allProviders || [];
@@ -508,11 +521,13 @@ export default function StreamingModal({
               <p className="text-[12px] text-white/30">{statusText}</p>
             </div>
 
+            {/* Back button — always visible during resolving */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+              className="absolute top-5 left-5 z-20 flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors backdrop-blur-sm border border-white/10"
             >
-              <X size={20} />
+              <ChevronLeft size={18} />
+              <span className="text-sm font-medium">Back</span>
             </button>
           </m.div>
         )}

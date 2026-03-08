@@ -130,6 +130,8 @@ export default function VideoPlayer({
 
   // Quality
   const [activeQuality, setActiveQuality] = useState<string>('auto');
+  const [hlsQualities, setHlsQualities] = useState<QualityOption[]>([]);
+  const hlsRef = useRef<any>(null);
 
   // PiP
   const [isPip, setIsPip] = useState(false);
@@ -237,6 +239,7 @@ export default function VideoPlayer({
             },
           });
           hlsInstance = hls;
+          hlsRef.current = hls;
           hls.loadSource(src);
           hls.attachMedia(v);
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -244,21 +247,58 @@ export default function VideoPlayer({
             setError(null);
             if (startPositionSeconds > 0) v.currentTime = startPositionSeconds;
             v.play().catch(() => {});
+
+            // Extract quality levels from HLS manifest
+            const levels = hls.levels || [];
+            if (levels.length > 1) {
+              const qualities: QualityOption[] = levels.map((level: any, i: number) => {
+                const h = level.height || 0;
+                let label = `${h}p`;
+                if (h >= 2160) label = '4K';
+                else if (h === 0) label = `${Math.round((level.bitrate || 0) / 1000)}kbps`;
+                return {
+                  label,
+                  bitrate: level.bitrate || 0,
+                  width: level.width,
+                  height: h,
+                };
+              }).sort((a: QualityOption, b: QualityOption) => (b.height || b.bitrate) - (a.height || a.bitrate));
+              setHlsQualities(qualities);
+              console.log('[HLS] Quality levels:', qualities.map((q: QualityOption) => q.label));
+            }
           });
+          // Track network retry count to avoid infinite retries
+          let networkRetries = 0;
+          const MAX_NETWORK_RETRIES = 3;
+
           hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal: boolean; type: string; details: string }) => {
             if (data.fatal) {
               console.error('[HLS] Fatal error:', data.type, data.details);
-              // Try to recover before showing error
-              if (data.type === 'networkError') {
+              if (data.type === 'networkError' && networkRetries < MAX_NETWORK_RETRIES) {
+                networkRetries++;
+                console.log(`[HLS] Network retry ${networkRetries}/${MAX_NETWORK_RETRIES}`);
                 hls.startLoad();
               } else if (data.type === 'mediaError') {
                 hls.recoverMediaError();
               } else {
                 setError('Playback error. Try switching to a different source.');
+                setLoading(false);
                 onErrorCallback?.();
               }
             }
           });
+
+          // Timeout: if manifest not parsed in 12s, fail
+          const loadTimeout = setTimeout(() => {
+            if (!v.readyState) {
+              console.error('[HLS] Load timeout — manifest not parsed in 12s');
+              hls.destroy();
+              setError('Stream took too long to load. Try a different source.');
+              setLoading(false);
+              onErrorCallback?.();
+            }
+          }, 12000);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => clearTimeout(loadTimeout));
         }
       }).catch(() => {
         setError('HLS playback not supported in this browser.');
@@ -271,6 +311,8 @@ export default function VideoPlayer({
 
     return () => {
       if (hlsInstance) hlsInstance.destroy();
+      hlsRef.current = null;
+      setHlsQualities([]);
     };
   }, [src, startPositionSeconds]);
 
@@ -734,7 +776,9 @@ export default function VideoPlayer({
           </div>
         );
 
-      case 'quality':
+      case 'quality': {
+        // Merge prop qualityOptions with HLS-detected qualities
+        const allQualities = hlsQualities.length > 0 ? hlsQualities : qualityOptions;
         return (
           <div>
             <div className="flex items-center gap-2 px-3 pt-2 pb-2 border-b border-white/5">
@@ -748,7 +792,11 @@ export default function VideoPlayer({
             </div>
             <div>
               <button
-                onClick={() => { setActiveQuality('auto'); setSettingsView('main'); }}
+                onClick={() => {
+                  setActiveQuality('auto');
+                  if (hlsRef.current) hlsRef.current.currentLevel = -1; // auto
+                  setSettingsView('main');
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors ${
                   activeQuality === 'auto' ? 'text-accent' : 'text-white/60 hover:text-white hover:bg-white/5'
                 }`}
@@ -756,27 +804,40 @@ export default function VideoPlayer({
                 {activeQuality === 'auto' && <Check size={14} />}
                 <span className={activeQuality === 'auto' ? '' : 'ml-[22px]'}>Auto</span>
               </button>
-              {qualityOptions.map((q) => (
+              {allQualities.map((q, i) => (
                 <button
                   key={q.label}
-                  onClick={() => { setActiveQuality(q.label); setSettingsView('main'); }}
+                  onClick={() => {
+                    setActiveQuality(q.label);
+                    // Set HLS quality level if available
+                    if (hlsRef.current && hlsQualities.length > 0) {
+                      // Find the matching level index in hls.levels
+                      const hls = hlsRef.current;
+                      const levelIdx = (hls.levels || []).findIndex((l: any) =>
+                        l.height === q.height || l.bitrate === q.bitrate
+                      );
+                      if (levelIdx >= 0) hls.currentLevel = levelIdx;
+                    }
+                    setSettingsView('main');
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors ${
                     activeQuality === q.label ? 'text-accent' : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   {activeQuality === q.label && <Check size={14} />}
                   <span className={activeQuality === q.label ? '' : 'ml-[22px]'}>{q.label}</span>
-                  {q.height && <span className="text-[10px] text-white/30 ml-auto">{q.height}p</span>}
+                  {q.bitrate > 0 && <span className="text-[10px] text-white/30 ml-auto">{Math.round(q.bitrate / 1000)}kbps</span>}
                 </button>
               ))}
-              {qualityOptions.length === 0 && (
+              {allQualities.length === 0 && (
                 <p className="px-3 py-4 text-xs text-white/30 text-center">
-                  Quality controlled by server transcoding settings
+                  Single quality stream
                 </p>
               )}
             </div>
           </div>
         );
+      }
 
       case 'audio':
         return (

@@ -30,7 +30,7 @@ interface YTSTorrent {
 export async function searchYTS(imdbId: string): Promise<TorrentSource[]> {
   try {
     const res = await fetch(
-      `https://yts.mx/api/v2/list_movies.json?query_term=${imdbId}&limit=1`
+      `https://yts.torrentbay.st/api/v2/list_movies.json?query_term=${imdbId}&limit=1`
     );
     const data = await res.json();
     const movie = data?.data?.movies?.[0];
