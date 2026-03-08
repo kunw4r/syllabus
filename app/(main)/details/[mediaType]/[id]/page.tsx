@@ -7,7 +7,7 @@ import {
   Star, Clock, Eye, CheckCircle2, Play, ExternalLink, Globe, Award,
   DollarSign, Film, Tv, BookOpen, Users, Calendar, X, Heart, Plus, Minus,
   ChevronLeft, ChevronRight, Check, Trash2, Info, Sparkles, Lightbulb, ShoppingCart,
-  BookCopy, BookMarked, PenLine, ChevronDown,
+  BookCopy, BookMarked, PenLine, ChevronDown, Download,
 } from 'lucide-react';
 import { m, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -1189,6 +1189,52 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   // Streaming modal state
   const [streamModalOpen, setStreamModalOpen] = useState(false);
 
+  // Download state
+  const [downloading, setDownloading] = useState(false);
+  const [downloadStarted, setDownloadStarted] = useState(false);
+
+  const handleDownload = async () => {
+    if (!imdbId || downloading) return;
+    setDownloading(true);
+    try {
+      const params = new URLSearchParams({ imdbId, mediaType: mediaType as string });
+      if (mediaType === 'tv') {
+        params.set('season', '1');
+        params.set('episode', '1');
+      }
+      const res = await fetch(`/api/sources?${params}`);
+      const data = await res.json();
+      const sources = data.sources || [];
+      if (sources.length === 0) {
+        alert('No download sources found for this title.');
+        return;
+      }
+      // Pick best quality under 4GB
+      const best = sources
+        .filter((s: any) => s.sizeBytes < 4 * 1024 * 1024 * 1024)
+        .sort((a: any, b: any) => {
+          const qOrder: Record<string, number> = { '2160p': 4, '1080p': 3, '720p': 2, '480p': 1 };
+          return (qOrder[b.quality] || 0) - (qOrder[a.quality] || 0);
+        })[0] || sources[0];
+      // Add to qBittorrent
+      const addRes = await fetch('/api/torrent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ magnetUrl: best.magnetUrl, category: 'syllabus' }),
+      });
+      if (addRes.ok) {
+        setDownloadStarted(true);
+        setTimeout(() => setDownloadStarted(false), 3000);
+      } else {
+        alert('Failed to start download. Is qBittorrent running?');
+      }
+    } catch (err) {
+      alert('Download failed. Check your connection.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   // Check if already in library
   useEffect(() => {
     if (!user || !data?.id) return;
@@ -1323,6 +1369,25 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                   className="inline-flex items-center gap-2 sm:gap-2.5 bg-white text-black font-bold text-sm sm:text-base px-5 sm:px-7 py-2.5 sm:py-3 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
                 >
                   <Play size={18} fill="black" className="sm:w-5 sm:h-5" /> Watch Now
+                </button>
+
+                {/* Download button */}
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading || !imdbId}
+                  className={`inline-flex items-center gap-2 font-semibold text-sm px-5 py-2.5 rounded-lg transition-all shadow-lg border ${
+                    downloadStarted
+                      ? 'bg-green-500/20 border-green-500/40 text-green-400'
+                      : 'bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border-white/10'
+                  }`}
+                  title="Download via qBittorrent"
+                >
+                  {downloading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Download size={16} />
+                  )}
+                  {downloadStarted ? 'Started!' : 'Download'}
                 </button>
 
                 {trailer && (

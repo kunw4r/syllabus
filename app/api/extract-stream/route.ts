@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createDecipheriv, createCipheriv, randomBytes } from 'crypto';
+import { scrapeVidsrc } from '@definisi/vidsrc-scraper';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +11,132 @@ interface ExtractedStream {
   provider: string;
   subtitles?: { label: string; file: string; language?: string }[];
   skips?: { intro?: { start: number; end: number }; outro?: { start: number; end: number } };
+}
+
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+
+// ─── vidsrc-embed.ru extractor (via @definisi/vidsrc-scraper) ───
+// Uses: vidsrc-embed.ru → cloudnestra.com RCP → prorcp → m3u8
+
+async function extractVidsrcEmbed(
+  tmdbId: string,
+  mediaType: string,
+  season?: string,
+  episode?: string
+): Promise<ExtractedStream | null> {
+  try {
+    const result = await scrapeVidsrc(
+      tmdbId,
+      mediaType === 'movie' ? 'movie' : 'tv',
+      mediaType === 'tv' ? (season || '1') : null,
+      mediaType === 'tv' ? (episode || '1') : null,
+      { timeout: 15000 }
+    );
+
+    if (result.success && result.hlsUrl) {
+      return {
+        url: result.hlsUrl,
+        format: 'hls',
+        provider: 'VidSrc',
+        subtitles: (result.subtitles || []).map((url: string, i: number) => ({
+          label: `Subtitle ${i + 1}`,
+          file: url,
+          language: 'en',
+        })),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] vidsrc-embed failed:', err);
+    return null;
+  }
+}
+
+// ─── autoembed.cc extractor ───
+// Parses data-server attribute (base64-encoded iframe URL) to get streameeeeee.site URL
+// Then we can potentially extract m3u8 from the Vidcloud player
+
+async function extractAutoembed(
+  tmdbId: string,
+  mediaType: string,
+  season?: string,
+  episode?: string
+): Promise<ExtractedStream | null> {
+  try {
+    const path = mediaType === 'movie'
+      ? `/embed/movie/${tmdbId}`
+      : `/embed/tv/${tmdbId}/${season || '1'}/${episode || '1'}`;
+
+    const res = await fetch(`https://player.autoembed.cc${path}`, {
+      headers: { 'User-Agent': UA },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    // Extract data-server base64 attribute
+    const serverMatch = html.match(/data-server="([^"]+)"/);
+    if (!serverMatch?.[1]) return null;
+
+    const streamUrl = Buffer.from(serverMatch[1], 'base64').toString();
+    if (!streamUrl.includes('http')) return null;
+
+    // The streamUrl points to e.g. streameeeeee.site which is a Vidcloud player
+    // Fetch that page and look for the source loading mechanism
+    const playerRes = await fetch(streamUrl, {
+      headers: {
+        'User-Agent': UA,
+        'Referer': `https://player.autoembed.cc${path}`,
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!playerRes.ok) return null;
+    const playerHtml = await playerRes.text();
+
+    // Extract the data-id and try to get sources from the Vidcloud API
+    const dataIdMatch = playerHtml.match(/data-id="([^"]+)"/);
+    const realIdMatch = playerHtml.match(/data-realid="([^"]+)"/);
+
+    if (dataIdMatch?.[1]) {
+      const playerHost = new URL(streamUrl).origin;
+
+      // Try the Vidcloud ajax sources endpoint
+      const sourcesUrl = `${playerHost}/ajax/embed/episode/${dataIdMatch[1]}/sources`;
+      const sourcesRes = await fetch(sourcesUrl, {
+        headers: {
+          'User-Agent': UA,
+          'Referer': streamUrl,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (sourcesRes.ok) {
+        const sourcesData = await sourcesRes.json();
+        // Sources typically return encrypted data or direct URLs
+        if (sourcesData?.sources?.[0]?.file) {
+          return {
+            url: sourcesData.sources[0].file,
+            format: sourcesData.sources[0].file.includes('.mp4') ? 'mp4' : 'hls',
+            provider: 'Autoembed (Vidcloud)',
+            subtitles: (sourcesData.tracks || [])
+              .filter((t: any) => t.kind === 'captions')
+              .map((t: any) => ({
+                label: t.label || 'Unknown',
+                file: t.file,
+                language: t.label?.toLowerCase()?.slice(0, 2) || 'en',
+              })),
+          };
+        }
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.error('[extract] autoembed failed:', err);
+    return null;
+  }
 }
 
 // ─── embed.su extractor ───
@@ -27,28 +153,23 @@ async function extractEmbedSu(
       : `/embed/tv/${tmdbId}/${season || '1'}/${episode || '1'}`;
 
     const res = await fetch(`https://embed.su${path}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+      headers: { 'User-Agent': UA },
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
     const html = await res.text();
 
-    // Extract base64 config from window.vConfig = JSON.parse(atob(`...`))
     const match = html.match(/window\.vConfig\s*=\s*JSON\.parse\(atob\(`(.+?)`\)\)/);
     if (!match?.[1]) return null;
 
     const config = JSON.parse(Buffer.from(match[1], 'base64').toString());
     if (!config.hash) return null;
 
-    // Decode the hash to get server list
-    // Step 1: atob, split by '.', reverse each part
     const firstDecode = atob(config.hash).split('.').map((item: string) => item.split('').reverse().join(''));
-    // Step 2: join, reverse all, atob again, parse JSON
     const servers = JSON.parse(atob(firstDecode.join('').split('').reverse().join('')));
 
     if (!servers || servers.length === 0) return null;
 
-    // Try each server to get stream URL
     for (const server of servers) {
       try {
         const streamRes = await fetch(`https://embed.su/api/e/${server.hash}`, {
@@ -77,166 +198,6 @@ async function extractEmbedSu(
   }
 }
 
-// ─── vidlink.pro extractor ───
-
-const VIDLINK_KEY_HEX = '2de6e6ea13a9df9503b11a6117fd7e51941e04a0c223dfeacfe8a1dbb6c52783';
-
-function vidlinkEncrypt(data: string): string {
-  const iv = randomBytes(16);
-  const key = Buffer.from(VIDLINK_KEY_HEX, 'hex').slice(0, 32);
-  const cipher = createCipheriv('aes-256-cbc', key, iv);
-  let encrypted = cipher.update(data);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return `${iv.toString('hex')}:${encrypted.toString('hex')}`;
-}
-
-function vidlinkDecrypt(data: string): string {
-  const [ivHex, encryptedHex] = data.split(':');
-  const iv = Buffer.from(ivHex, 'hex');
-  const encrypted = Buffer.from(encryptedHex, 'hex');
-  const key = Buffer.from(VIDLINK_KEY_HEX, 'hex').slice(0, 32);
-  const decipher = createDecipheriv('aes-256-cbc', key, iv);
-  let decrypted = decipher.update(encrypted);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString();
-}
-
-async function extractVidlink(
-  tmdbId: string,
-  mediaType: string,
-  season?: string,
-  episode?: string
-): Promise<ExtractedStream | null> {
-  try {
-    const encodedId = Buffer.from(vidlinkEncrypt(tmdbId)).toString('base64');
-    const url = mediaType === 'movie'
-      ? `https://vidlink.pro/api/b/movie/${encodedId}`
-      : `https://vidlink.pro/api/b/tv/${encodedId}/${season || '1'}/${episode || '1'}`;
-
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return null;
-
-    const encrypted = await res.text();
-    if (!encrypted.includes(':')) return null;
-
-    const decrypted = vidlinkDecrypt(encrypted);
-    const data = JSON.parse(decrypted);
-
-    if (data?.stream?.playlist) {
-      return {
-        url: data.stream.playlist,
-        format: 'hls',
-        provider: 'vidlink.pro',
-        subtitles: (data.stream.captions || []).map((c: any) => ({
-          label: c.language || c.id,
-          file: c.url,
-          language: c.language,
-        })),
-      };
-    }
-    return null;
-  } catch (err) {
-    console.error('[extract] vidlink.pro failed:', err);
-    return null;
-  }
-}
-
-// ─── vidsrc.rip extractor ───
-
-async function extractVidsrcRip(
-  tmdbId: string,
-  mediaType: string,
-  season?: string,
-  episode?: string
-): Promise<ExtractedStream | null> {
-  try {
-    const BASE = 'https://vidsrc.rip';
-
-    // Step 1: Fetch embed page to get config (servers list)
-    const embedPath = mediaType === 'movie'
-      ? `/embed/movie/${tmdbId}`
-      : `/embed/tv/${tmdbId}/${season || '1'}/${episode || '1'}`;
-
-    const embedRes = await fetch(`${BASE}${embedPath}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!embedRes.ok) return null;
-    const html = await embedRes.text();
-
-    const configMatch = html.match(/window\.config\s*=\s*(\{[\s\S]*?\});/);
-    if (!configMatch?.[1]) return null;
-
-    // Parse config
-    const config = parseVidsrcConfig(configMatch[1]);
-    if (!config.servers?.length) return null;
-
-    // Step 2: Get encryption key from skip-button.png
-    const keyRes = await fetch(`${BASE}/images/skip-button.png`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!keyRes.ok) return null;
-    const encKey = await keyRes.text();
-
-    // Step 3: Try each server
-    for (const server of config.servers) {
-      try {
-        const apiPath = `/api/source/${server}/${tmdbId}`;
-        const vrf = generateVRF(encKey, apiPath);
-        let apiUrl = `${BASE}${apiPath}?vrf=${vrf}`;
-        if (mediaType === 'tv') {
-          apiUrl += `&s=${season || '1'}&e=${episode || '1'}`;
-        }
-
-        const streamRes = await fetch(apiUrl, {
-          signal: AbortSignal.timeout(5000),
-        });
-        if (!streamRes.ok) continue;
-        const data = await streamRes.json();
-
-        if (data?.sources?.[0]?.file) {
-          return {
-            url: data.sources[0].file,
-            format: data.sources[0].file.includes('.mp4') ? 'mp4' : 'hls',
-            provider: `vidsrc.rip (${server})`,
-          };
-        }
-      } catch {
-        continue;
-      }
-    }
-    return null;
-  } catch (err) {
-    console.error('[extract] vidsrc.rip failed:', err);
-    return null;
-  }
-}
-
-function parseVidsrcConfig(configString: string): { servers: string[]; tmdbId?: string; season?: string; episode?: string } {
-  const config: any = {};
-  const regex = /(\w+):\s*(?:'([^']*)'|"([^"]*)"|(\[[^\]]*\])|([^,}]+))/g;
-  let match;
-  while ((match = regex.exec(configString)) !== null) {
-    const [, key, sq, dq, arrVal, unq] = match;
-    let value: any = sq || dq || unq;
-    if (arrVal) value = JSON.parse(arrVal);
-    if (key === 'servers' && typeof value === 'string') value = [value];
-    config[key] = value;
-  }
-  return config;
-}
-
-function generateVRF(key: string, message: string): string {
-  const decoded = decodeURIComponent(message);
-  const keyCodes = Array.from(key, c => c.charCodeAt(0));
-  const msgCodes = Array.from(decoded, c => c.charCodeAt(0));
-  const xored = msgCodes.map((code, i) => code ^ keyCodes[i % keyCodes.length]);
-  return encodeURIComponent(Buffer.from(String.fromCharCode(...xored)).toString('base64'));
-}
-
 // ─── Main handler ───
 
 export async function GET(req: NextRequest) {
@@ -250,14 +211,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing tmdbId' }, { status: 400 });
   }
 
-  // Try extractors in order of reliability
+  // Try extractors in parallel — ordered by reliability
   const extractors = [
+    { name: 'vidsrc-embed', fn: () => extractVidsrcEmbed(tmdbId, mediaType, season, episode) },
+    { name: 'autoembed', fn: () => extractAutoembed(tmdbId, mediaType, season, episode) },
     { name: 'embed.su', fn: () => extractEmbedSu(tmdbId, mediaType, season, episode) },
-    { name: 'vidlink.pro', fn: () => extractVidlink(tmdbId, mediaType, season, episode) },
-    { name: 'vidsrc.rip', fn: () => extractVidsrcRip(tmdbId, mediaType, season, episode) },
   ];
 
-  // Run all extractors in parallel for speed
   const results = await Promise.allSettled(
     extractors.map(async (ext) => {
       const result = await ext.fn();
@@ -274,13 +234,12 @@ export async function GET(req: NextRequest) {
 
   if (streams.length > 0) {
     return NextResponse.json({
-      stream: streams[0], // Best/first working
+      stream: streams[0],
       allStreams: streams,
       extracted: true,
     });
   }
 
-  // No direct extraction available — return null so client falls back to iframe
   return NextResponse.json({
     stream: null,
     allStreams: [],
