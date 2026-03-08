@@ -1314,14 +1314,12 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                 </button>
 
                 {/* Watch Now — streaming */}
-                {imdbId && (
-                  <button
-                    onClick={() => setStreamModalOpen(true)}
-                    className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white font-bold text-sm px-5 py-2.5 rounded-lg transition-colors shadow-lg backdrop-blur-sm"
-                  >
-                    <MonitorPlay size={17} /> Watch
-                  </button>
-                )}
+                <button
+                  onClick={() => setStreamModalOpen(true)}
+                  className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white font-bold text-sm px-5 py-2.5 rounded-lg transition-colors shadow-lg backdrop-blur-sm"
+                >
+                  <MonitorPlay size={17} /> Watch
+                </button>
 
                 {/* Ratings inline next to Play/Add */}
                 <RatingCluster
@@ -1707,13 +1705,11 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       <StreamingModal
         isOpen={streamModalOpen}
         onClose={() => setStreamModalOpen(false)}
+        tmdbId={String(data.id)}
         imdbId={imdbId || ''}
         mediaType={mediaType as 'movie' | 'tv'}
         title={title}
         year={year}
-        onPlay={(streamUrl) => {
-          window.open(`/streaming/watch/local?src=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`, '_blank');
-        }}
       />
     </div>
   );

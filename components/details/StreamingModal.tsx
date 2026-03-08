@@ -1,8 +1,70 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Play, Download, Loader2, HardDrive, Wifi, Check, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Play, Download, Loader2, HardDrive, Check, MonitorPlay, Server, ChevronLeft } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
+
+// ─── Embedded Streaming Providers ───
+// These take TMDB/IMDB IDs and return an embeddable player with subtitles
+
+interface StreamProvider {
+  name: string;
+  buildUrl: (opts: { tmdbId: string; imdbId: string; mediaType: 'movie' | 'tv'; season?: number; episode?: number }) => string;
+  color: string;
+}
+
+const STREAM_PROVIDERS: StreamProvider[] = [
+  {
+    name: 'VidSrc PRO',
+    buildUrl: ({ tmdbId, mediaType, season, episode }) =>
+      mediaType === 'movie'
+        ? `https://vidsrc.pro/embed/movie/${tmdbId}`
+        : `https://vidsrc.pro/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`,
+    color: 'from-blue-500 to-blue-600',
+  },
+  {
+    name: 'VidSrc ICU',
+    buildUrl: ({ tmdbId, mediaType, season, episode }) =>
+      mediaType === 'movie'
+        ? `https://vidsrc.icu/embed/movie/${tmdbId}`
+        : `https://vidsrc.icu/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`,
+    color: 'from-emerald-500 to-emerald-600',
+  },
+  {
+    name: 'VidSrc CC',
+    buildUrl: ({ tmdbId, mediaType, season, episode }) =>
+      mediaType === 'movie'
+        ? `https://vidsrc.cc/v2/embed/movie/${tmdbId}`
+        : `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`,
+    color: 'from-purple-500 to-purple-600',
+  },
+  {
+    name: 'SuperEmbed',
+    buildUrl: ({ tmdbId, mediaType, season, episode }) =>
+      mediaType === 'movie'
+        ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`
+        : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`,
+    color: 'from-orange-500 to-orange-600',
+  },
+  {
+    name: 'Embed.su',
+    buildUrl: ({ tmdbId, mediaType, season, episode }) =>
+      mediaType === 'movie'
+        ? `https://embed.su/embed/movie/${tmdbId}`
+        : `https://embed.su/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`,
+    color: 'from-cyan-500 to-cyan-600',
+  },
+  {
+    name: 'AutoEmbed',
+    buildUrl: ({ tmdbId, mediaType, season, episode }) =>
+      mediaType === 'movie'
+        ? `https://player.autoembed.cc/embed/movie/${tmdbId}`
+        : `https://player.autoembed.cc/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`,
+    color: 'from-rose-500 to-rose-600',
+  },
+];
+
+const MAX_DOWNLOAD_SIZE = 4 * 1024 * 1024 * 1024; // 4GB cap
 
 interface TorrentSource {
   title: string;
@@ -20,41 +82,53 @@ interface TorrentSource {
 interface StreamingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  tmdbId: string;
   imdbId: string;
   mediaType: 'movie' | 'tv';
   title: string;
   year?: string;
   season?: number;
   episode?: number;
-  onPlay?: (streamUrl: string) => void;
 }
 
-type Mode = 'sources' | 'downloading' | 'ready';
+type Tab = 'stream' | 'download';
 
 export default function StreamingModal({
-  isOpen, onClose, imdbId, mediaType, title, year, season, episode, onPlay,
+  isOpen, onClose, tmdbId, imdbId, mediaType, title, year, season, episode,
 }: StreamingModalProps) {
+  const [tab, setTab] = useState<Tab>('stream');
+  const [activeProvider, setActiveProvider] = useState<StreamProvider | null>(null);
   const [sources, setSources] = useState<TorrentSource[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<Mode>('sources');
-  const [selectedSource, setSelectedSource] = useState<TorrentSource | null>(null);
-  const [torrentHash, setTorrentHash] = useState<string | null>(null);
+  const [loadingSources, setLoadingSources] = useState(false);
+  const [downloading, setDownloading] = useState<TorrentSource | null>(null);
   const [progress, setProgress] = useState(0);
   const [dlSpeed, setDlSpeed] = useState(0);
-  const [videoPath, setVideoPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
-  // Fetch sources when modal opens
+  // Reset state when modal opens/closes
   useEffect(() => {
-    if (!isOpen || !imdbId) return;
-    setLoading(true);
+    if (isOpen) {
+      setTab('stream');
+      setActiveProvider(null);
+      setDownloading(null);
+      setProgress(0);
+      setError(null);
+      setSources([]);
+    } else {
+      if (pollRef.current) clearInterval(pollRef.current);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+
+  // Fetch download sources when download tab is selected
+  useEffect(() => {
+    if (tab !== 'download' || !imdbId || sources.length > 0) return;
+    setLoadingSources(true);
     setError(null);
-    setSources([]);
-    setMode('sources');
-    setSelectedSource(null);
-    setTorrentHash(null);
-    setVideoPath(null);
 
     const params = new URLSearchParams({ imdbId, mediaType });
     if (season !== undefined) params.set('season', String(season));
@@ -63,23 +137,23 @@ export default function StreamingModal({
     fetch(`/api/sources?${params}`)
       .then(r => r.json())
       .then(data => {
-        setSources(data.sources || []);
-        setLoading(false);
+        // Filter to max 4GB and sort
+        const filtered = (data.sources || []).filter((s: TorrentSource) => s.sizeBytes <= MAX_DOWNLOAD_SIZE);
+        setSources(filtered);
+        setLoadingSources(false);
       })
-      .catch(err => {
+      .catch(() => {
         setError('Failed to search for sources');
-        setLoading(false);
+        setLoadingSources(false);
       });
-  }, [isOpen, imdbId, mediaType, season, episode]);
+  }, [tab, imdbId, mediaType, season, episode, sources.length]);
 
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
+  const handleStream = (provider: StreamProvider) => {
+    setActiveProvider(provider);
+  };
 
   const handleDownload = async (source: TorrentSource) => {
-    setSelectedSource(source);
-    setMode('downloading');
+    setDownloading(source);
     setProgress(0);
     setError(null);
 
@@ -92,51 +166,22 @@ export default function StreamingModal({
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to start download');
 
-      setTorrentHash(data.hash);
-
-      // Poll for progress
       pollRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/torrent?hash=${data.hash}`);
           const status = await statusRes.json();
           if (status.error) return;
-
           setProgress(Math.round(status.progress * 100));
           setDlSpeed(status.dlspeed || 0);
-
-          if (status.videoFile?.name) {
-            setVideoPath(status.videoFile.name);
-          }
-
-          // Ready when we have enough to stream (5%+) or complete
-          if (status.progress >= 0.05 && status.videoFile?.name) {
-            setMode('ready');
-          }
           if (status.progress >= 1) {
             if (pollRef.current) clearInterval(pollRef.current);
           }
-        } catch { /* ignore poll errors */ }
+        } catch { /* ignore */ }
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to start download');
-      setMode('sources');
+      setDownloading(null);
     }
-  };
-
-  const handleStream = () => {
-    if (!videoPath) return;
-    const streamUrl = `/api/stream?path=${encodeURIComponent(videoPath)}`;
-    onPlay?.(streamUrl);
-    onClose();
-  };
-
-  const handleDownloadToMac = () => {
-    if (!videoPath) return;
-    const streamUrl = `/api/stream?path=${encodeURIComponent(videoPath)}`;
-    const a = document.createElement('a');
-    a.href = streamUrl;
-    a.download = videoPath.split('/').pop() || 'download';
-    a.click();
   };
 
   const formatSpeed = (bytesPerSec: number) => {
@@ -153,6 +198,61 @@ export default function StreamingModal({
   };
 
   if (!isOpen) return null;
+
+  // Full-screen player mode
+  if (activeProvider) {
+    const embedUrl = activeProvider.buildUrl({ tmdbId, imdbId, mediaType, season, episode });
+    return (
+      <div className="fixed inset-0 z-[200] bg-black">
+        {/* Top bar */}
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 p-3 bg-gradient-to-b from-black/80 to-transparent">
+          <button
+            onClick={() => setActiveProvider(null)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 text-sm transition-colors"
+          >
+            <ChevronLeft size={16} /> Back
+          </button>
+          <span className="text-white/60 text-sm truncate">{title}</span>
+          <span className="text-white/30 text-xs">via {activeProvider.name}</span>
+          <button
+            onClick={onClose}
+            className="ml-auto p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Embedded player */}
+        <iframe
+          src={embedUrl}
+          className="w-full h-full border-0"
+          allowFullScreen
+          allow="autoplay; encrypted-media; picture-in-picture"
+          referrerPolicy="origin"
+        />
+
+        {/* Server switcher — bottom bar */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 to-transparent pt-8 pb-4 px-4">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <span className="text-[10px] text-white/30 uppercase tracking-wider shrink-0 mr-1">Servers:</span>
+            {STREAM_PROVIDERS.map((p) => (
+              <button
+                key={p.name}
+                onClick={() => setActiveProvider(p)}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  p.name === activeProvider.name
+                    ? 'bg-white/20 text-white border border-white/20'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 border border-white/[0.06]'
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -185,150 +285,149 @@ export default function StreamingModal({
             </button>
           </div>
 
+          {/* Tab switcher */}
+          <div className="flex border-b border-white/[0.06]">
+            <button
+              onClick={() => setTab('stream')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                tab === 'stream' ? 'text-accent border-b-2 border-accent' : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              <MonitorPlay size={16} /> Stream
+            </button>
+            <button
+              onClick={() => setTab('download')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                tab === 'download' ? 'text-accent border-b-2 border-accent' : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              <Download size={16} /> Download
+            </button>
+          </div>
+
           {/* Content */}
           <div className="p-5 max-h-[60vh] overflow-y-auto">
-            {/* Loading state */}
-            {loading && (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <Loader2 className="w-8 h-8 text-accent animate-spin" />
-                <p className="text-sm text-white/40">Searching for sources...</p>
-              </div>
-            )}
-
-            {/* Error */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4">
-                <p className="text-sm text-red-400">{error}</p>
-              </div>
-            )}
-
-            {/* Sources list */}
-            {mode === 'sources' && !loading && sources.length > 0 && (
+            {/* ─── Stream Tab ─── */}
+            {tab === 'stream' && (
               <div className="space-y-2">
-                <p className="text-xs text-white/30 mb-3">{sources.length} sources found</p>
-                {sources.map((source, i) => (
+                <p className="text-xs text-white/30 mb-3">Choose a server — instant playback with subtitles</p>
+                {STREAM_PROVIDERS.map((provider) => (
                   <button
-                    key={i}
-                    onClick={() => handleDownload(source)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/10 transition-all group text-left"
+                    key={provider.name}
+                    onClick={() => handleStream(provider)}
+                    className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/10 transition-all group text-left"
                   >
-                    <div className={`px-2 py-1 rounded-md text-xs font-bold border ${qualityColor(source.quality)}`}>
-                      {source.quality}
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${provider.color} flex items-center justify-center shadow-lg`}>
+                      <Play size={18} fill="white" className="text-white ml-0.5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white/80 truncate">{source.title}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-white/30 mt-0.5">
-                        <span>{source.size}</span>
-                        <span>·</span>
-                        <span className="text-green-400/70">{source.seeders} seeds</span>
-                        {source.codec && <><span>·</span><span>{source.codec}</span></>}
-                        <span>·</span>
-                        <span className="uppercase">{source.source}</span>
-                      </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white/90">{provider.name}</p>
+                      <p className="text-[10px] text-white/30">Instant · Subtitles · Multiple qualities</p>
                     </div>
-                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="p-2 rounded-lg bg-accent/10 text-accent" title="Download & Stream">
-                        <Download size={16} />
-                      </div>
+                    <div className="p-2 rounded-lg bg-accent/10 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play size={14} fill="currentColor" />
                     </div>
                   </button>
                 ))}
               </div>
             )}
 
-            {/* No sources */}
-            {mode === 'sources' && !loading && sources.length === 0 && !error && (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <HardDrive className="w-10 h-10 text-white/20" />
-                <p className="text-sm text-white/40">No sources found</p>
-                <p className="text-xs text-white/20">Try a different title or check back later</p>
-              </div>
-            )}
+            {/* ─── Download Tab ─── */}
+            {tab === 'download' && (
+              <>
+                {/* Loading */}
+                {loadingSources && (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                    <p className="text-sm text-white/40">Searching for downloads...</p>
+                  </div>
+                )}
 
-            {/* Downloading state */}
-            {mode === 'downloading' && selectedSource && (
-              <div className="py-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className={`px-2 py-1 rounded-md text-xs font-bold border ${qualityColor(selectedSource.quality)}`}>
-                    {selectedSource.quality}
+                {/* Error */}
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-red-400">{error}</p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm text-white/80 truncate">{selectedSource.title}</p>
-                    <p className="text-xs text-white/30">{selectedSource.size}</p>
-                  </div>
-                </div>
+                )}
 
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-white/50">Downloading...</span>
-                    <span className="text-accent font-mono">{progress}%</span>
+                {/* Downloading progress */}
+                {downloading && (
+                  <div className="mb-4 p-4 rounded-xl bg-accent/5 border border-accent/20">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`px-2 py-1 rounded-md text-xs font-bold border ${qualityColor(downloading.quality)}`}>
+                        {downloading.quality}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm text-white/80 truncate">{downloading.title}</p>
+                        <p className="text-xs text-white/30">{downloading.size}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-white/50">{progress >= 100 ? 'Complete!' : 'Downloading to ~/media-server/downloads...'}</span>
+                      <span className="text-accent font-mono">{progress}%</span>
+                    </div>
+                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                      <m.div
+                        className="h-full bg-gradient-to-r from-accent to-accent/80 rounded-full"
+                        animate={{ width: `${progress}%` }}
+                        transition={{ ease: 'easeOut' }}
+                      />
+                    </div>
+                    {progress < 100 && (
+                      <p className="text-[10px] text-white/30 mt-1.5">{formatSpeed(dlSpeed)}</p>
+                    )}
+                    {progress >= 100 && (
+                      <p className="text-xs text-green-400 mt-2 flex items-center gap-1.5">
+                        <Check size={14} /> Downloaded to your Mac
+                      </p>
+                    )}
                   </div>
-                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                    <m.div
-                      className="h-full bg-gradient-to-r from-accent to-accent/80 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ ease: 'easeOut' }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-white/30 mt-1.5">
-                    <span>{formatSpeed(dlSpeed)}</span>
-                    <span>Stream available at 5%</span>
-                  </div>
-                </div>
+                )}
 
-                {progress >= 5 && videoPath && (
-                  <m.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
-                    <p className="text-xs text-green-400 mb-3 flex items-center gap-1.5">
-                      <Check size={14} /> Ready to stream
+                {/* Source list */}
+                {!loadingSources && sources.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-white/30 mb-3">
+                      {sources.length} sources (max 4 GB) — downloads to ~/media-server/downloads
                     </p>
-                    <div className="flex gap-2">
-                      <button onClick={handleStream}
-                        className="flex-1 flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-bold py-3 rounded-xl transition-colors">
-                        <Play size={18} fill="white" /> Watch Now
+                    {sources.map((source, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleDownload(source)}
+                        disabled={!!downloading}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/10 transition-all group text-left disabled:opacity-40"
+                      >
+                        <div className={`px-2 py-1 rounded-md text-xs font-bold border ${qualityColor(source.quality)}`}>
+                          {source.quality}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white/80 truncate">{source.title}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-white/30 mt-0.5">
+                            <span>{source.size}</span>
+                            <span>·</span>
+                            <span className="text-green-400/70">{source.seeders} seeds</span>
+                            {source.codec && <><span>·</span><span>{source.codec}</span></>}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                            <Download size={16} />
+                          </div>
+                        </div>
                       </button>
-                    </div>
-                  </m.div>
-                )}
-              </div>
-            )}
-
-            {/* Ready state */}
-            {mode === 'ready' && (
-              <div className="py-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                    <Check size={24} className="text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">Ready to play</p>
-                    <p className="text-xs text-white/40">{selectedSource?.quality} · {selectedSource?.size} · {progress}% downloaded</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button onClick={handleStream}
-                    className="flex-1 flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-bold py-3 rounded-xl transition-colors">
-                    <Play size={18} fill="white" /> Watch Now
-                  </button>
-                  <button onClick={handleDownloadToMac}
-                    className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white/80 font-medium py-3 px-5 rounded-xl transition-colors border border-white/[0.06]">
-                    <Download size={16} /> Save
-                  </button>
-                </div>
-
-                {progress < 100 && (
-                  <div className="mt-4">
-                    <div className="flex justify-between text-[10px] text-white/30 mb-1">
-                      <span>Still downloading in background</span>
-                      <span className="font-mono">{progress}%</span>
-                    </div>
-                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent/60 rounded-full" style={{ width: `${progress}%` }} />
-                    </div>
+                    ))}
                   </div>
                 )}
-              </div>
+
+                {/* No sources */}
+                {!loadingSources && sources.length === 0 && !error && (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <HardDrive className="w-10 h-10 text-white/20" />
+                    <p className="text-sm text-white/40">No downloads available under 4 GB</p>
+                    <p className="text-xs text-white/20">Try streaming instead</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </m.div>
