@@ -7,7 +7,7 @@ import {
   Star, Clock, Eye, CheckCircle2, Play, ExternalLink, Globe, Award,
   DollarSign, Film, Tv, BookOpen, Users, Calendar, X, Heart, Plus, Minus,
   ChevronLeft, ChevronRight, Check, Trash2, Info, Sparkles, Lightbulb, ShoppingCart,
-  BookCopy, BookMarked, PenLine, ChevronDown, Download, MonitorPlay,
+  BookCopy, BookMarked, PenLine, ChevronDown,
 } from 'lucide-react';
 import { m, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -1286,14 +1286,23 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 lg:p-10 z-10">
               <h1 className="font-serif text-2xl sm:text-4xl lg:text-6xl text-white drop-shadow-lg mb-3 sm:mb-4">{title}</h1>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                {/* Watch Now — primary CTA */}
+                <button
+                  onClick={() => setStreamModalOpen(true)}
+                  className="inline-flex items-center gap-2 sm:gap-2.5 bg-white text-black font-bold text-sm sm:text-base px-5 sm:px-7 py-2.5 sm:py-3 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+                >
+                  <Play size={18} fill="black" className="sm:w-5 sm:h-5" /> Watch Now
+                </button>
+
                 {trailer && (
                   <button
                     onClick={() => setShowTrailer(!showTrailer)}
-                    className="inline-flex items-center gap-2 sm:gap-2.5 bg-white text-black font-bold text-sm sm:text-base px-5 sm:px-7 py-2.5 sm:py-3 rounded-lg hover:bg-white/90 transition-colors shadow-lg"
+                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors shadow-lg border border-white/10"
                   >
-                    <Play size={18} fill="black" className="sm:w-5 sm:h-5" /> {showTrailer ? 'Close' : 'Play'}
+                    <Play size={16} className="text-white/80" /> {showTrailer ? 'Close' : 'Trailer'}
                   </button>
                 )}
+
                 <button
                   onClick={handleQuickAdd}
                   disabled={quickAdding}
@@ -1311,14 +1320,6 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                   ) : (
                     <Plus size={20} className="text-white" />
                   )}
-                </button>
-
-                {/* Watch Now — streaming */}
-                <button
-                  onClick={() => setStreamModalOpen(true)}
-                  className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white font-bold text-sm px-5 py-2.5 rounded-lg transition-colors shadow-lg backdrop-blur-sm"
-                >
-                  <MonitorPlay size={17} /> Watch
                 </button>
 
                 {/* Ratings inline next to Play/Add */}
@@ -1710,6 +1711,8 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         mediaType={mediaType as 'movie' | 'tv'}
         title={title}
         year={year}
+        backdropPath={data.backdrop_path}
+        backdropImages={data.images?.backdrops?.slice(0, 8).map((b: any) => b.file_path) || []}
       />
     </div>
   );
