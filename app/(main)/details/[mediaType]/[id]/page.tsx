@@ -1128,8 +1128,8 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
             const sr = getStaticRatings(mediaType, id);
             if (sr) {
               const merged = r ? { ...r } : {};
-              if (!merged.imdb && sr.imdb) merged.imdb = sr.imdb;
-              if (!merged.rt && sr.rt) merged.rt = sr.rt;
+              if (!merged.imdb && sr.imdb) merged.imdb = { score: `${sr.imdb}/10` };
+              if (!merged.rt && sr.rt) merged.rt = { score: `${sr.rt}%` };
               if (!merged.imdb_id && sr.imdb_id) merged.imdb_id = sr.imdb_id;
               setExtRatings(Object.keys(merged).length > 0 ? merged : null);
             } else {
@@ -1145,8 +1145,8 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         const sr = getStaticRatings(mediaType, id);
         if (sr) {
           const fallback: any = {};
-          if (sr.imdb) fallback.imdb = sr.imdb;
-          if (sr.rt) fallback.rt = sr.rt;
+          if (sr.imdb) fallback.imdb = { score: `${sr.imdb}/10` };
+          if (sr.rt) fallback.rt = { score: `${sr.rt}%` };
           if (sr.imdb_id) fallback.imdb_id = sr.imdb_id;
           if (Object.keys(fallback).length > 0) setExtRatings(fallback);
         }
