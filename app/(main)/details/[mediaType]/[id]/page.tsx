@@ -20,7 +20,7 @@ import {
   addToLibrary, updateLibraryItem, removeFromLibrary,
   getLibraryItemByMediaId,
 } from '@/lib/api/library';
-import { computeUnifiedRating, setSyllabusScore, getSyllabusScore } from '@/lib/scoring';
+import { computeUnifiedRating, setSyllabusScore, getSyllabusScore, getStaticRatings } from '@/lib/scoring';
 import { TMDB_IMG, TMDB_IMG_ORIGINAL, TMDB_BACKDROP, STREAMING_PROVIDERS, SCENARIO_KEYWORDS } from '@/lib/constants';
 import BookCover from '@/components/ui/BookCover';
 import MediaCard from '@/components/ui/MediaCard';
@@ -1122,8 +1122,34 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           }
           return r;
         };
-        fetchRatings().then((r) => { setExtRatings(r); setRatingsLoaded(true); });
+        fetchRatings().then((r) => {
+          // Fall back to static scores from scores.json when OMDb fails
+          if (!r || (!r.imdb && !r.rt)) {
+            const sr = getStaticRatings(mediaType, id);
+            if (sr) {
+              const merged = r ? { ...r } : {};
+              if (!merged.imdb && sr.imdb) merged.imdb = sr.imdb;
+              if (!merged.rt && sr.rt) merged.rt = sr.rt;
+              if (!merged.imdb_id && sr.imdb_id) merged.imdb_id = sr.imdb_id;
+              setExtRatings(Object.keys(merged).length > 0 ? merged : null);
+            } else {
+              setExtRatings(r);
+            }
+          } else {
+            setExtRatings(r);
+          }
+          setRatingsLoaded(true);
+        });
       } else {
+        // No IMDb ID from TMDB — still try static scores
+        const sr = getStaticRatings(mediaType, id);
+        if (sr) {
+          const fallback: any = {};
+          if (sr.imdb) fallback.imdb = sr.imdb;
+          if (sr.rt) fallback.rt = sr.rt;
+          if (sr.imdb_id) fallback.imdb_id = sr.imdb_id;
+          if (Object.keys(fallback).length > 0) setExtRatings(fallback);
+        }
         setRatingsLoaded(true);
       }
 
