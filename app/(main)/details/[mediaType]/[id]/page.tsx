@@ -1742,6 +1742,17 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           </FadeInView>
         </div>
       )}
+
+      {/* Download Modal */}
+      <DownloadModal
+        isOpen={downloadModalOpen}
+        onClose={() => setDownloadModalOpen(false)}
+        imdbId={imdbId || ''}
+        mediaType={mediaType as 'movie' | 'tv'}
+        title={title}
+        backdropPath={data.backdrop_path}
+        tmdbId={data.id}
+      />
     </div>
   );
 }
