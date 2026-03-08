@@ -354,12 +354,25 @@ export function computeUnifiedRating(
   omdbData: OMDbRatings | null | undefined,
   malData: MALRating | null | undefined,
   isAnime: boolean,
+  tmdbScore?: number | null,
 ): number | null {
   const scores: number[] = [];
 
+  // Include TMDB vote_average (already 0-10 scale)
+  if (tmdbScore && tmdbScore > 0) {
+    scores.push(tmdbScore);
+  }
+
   if (omdbData?.imdb?.score) {
     const v = parseFloat(omdbData.imdb.score);
-    if (!isNaN(v)) scores.push(v);
+    if (!isNaN(v)) {
+      // Sanity check: if TMDB and OMDb IMDb differ by > 2.5, OMDb likely has wrong movie
+      if (tmdbScore && tmdbScore > 0 && Math.abs(v - tmdbScore) > 2.5) {
+        // Don't trust OMDb IMDb score — skip it
+      } else {
+        scores.push(v);
+      }
+    }
   }
 
   if (isAnime) {
@@ -435,7 +448,7 @@ export async function enrichChart(
               /* MAL failures are non-fatal */
             }
           }
-          item.unified_rating = computeUnifiedRating(omdb, mal, !!isAnime);
+          item.unified_rating = computeUnifiedRating(omdb, mal, !!isAnime, item.vote_average);
           if (item.unified_rating != null) {
             setSyllabusScore(mediaType, item.id, item.unified_rating);
           }

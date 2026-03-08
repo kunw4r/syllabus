@@ -1165,7 +1165,21 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   const isAnime = data
     ? (data.original_language === 'ja' && data.genres?.some((g: any) => g.id === 16))
     : false;
-  const avgScore = computeUnifiedRating(extRatings, malData, isAnime);
+  const avgScore = computeUnifiedRating(extRatings, malData, isAnime, data?.vote_average);
+
+  // Filter out suspect OMDb scores that don't match TMDB (wrong movie matched)
+  const sanitizedExtRatings = (() => {
+    if (!extRatings || !data?.vote_average) return extRatings;
+    const tmdb = data.vote_average;
+    let filtered = { ...extRatings };
+    if (filtered.imdb?.score) {
+      const imdbVal = parseFloat(filtered.imdb.score);
+      if (!isNaN(imdbVal) && Math.abs(imdbVal - tmdb) > 2.5) {
+        filtered = { ...filtered, imdb: undefined };
+      }
+    }
+    return filtered;
+  })();
 
   // Inline trailer player state
   const [showTrailer, setShowTrailer] = useState(false);
@@ -1354,7 +1368,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                   tmdbScore={data.vote_average}
                   mediaType={mediaType}
                   dataId={data.id}
-                  extRatings={extRatings}
+                  extRatings={sanitizedExtRatings}
                   ratingsLoaded={ratingsLoaded}
                   imdbId={imdbId}
                   isAnime={isAnime}
