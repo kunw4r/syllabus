@@ -1809,6 +1809,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         mediaType={mediaType as 'movie' | 'tv'}
         title={title}
         backdropPath={data.backdrop_path}
+        tmdbId={data.id}
       />
     </div>
   );

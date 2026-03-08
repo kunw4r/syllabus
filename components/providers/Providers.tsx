@@ -5,13 +5,20 @@ import { AuthProvider } from './AuthProvider';
 import { ToastProvider } from './ToastProvider';
 import { PreviewModalProvider } from './PreviewModalProvider';
 import { MotionProvider } from '@/components/motion/MotionProvider';
+import DownloadProvider from './DownloadProvider';
+import DownloadBar from '@/components/ui/DownloadBar';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <ToastProvider>
         <MotionProvider>
-          <PreviewModalProvider>{children}</PreviewModalProvider>
+          <DownloadProvider>
+            <PreviewModalProvider>
+              {children}
+              <DownloadBar />
+            </PreviewModalProvider>
+          </DownloadProvider>
         </MotionProvider>
       </ToastProvider>
     </AuthProvider>
