@@ -153,6 +153,19 @@ export default function MediaCard({
   // Individual IMDb/RT scores from static DB
   const staticRatings = !isBook && item.id ? getStaticRatings(mediaType, item.id) : null;
 
+  // Quality badge: CAM for recent theatrical movies, HD for everything else
+  const qualityBadge = (() => {
+    if (isBook) return null;
+    if (mediaType === 'tv') return 'HD';
+    const releaseStr = item.release_date || item.first_air_date || '';
+    if (!releaseStr) return 'HD';
+    const releaseDate = new Date(releaseStr);
+    const daysSinceRelease = (Date.now() - releaseDate.getTime()) / (1000 * 60 * 60 * 24);
+    // Movies released within ~90 days are likely still cam/screener quality
+    if (daysSinceRelease >= 0 && daysSinceRelease < 90) return 'CAM';
+    return 'HD';
+  })();
+
   // ── Landscape card (16:9 backdrop) — Netflix-style hover ──
   if (mode === 'landscape') {
     return (
@@ -296,33 +309,46 @@ export default function MediaCard({
                 </button>
               </div>
 
-              {/* Bottom — title + metadata */}
-              <div>
-                <p className="text-sm font-bold text-white truncate drop-shadow-lg leading-tight">
-                  {title}
-                </p>
-                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-white/70 flex-wrap">
-                  {year && <span className="font-medium">{year}</span>}
-                  {staticRatings?.imdb && (
-                    <>
-                      <span className="text-white/30">&#8226;</span>
-                      <span className="font-bold text-[#f5c518]">IMDb {staticRatings.imdb}</span>
-                    </>
-                  )}
-                  {staticRatings?.rt && (
-                    <>
-                      <span className="text-white/30">&#8226;</span>
-                      <span className="font-bold text-[#FA320A]">RT {staticRatings.rt}%</span>
-                    </>
-                  )}
-                  {genreNames.length > 0 && (year || staticRatings) && <span className="text-white/30">&#8226;</span>}
-                  {genreNames.map((g, i) => (
-                    <span key={g} className="flex items-center gap-1.5">
-                      {i > 0 && <span className="text-white/30">&#8226;</span>}
-                      {g}
-                    </span>
-                  ))}
+              {/* Bottom — title + metadata + quality badge */}
+              <div className="flex items-end justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-white truncate drop-shadow-lg leading-tight">
+                    {title}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1 text-[11px] text-white/70 flex-wrap">
+                    {year && <span className="font-medium">{year}</span>}
+                    {staticRatings?.imdb && (
+                      <>
+                        <span className="text-white/30">&#8226;</span>
+                        <span className="font-bold text-[#f5c518]">IMDb {staticRatings.imdb}</span>
+                      </>
+                    )}
+                    {staticRatings?.rt && (
+                      <>
+                        <span className="text-white/30">&#8226;</span>
+                        <span className="font-bold text-[#FA320A]">RT {staticRatings.rt}%</span>
+                      </>
+                    )}
+                    {genreNames.length > 0 && (year || staticRatings) && <span className="text-white/30">&#8226;</span>}
+                    {genreNames.map((g, i) => (
+                      <span key={g} className="flex items-center gap-1.5">
+                        {i > 0 && <span className="text-white/30">&#8226;</span>}
+                        {g}
+                      </span>
+                    ))}
+                  </div>
                 </div>
+                {qualityBadge && (
+                  <span
+                    className={`shrink-0 px-2 py-1 rounded text-[11px] font-black tracking-wider border backdrop-blur-sm ${
+                      qualityBadge === 'HD'
+                        ? 'text-purple-300 border-purple-400/50 bg-purple-500/20'
+                        : 'text-yellow-300 border-yellow-500/50 bg-yellow-500/20'
+                    }`}
+                  >
+                    {qualityBadge}
+                  </span>
+                )}
               </div>
             </div>
           </div>
