@@ -9,7 +9,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import {
   HomeIcon, CompassIcon, LibraryIcon, SocialIcon, ProfileIcon,
   TrophyIcon, FilmIcon, TvIcon, BookIcon, ActorsIcon, AwardsIcon,
-  StudiosIcon, LogInIcon, LogOutIcon, XIcon,
+  StudiosIcon, StreamIcon, LogInIcon, LogOutIcon, XIcon,
 } from '@/components/layout/NavIcons';
 
 interface NavItem {
@@ -49,6 +49,7 @@ export default function Navbar() {
     { to: '/actors', Icon: ActorsIcon, label: 'Actors' },
     { to: '/studios', Icon: StudiosIcon, label: 'Studios' },
     { to: '/awards', Icon: AwardsIcon, label: 'Awards' },
+    { to: '/streaming', Icon: StreamIcon, label: 'Stream' },
   ];
 
   const userNav: NavItem[] = user ? [
@@ -76,6 +77,7 @@ export default function Navbar() {
     { to: '/actors', Icon: ActorsIcon, label: 'Actors', color: 'from-pink-500/20 to-pink-600/10' },
     { to: '/studios', Icon: StudiosIcon, label: 'Studios', color: 'from-emerald-500/20 to-emerald-600/10' },
     { to: '/awards', Icon: AwardsIcon, label: 'Awards', color: 'from-yellow-500/20 to-yellow-600/10' },
+    { to: '/streaming', Icon: StreamIcon, label: 'Stream', color: 'from-violet-500/20 to-violet-600/10' },
   ];
 
   const allLinks = [...primaryNav, ...userNav];
