@@ -243,10 +243,8 @@ export default function StreamingModal({
         setPhase('playing');
         onStartWatching?.();
 
-        // Load OpenSubtitles in background if no provider subs
-        if (!stream.subtitles?.length) {
-          loadSubtitles(s, e);
-        }
+        // Always load OpenSubtitles in background for more subtitle options
+        loadSubtitles(s, e);
         return;
       }
 

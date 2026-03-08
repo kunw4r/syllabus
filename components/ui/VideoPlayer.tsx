@@ -61,7 +61,7 @@ interface VideoPlayerProps {
 }
 
 // ─── Settings Panel Views ───
-type SettingsView = 'main' | 'quality' | 'subtitles' | 'subtitleStyles' | 'audio';
+type SettingsView = 'main' | 'quality' | 'source' | 'subtitles' | 'subtitleStyles' | 'audio';
 
 // ─── Subtitle Style Presets ───
 interface SubtitleStyle {
@@ -479,14 +479,14 @@ export default function VideoPlayer({
                 </div>
               </button>
 
-              {sourceOptions.length > 1 && (
+              {sourceOptions.length > 0 && (
                 <button
-                  onClick={() => {/* cycle source */}}
+                  onClick={() => setSettingsView('source')}
                   className="bg-white/5 hover:bg-white/10 rounded-xl p-3 text-center transition-colors border border-white/5"
                 >
                   <div className="text-xs font-semibold text-white">Source</div>
-                  <div className="text-[10px] text-white/40 mt-0.5">
-                    {sourceOptions.find((s) => s.url === src)?.label || 'Default'}
+                  <div className="text-[10px] text-white/40 mt-0.5 truncate">
+                    {sourceOptions.find((s) => s.url === src)?.label || sourceOptions[0]?.label || 'Default'}
                   </div>
                 </button>
               )}
@@ -662,14 +662,17 @@ export default function VideoPlayer({
               })()}
 
               {/* Fetch from OpenSubtitles */}
-              {onSubtitleRequest && allSubtitles.length === 0 && (
-                <button
-                  onClick={() => { onSubtitleRequest(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-accent/70 hover:text-accent hover:bg-accent/5 transition-colors"
-                >
-                  <Loader2 size={14} />
-                  Search OpenSubtitles...
-                </button>
+              {onSubtitleRequest && (
+                <>
+                  <div className="border-t border-white/5 my-1" />
+                  <button
+                    onClick={() => { onSubtitleRequest(); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-accent/70 hover:text-accent hover:bg-accent/5 transition-colors"
+                  >
+                    <Loader2 size={14} />
+                    {allSubtitles.length === 0 ? 'Search OpenSubtitles...' : 'Load more from OpenSubtitles...'}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -838,6 +841,51 @@ export default function VideoPlayer({
           </div>
         );
       }
+
+      case 'source':
+        return (
+          <div>
+            <div className="flex items-center gap-2 px-3 pt-2 pb-2 border-b border-white/5">
+              <button
+                onClick={() => setSettingsView('main')}
+                className="text-white/50 hover:text-white transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <h3 className="text-sm font-semibold text-white/80">Source</h3>
+            </div>
+            <div className="max-h-[300px] overflow-y-auto scrollbar-hide">
+              {sourceOptions.map((source) => {
+                const isActive = source.url === src;
+                return (
+                  <button
+                    key={source.id}
+                    onClick={() => {
+                      if (!isActive) {
+                        onSourceChange?.(source);
+                      }
+                      setSettingsView('main');
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors ${
+                      isActive ? 'text-accent' : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {isActive && <Check size={14} className="text-accent" />}
+                    <span className={isActive ? '' : 'ml-[22px]'}>{source.label}</span>
+                    {isActive && (
+                      <span className="ml-auto text-[9px] text-accent/60 bg-accent/10 px-1.5 py-0.5 rounded">active</span>
+                    )}
+                  </button>
+                );
+              })}
+              {sourceOptions.length === 0 && (
+                <p className="px-3 py-4 text-xs text-white/30 text-center">
+                  No alternative sources available
+                </p>
+              )}
+            </div>
+          </div>
+        );
 
       case 'audio':
         return (
