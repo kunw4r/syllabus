@@ -873,6 +873,16 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
     return rated.reduce((best: any, e: any) => e.imdbRating > best.imdbRating ? e : best, rated[0]);
   };
 
+  // "Fresh" percentage — episodes rated 7.0+ out of total rated
+  const getSeasonFresh = (seasonNumber: number): number | null => {
+    const eps = episodesBySeason[seasonNumber];
+    if (!eps || eps.length === 0) return null;
+    const rated = eps.filter((e: any) => e.imdbRating != null);
+    if (rated.length === 0) return null;
+    const fresh = rated.filter((e: any) => e.imdbRating >= 7.0).length;
+    return Math.round((fresh / rated.length) * 100);
+  };
+
   const ratingBarPct = (rating: number) => Math.max((rating / 10) * 100, 8);
 
   return (
@@ -884,6 +894,7 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
       <div className="space-y-2">
         {regularSeasons.map((season: any, idx: number) => {
           const seasonAvg = getSeasonAvg(season.season_number);
+          const freshPct = getSeasonFresh(season.season_number);
           const omdbEps = episodesBySeason[season.season_number] || [];
           const isExpanded = expandedSeason === season.season_number;
           const bestEp = getBestEpisode(season.season_number);
@@ -913,19 +924,28 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
                   </div>
                   <div className="flex items-center gap-2.5">
                     {seasonAvg != null ? (
-                      <div className="flex items-center gap-1.5">
-                        <Star size={13} className="fill-current" style={{ color: getRatingHex(seasonAvg) }} />
-                        <span className="text-base font-black tabular-nums" style={{ color: getRatingHex(seasonAvg) }}>
-                          {seasonAvg.toFixed(1)}
-                        </span>
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-[#f5c518]/80 bg-[#f5c518]/10 border border-[#f5c518]/20 rounded px-1.5 py-0.5">IMDb</span>
+                          <span className="text-base font-black tabular-nums" style={{ color: getRatingHex(seasonAvg) }}>
+                            {seasonAvg.toFixed(1)}
+                          </span>
+                        </div>
+                        {freshPct != null && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-[#FA320A]/80 bg-[#FA320A]/10 border border-[#FA320A]/20 rounded px-1.5 py-0.5">RT</span>
+                            <span className="text-sm font-bold tabular-nums text-[#FA320A]">
+                              {freshPct}%
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ) : season.vote_average > 0 && !loadingSeasons ? (
-                      <div className="flex items-center gap-1.5">
-                        <Star size={12} className="fill-current" style={{ color: getRatingHex(season.vote_average), opacity: 0.7 }} />
-                        <span className="text-sm font-bold tabular-nums" style={{ color: getRatingHex(season.vote_average), opacity: 0.7 }}>
+                      <div className="flex items-center gap-1.5 opacity-70">
+                        <Star size={12} className="fill-current" style={{ color: getRatingHex(season.vote_average) }} />
+                        <span className="text-sm font-bold tabular-nums" style={{ color: getRatingHex(season.vote_average) }}>
                           {season.vote_average.toFixed(1)}
                         </span>
-                        
                       </div>
                     ) : loadingSeasons ? (
                       <div className="w-3 h-3 border border-white/10 border-t-accent/50 rounded-full animate-spin" />
@@ -1018,7 +1038,10 @@ function SeasonRatings({ imdbId, tvId, seasons }: { imdbId: string | null; tvId:
                                       }}
                                     />
                                   </div>
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1.5">
+                                    {ratingSource === 'imdb' && (
+                                      <span className="text-[9px] font-bold text-[#f5c518]/70">IMDb</span>
+                                    )}
                                     <Star size={10} className="fill-current" style={{ color: getRatingHex(epRating) }} />
                                     <span className="text-xs font-bold tabular-nums" style={{ color: getRatingHex(epRating) }}>{epRating.toFixed(1)}</span>
                                   </div>
