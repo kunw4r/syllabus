@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 const QB_BASE = 'http://localhost:8080/api/v2';
-// /host-downloads is Docker volume mapped to ~/Downloads on the Mac
-const DOWNLOAD_PATH = '/host-downloads';
+// /downloads inside Docker = ~/media-server/downloads on Mac host (staging area)
+const DOWNLOAD_PATH = '/downloads';
 let sessionCookie: string | null = null;
 
 async function qbAuth(): Promise<string> {

@@ -46,6 +46,18 @@ function formatSpeed(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB/s`;
 }
 
+function triggerBrowserDownload(hash: string) {
+  // Create a hidden link to trigger the browser's native download
+  // This serves the file via /api/torrent/file which sets Content-Disposition: attachment
+  const a = document.createElement('a');
+  a.href = `/api/torrent/file?hash=${hash}`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  // Clean up after a moment
+  setTimeout(() => document.body.removeChild(a), 1000);
+}
+
 export default function DownloadProvider({ children }: { children: React.ReactNode }) {
   const [activeDownload, setActiveDownload] = useState<ActiveDownload | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -82,8 +94,10 @@ export default function DownloadProvider({ children }: { children: React.ReactNo
 
         if (pct >= 100) {
           stopPolling();
-          // Auto-clear after 10 seconds
-          setTimeout(() => setActiveDownload(null), 10000);
+          // Trigger browser download so file goes to user's Downloads folder
+          triggerBrowserDownload(hash);
+          // Auto-clear after 15 seconds
+          setTimeout(() => setActiveDownload(null), 15000);
         }
       })
       .catch(() => {});
