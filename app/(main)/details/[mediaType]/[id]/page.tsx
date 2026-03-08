@@ -12,7 +12,7 @@ import {
 import { m, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/providers/ToastProvider';
-import { getMovieDetails, getTVDetails, getTrendingMovies, getTrendingTV, getTVSeasonDetails } from '@/lib/api/tmdb';
+import { getMovieDetails, getTVDetails, getTrendingMovies, getTrendingTV, getTVSeasonDetails, getCollectionDetails } from '@/lib/api/tmdb';
 import { getOMDbRatings, getOMDbSeasonEpisodes } from '@/lib/api/omdb';
 import { getMALRating } from '@/lib/api/jikan';
 import { getBookDetails, getBookRecommendations } from '@/lib/api/books';
@@ -1122,6 +1122,7 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
   const [ratingsLoaded, setRatingsLoaded] = useState(false);
   const [malData, setMalData] = useState<any>(null);
   const [trending, setTrending] = useState<any[]>([]);
+  const [collection, setCollection] = useState<any>(null);
 
   useEffect(() => {
     async function load() {
@@ -1129,12 +1130,20 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
       setExtRatings(null);
       setRatingsLoaded(false);
       setMalData(null);
+      setCollection(null);
       const fetcher = mediaType === 'movie' ? getMovieDetails : getTVDetails;
       const trendFetcher = mediaType === 'movie' ? getTrendingMovies : getTrendingTV;
       const [result, trendingData] = await Promise.all([fetcher(id), trendFetcher().catch(() => [])]);
       setData(result);
       setTrending(trendingData.filter((t: any) => String(t.id) !== String(id)).slice(0, 20));
       setLoading(false);
+
+      // Fetch franchise/collection data
+      if (mediaType === 'movie' && result.belongs_to_collection?.id) {
+        getCollectionDetails(result.belongs_to_collection.id)
+          .then((col) => setCollection(col))
+          .catch(() => {});
+      }
 
       const imdbId = result.external_ids?.imdb_id || result.imdb_id;
       const resultTitle = result.name || result.title;
@@ -1795,6 +1804,19 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
         />
       </div>
 
+      {/* ── Franchise / Collection ── */}
+      {collection && collection.parts && collection.parts.length > 1 && (
+        <div className="px-4 sm:px-6 lg:px-10 mt-12 pb-6 max-w-7xl mx-auto">
+          <FadeInView>
+            <FranchiseTimeline
+              collection={collection}
+              currentMovieId={Number(id)}
+              getRatingHex={getRatingHex}
+            />
+          </FadeInView>
+        </div>
+      )}
+
       {/* ── Recommendations ── */}
       {recommendations.length > 0 && (
         <div id="recommendations" className="px-4 sm:px-6 lg:px-10 mt-12 pb-10 max-w-7xl mx-auto scroll-mt-16">
@@ -1866,6 +1888,155 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 /* ═══════════════════════════════════════════════════════════════════════════
    PosterSliderRow — Netflix-style poster horizontal slider with arrows
    ═══════════════════════════════════════════════════════════════════════════ */
+
+function FranchiseTimeline({ collection, currentMovieId, getRatingHex }: {
+  collection: any;
+  currentMovieId: number;
+  getRatingHex: (v: number) => string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const parts = [...(collection.parts || [])]
+    .sort((a: any, b: any) => (a.release_date || '').localeCompare(b.release_date || ''));
+
+  const currentIndex = parts.findIndex((p: any) => p.id === currentMovieId);
+
+  // Auto-scroll to current movie on mount
+  useEffect(() => {
+    if (scrollRef.current && currentIndex > 0) {
+      const card = scrollRef.current.children[currentIndex] as HTMLElement;
+      if (card) {
+        scrollRef.current.scrollTo({
+          left: card.offsetLeft - scrollRef.current.offsetWidth / 2 + card.offsetWidth / 2,
+          behavior: 'smooth',
+        });
+      }
+    }
+  }, [currentIndex]);
+
+  const scroll = (dir: number) => {
+    scrollRef.current?.scrollBy({ left: dir * 400, behavior: 'smooth' });
+  };
+
+  // Find highest rating for the bar chart scale
+  const maxRating = Math.max(...parts.map((p: any) => p.vote_average || 0), 10);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white">{collection.name}</h2>
+          <p className="text-sm text-white/40 mt-0.5">{parts.length} films &middot; Part {currentIndex + 1} of {parts.length}</p>
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => scroll(-1)}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={() => scroll(1)}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+      >
+        {parts.map((part: any, idx: number) => {
+          const isCurrent = part.id === currentMovieId;
+          const poster = part.poster_path ? `${TMDB_IMG}${part.poster_path}` : null;
+          const rating = part.vote_average ? part.vote_average.toFixed(1) : null;
+          const year = (part.release_date || '').slice(0, 4);
+          const barHeight = rating ? `${(parseFloat(rating) / maxRating) * 100}%` : '0%';
+          const isFuture = part.release_date && new Date(part.release_date) > new Date();
+
+          return (
+            <Link
+              key={part.id}
+              href={`/details/movie/${part.id}`}
+              className={`group/franchise shrink-0 w-[140px] sm:w-[160px] transition-all duration-200 ${
+                isCurrent ? 'scale-[1.02]' : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              {/* Poster */}
+              <div className={`relative aspect-[2/3] rounded-lg overflow-hidden ${
+                isCurrent ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0e1117]' : ''
+              }`}>
+                {poster ? (
+                  <img
+                    src={poster}
+                    alt={part.title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover/franchise:scale-105"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-white/5 flex items-center justify-center text-white/20 text-sm p-3 text-center">
+                    {part.title}
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+
+                {/* Part number badge */}
+                <span className="absolute top-2 left-2 text-[10px] font-bold text-white/60 bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded">
+                  {isFuture ? 'TBA' : `#${idx + 1}`}
+                </span>
+
+                {/* Rating badge */}
+                {rating && !isFuture && (
+                  <span
+                    className="absolute top-2 right-2 text-[11px] font-bold px-1.5 py-0.5 rounded backdrop-blur-md"
+                    style={{
+                      color: getRatingHex(parseFloat(rating)),
+                      background: `${getRatingHex(parseFloat(rating))}20`,
+                      border: `1px solid ${getRatingHex(parseFloat(rating))}30`,
+                    }}
+                  >
+                    {rating}
+                  </span>
+                )}
+
+                {/* Current indicator */}
+                {isCurrent && (
+                  <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-blue-400 bg-blue-500/20 backdrop-blur-sm px-2 py-0.5 rounded-full border border-blue-500/30">
+                    VIEWING
+                  </span>
+                )}
+              </div>
+
+              {/* Title & Year */}
+              <div className="mt-2 px-0.5">
+                <p className={`text-[12px] font-semibold leading-tight line-clamp-2 ${
+                  isCurrent ? 'text-white' : 'text-white/70'
+                }`}>
+                  {part.title}
+                </p>
+                <p className="text-[11px] text-white/30 mt-0.5">{year || 'TBA'}</p>
+              </div>
+
+              {/* Rating bar */}
+              {rating && !isFuture && (
+                <div className="mt-1.5 h-1 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: barHeight,
+                      background: getRatingHex(parseFloat(rating)),
+                    }}
+                  />
+                </div>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function PosterSliderRow({ title, items, mediaType, getRatingHex }: {
   title: string;
