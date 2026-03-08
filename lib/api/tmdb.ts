@@ -127,6 +127,35 @@ export function getTVSeasonDetails(tvId: number | string, seasonNumber: number) 
   return tmdbCached(`/tv/${tvId}/season/${seasonNumber}`);
 }
 
+// ─── Logo fetching ───
+
+/** Fetch the English title logo for a movie or TV show. Returns path or null. */
+export async function getTitleLogo(mediaType: 'movie' | 'tv', id: number | string): Promise<string | null> {
+  try {
+    const data = await tmdbCached(`/${mediaType}/${id}/images`, 'include_image_language=en,null');
+    const logos = data.logos || [];
+    // Prefer English PNG logos sorted by vote count
+    const best = logos
+      .filter((l: any) => l.file_path && (l.iso_639_1 === 'en' || !l.iso_639_1))
+      .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0))[0];
+    return best?.file_path || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Batch fetch logos for an array of items. Mutates items by adding `logo_path`. */
+export async function enrichWithLogos(items: any[], mediaType: 'movie' | 'tv'): Promise<any[]> {
+  await Promise.all(
+    items.map(async (item) => {
+      if (!item.id) return;
+      const logo = await getTitleLogo(mediaType, item.id);
+      if (logo) item.logo_path = logo;
+    })
+  );
+  return items;
+}
+
 // ─── Movie Discovery ───
 
 export function getTopRatedMovies() {

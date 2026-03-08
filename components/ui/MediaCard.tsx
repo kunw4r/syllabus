@@ -26,6 +26,7 @@ interface MediaItem {
   first_publish_year?: string | number;
   poster_path?: string;
   backdrop_path?: string;
+  logo_path?: string;
   cover_url?: string;
   cover_urls?: string[];
   genre_ids?: number[];
@@ -207,11 +208,20 @@ export default function MediaCard({
               </div>
             )}
 
-            {/* Resting state — title + year + progress at bottom */}
+            {/* Resting state — logo/title + year + progress at bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black via-black/70 via-[40%] to-transparent group-hover/card:opacity-0 transition-opacity duration-200 pointer-events-none">
-              <p className="text-[13px] font-semibold text-white truncate" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6)' }}>
-                {title}
-              </p>
+              {item.logo_path ? (
+                <img
+                  src={`https://image.tmdb.org/t/p/w300${item.logo_path}`}
+                  alt={title}
+                  className="h-6 sm:h-7 w-auto max-w-[80%] object-contain object-left drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+                  loading="lazy"
+                />
+              ) : (
+                <p className="text-[13px] font-semibold text-white truncate" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6)' }}>
+                  {title}
+                </p>
+              )}
               <div className="flex items-center gap-2 mt-0.5">
                 {year && (
                   <p className="text-[11px] text-white/50" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>{year}</p>
