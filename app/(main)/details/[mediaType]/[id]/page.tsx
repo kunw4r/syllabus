@@ -7,7 +7,7 @@ import {
   Star, Clock, Eye, CheckCircle2, Play, ExternalLink, Globe, Award,
   DollarSign, Film, Tv, BookOpen, Users, Calendar, X, Heart, Plus, Minus,
   ChevronLeft, ChevronRight, Check, Trash2, Info, Sparkles, Lightbulb, ShoppingCart,
-  BookCopy, BookMarked, PenLine, ChevronDown,
+  BookCopy, BookMarked, PenLine, ChevronDown, Download, MonitorPlay,
 } from 'lucide-react';
 import { m, useSpring, useTransform } from 'framer-motion';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -32,6 +32,7 @@ import CastRow from '@/components/details/CastRow';
 import StreamingProviders from '@/components/details/StreamingProviders';
 import QuickFactsCard from '@/components/details/QuickFactsCard';
 import { getRatingHex, getRatingBg, getRatingGlow, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
+import StreamingModal from '@/components/details/StreamingModal';
 
 // ─── Image base URLs ───
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w92';
@@ -1154,6 +1155,9 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
     }
   }, [avgScore, data?.id, mediaType]);
 
+  // Streaming modal state
+  const [streamModalOpen, setStreamModalOpen] = useState(false);
+
   // Check if already in library
   useEffect(() => {
     if (!user || !data?.id) return;
@@ -1308,6 +1312,16 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                     <Plus size={20} className="text-white" />
                   )}
                 </button>
+
+                {/* Watch Now — streaming */}
+                {imdbId && (
+                  <button
+                    onClick={() => setStreamModalOpen(true)}
+                    className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white font-bold text-sm px-5 py-2.5 rounded-lg transition-colors shadow-lg backdrop-blur-sm"
+                  >
+                    <MonitorPlay size={17} /> Watch
+                  </button>
+                )}
 
                 {/* Ratings inline next to Play/Add */}
                 <RatingCluster
@@ -1688,6 +1702,19 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
           </FadeInView>
         </div>
       )}
+
+      {/* ── Streaming Modal ── */}
+      <StreamingModal
+        isOpen={streamModalOpen}
+        onClose={() => setStreamModalOpen(false)}
+        imdbId={imdbId || ''}
+        mediaType={mediaType as 'movie' | 'tv'}
+        title={title}
+        year={year}
+        onPlay={(streamUrl) => {
+          window.open(`/streaming/watch/local?src=${encodeURIComponent(streamUrl)}&title=${encodeURIComponent(title)}`, '_blank');
+        }}
+      />
     </div>
   );
 }
