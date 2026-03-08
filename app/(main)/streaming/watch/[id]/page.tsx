@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ChevronDown, Play, Star } from 'lucide-react';
-import VideoPlayer from '@/components/ui/VideoPlayer';
+import VideoPlayer, { type SubtitleTrack, type AudioTrack, type SourceOption } from '@/components/ui/VideoPlayer';
 import ScrollRow from '@/components/ui/ScrollRow';
 import {
   getStoredConfig,
@@ -25,7 +25,14 @@ import {
   type JellyfinConfig,
   type JellyfinItem,
   type JellyfinMediaSource,
+  type JellyfinMediaStream,
 } from '@/lib/api/jellyfin';
+import {
+  searchSubtitles,
+  fetchSubtitleAsVttUrl,
+  getLanguageName,
+  type SubtitleResult,
+} from '@/lib/api/opensubtitles';
 import { getRatingBg, getRatingGlow, getRatingHex } from '@/lib/utils/rating-colors';
 
 export default function WatchPage() {
@@ -37,6 +44,11 @@ export default function WatchPage() {
   const [startPos, setStartPos] = useState(0);
   const [mediaSources, setMediaSources] = useState<JellyfinMediaSource[]>([]);
 
+  // Media track state
+  const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>([]);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
+  const [sourceOptions, setSourceOptions] = useState<SourceOption[]>([]);
+
   // TV series state
   const [isSeries, setIsSeries] = useState(false);
   const [seasons, setSeasons] = useState<JellyfinItem[]>([]);
@@ -46,7 +58,6 @@ export default function WatchPage() {
   const [similar, setSimilar] = useState<JellyfinItem[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [showDetails, setShowDetails] = useState(false);
 
   const progressTimer = useRef<ReturnType<typeof setInterval>>(undefined);
   const lastPosition = useRef(0);
@@ -78,7 +89,6 @@ export default function WatchPage() {
           setSelectedSeason(ss[0]);
           const eps = await getEpisodes(cfg, itemId, ss[0].Id);
           setEpisodes(eps);
-          // Auto-play first unwatched episode
           const unwatched = eps.find((e) => !e.UserData?.Played);
           if (unwatched) {
             await preparePlayback(cfg, unwatched);
@@ -92,7 +102,6 @@ export default function WatchPage() {
         await preparePlayback(cfg, data);
       }
 
-      // Load similar
       getSimilarItems(cfg, itemId).then(setSimilar).catch(() => {});
     } catch (err) {
       console.error('[Watch] Failed to load:', err);
@@ -104,13 +113,66 @@ export default function WatchPage() {
     const sources = await getPlaybackInfo(cfg, playItem.Id);
     setMediaSources(sources);
 
-    if (sources.length > 0) {
-      const source = sources[0];
-      // Try direct play first, fall back to HLS transcoding
-      const url = source.DirectPlaySupported !== false
-        ? getStreamUrl(cfg, playItem.Id, source.Id)
-        : getHlsStreamUrl(cfg, playItem.Id, source.Id);
-      setStreamUrl(url);
+    if (sources.length === 0) return;
+
+    const source = sources[0];
+
+    // Build stream URL
+    const url = source.DirectPlaySupported !== false
+      ? getStreamUrl(cfg, playItem.Id, source.Id)
+      : getHlsStreamUrl(cfg, playItem.Id, source.Id);
+    setStreamUrl(url);
+
+    // Build source options (if multiple media sources)
+    if (sources.length > 1) {
+      setSourceOptions(
+        sources.map((s, i) => ({
+          id: s.Id,
+          label: s.Name || `Source ${i + 1}`,
+          url: s.DirectPlaySupported !== false
+            ? getStreamUrl(cfg, playItem.Id, s.Id)
+            : getHlsStreamUrl(cfg, playItem.Id, s.Id),
+          isDefault: i === 0,
+        }))
+      );
+    }
+
+    // Extract subtitle tracks from Jellyfin media streams
+    const subs: SubtitleTrack[] = [];
+    const audios: AudioTrack[] = [];
+
+    for (const stream of source.MediaStreams || []) {
+      if (stream.Type === 'Subtitle') {
+        const base = cfg.serverUrl.replace(/\/$/, '');
+        // Jellyfin serves subtitles as VTT at this endpoint
+        const subUrl = `${base}/Videos/${playItem.Id}/${source.Id}/Subtitles/${stream.Index}/0/Stream.vtt?api_key=${cfg.accessToken}`;
+        subs.push({
+          id: `jf-${stream.Index}`,
+          label: stream.DisplayTitle || getLanguageName(stream.Language || 'unknown'),
+          language: stream.Language || 'und',
+          src: subUrl,
+          jellyfinIndex: stream.Index,
+          isExternal: stream.IsExternal,
+          isDefault: stream.IsDefault,
+        });
+      } else if (stream.Type === 'Audio') {
+        audios.push({
+          id: `jf-audio-${stream.Index}`,
+          label: stream.DisplayTitle || getLanguageName(stream.Language || 'unknown'),
+          language: stream.Language,
+          index: stream.Index,
+          isDefault: stream.IsDefault,
+        });
+      }
+    }
+
+    setSubtitleTracks(subs);
+    setAudioTracks(audios);
+
+    // Set default audio
+    const defaultAudio = audios.find((a) => a.isDefault) || audios[0];
+    if (defaultAudio) {
+      // Audio track selection will be handled by the player
     }
 
     // Resume position
@@ -119,12 +181,57 @@ export default function WatchPage() {
       : 0;
     setStartPos(pos);
 
-    // Report playback start
     reportPlaybackStart(cfg, playItem.Id, playItem.UserData?.PlaybackPositionTicks || 0).catch(() => {});
   }
 
+  // Fetch subtitles from OpenSubtitles
+  const fetchOpenSubtitles = useCallback(async () => {
+    const activeItem = currentEpisode || item;
+    if (!activeItem) return;
+
+    const imdbId = activeItem.ProviderIds?.Imdb;
+    const tmdbId = activeItem.ProviderIds?.Tmdb ? parseInt(activeItem.ProviderIds.Tmdb) : undefined;
+
+    const results = await searchSubtitles({
+      imdbId: imdbId,
+      tmdbId: tmdbId,
+      query: activeItem.Name,
+      season: activeItem.ParentIndexNumber,
+      episode: activeItem.IndexNumber,
+      type: activeItem.Type === 'Episode' ? 'episode' : 'movie',
+    });
+
+    if (results.length === 0) return;
+
+    // Group by language, take best for each
+    const byLang = new Map<string, SubtitleResult>();
+    for (const r of results) {
+      if (!byLang.has(r.language) || r.downloadCount > byLang.get(r.language)!.downloadCount) {
+        byLang.set(r.language, r);
+      }
+    }
+
+    // Convert to SubtitleTrack (lazy-load actual VTT on selection)
+    const openSubs: SubtitleTrack[] = [];
+    for (const [lang, result] of byLang) {
+      openSubs.push({
+        id: `os-${result.fileId}`,
+        label: `${result.languageName} (OpenSubs)`,
+        language: lang,
+        // We'll load the actual URL when selected
+        src: undefined,
+        isExternal: true,
+      });
+    }
+
+    // Store the results for lazy loading
+    (window as any).__openSubResults = results;
+
+    setSubtitleTracks((prev) => [...prev, ...openSubs]);
+  }, [item, currentEpisode]);
+
   const handleTimeUpdate = useCallback(
-    (currentTime: number, duration: number) => {
+    (currentTime: number) => {
       lastPosition.current = currentTime;
     },
     []
@@ -148,7 +255,6 @@ export default function WatchPage() {
 
     return () => {
       if (progressTimer.current) clearInterval(progressTimer.current);
-      // Report stop when leaving
       if (lastPosition.current > 0) {
         reportPlaybackStopped(config, playingId, secondsToTicks(lastPosition.current)).catch(() => {});
       }
@@ -157,10 +263,8 @@ export default function WatchPage() {
 
   const handleEnded = useCallback(() => {
     if (!config || !currentEpisode) return;
-    // Report as complete
     reportPlaybackStopped(config, currentEpisode.Id, currentEpisode.RunTimeTicks || 0).catch(() => {});
 
-    // Auto-play next episode
     const idx = episodes.findIndex((e) => e.Id === currentEpisode.Id);
     if (idx >= 0 && idx < episodes.length - 1) {
       const next = episodes[idx + 1];
@@ -180,6 +284,10 @@ export default function WatchPage() {
     if (!config) return;
     setCurrentEpisode(ep);
     await preparePlayback(config, ep);
+  };
+
+  const handleSourceChange = (source: SourceOption) => {
+    setStreamUrl(source.url);
   };
 
   if (loading || !item || !config) {
@@ -208,9 +316,14 @@ export default function WatchPage() {
             }
             posterUrl={getImageUrl(config, activeItem.Id, 'Backdrop', 1280)}
             startPositionSeconds={startPos}
+            subtitleTracks={subtitleTracks}
+            audioTracks={audioTracks}
+            sourceOptions={sourceOptions}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
             onBack={() => router.push('/streaming')}
+            onSubtitleRequest={fetchOpenSubtitles}
+            onSourceChange={handleSourceChange}
           />
         </div>
       )}
@@ -242,7 +355,6 @@ export default function WatchPage() {
             )}
           </div>
 
-          {/* Episode title for series */}
           {currentEpisode && (
             <p className="text-white/70 text-sm mb-2">
               S{currentEpisode.ParentIndexNumber || 0}E{currentEpisode.IndexNumber || 0} &mdash; {currentEpisode.Name}
@@ -256,10 +368,9 @@ export default function WatchPage() {
           )}
         </div>
 
-        {/* Season / Episode picker for Series */}
+        {/* Season / Episode picker */}
         {isSeries && seasons.length > 0 && (
           <div className="mt-8">
-            {/* Season selector */}
             <div className="flex items-center gap-3 mb-4">
               <h2 className="text-lg font-bold">Episodes</h2>
               <div className="relative">
@@ -281,7 +392,6 @@ export default function WatchPage() {
               </div>
             </div>
 
-            {/* Episodes list */}
             <div className="space-y-2">
               {episodes.map((ep) => {
                 const isActive = currentEpisode?.Id === ep.Id;
@@ -296,7 +406,6 @@ export default function WatchPage() {
                         : 'bg-white/5 border border-white/5 hover:bg-white/10'
                     }`}
                   >
-                    {/* Thumbnail */}
                     <div className="relative w-32 sm:w-40 aspect-video rounded-lg overflow-hidden bg-white/5 shrink-0">
                       <img
                         src={getImageUrl(config, ep.Id, 'Primary', 300)}
