@@ -44,8 +44,8 @@ const SCORES_PATH = path.resolve(__dirname, '../public/data/scores.json');
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const JIKAN_BASE = 'https://api.jikan.moe/v4';
 
-// Backfill boundaries
-const BACKFILL_START_YEAR = 2025;
+// Backfill boundaries — always start from current year
+const BACKFILL_START_YEAR = new Date().getFullYear();
 const BACKFILL_END_YEAR = 2000;
 const DECADE_START = 1990;
 const DECADE_END = 1960;
@@ -387,8 +387,9 @@ async function fetchTier3(db) {
   }
 
   if (currentYear < BACKFILL_END_YEAR) {
-    log('   Year backfill complete! All years 2025-2000 covered.');
+    log(`   Year backfill complete! All years ${BACKFILL_START_YEAR}-${BACKFILL_END_YEAR} covered.`);
     db._meta.backfillYear = 'done';
+    db._meta.backfillDoneForYear = BACKFILL_START_YEAR;
   }
 
   log(`   Tier 3 done: ${yearsProcessed} years, +${totalNew} new scores (${totalCalls} calls used)`);
@@ -820,7 +821,12 @@ async function main() {
     totalNew += await fetchTier2(db);
   }
 
-  // ── Tier 3: Year backfill (2025 → 2000) ──
+  // ── Tier 3: Year backfill (current year → 2000) ──
+  // Auto-reset when a new year starts so we always crawl the latest year
+  if (db._meta.backfillYear === 'done' && db._meta.backfillDoneForYear < BACKFILL_START_YEAR) {
+    log(`   New year detected (${BACKFILL_START_YEAR}), resetting year backfill...`);
+    db._meta.backfillYear = undefined;
+  }
   if (hasBudget() && db._meta.backfillYear !== 'done') {
     totalNew += await fetchTier3(db);
   }

@@ -8,6 +8,7 @@ on:
 jobs:
   enrich:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
 
@@ -18,13 +19,27 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Run enrichment agent
+      # Step 1: Main enrichment (new/popular + year backfill 2026→2000 + genres)
+      - name: Run main enrichment
         env:
           TMDB_KEY: ${{ secrets.TMDB_KEY }}
           OMDB_KEY_1: ${{ secrets.OMDB_KEY_1 }}
           OMDB_KEY_2: ${{ secrets.OMDB_KEY_2 }}
           OMDB_KEY_3: ${{ secrets.OMDB_KEY_3 }}
-        run: node scripts/enrich.js --limit 2700
+        run: node scripts/enrich.js --limit 2700 --skip-rt
+
+      # Step 2: Bollywood & Indian cinema enrichment
+      - name: Run Bollywood enrichment
+        env:
+          TMDB_KEY: ${{ secrets.TMDB_KEY }}
+          OMDB_KEY_1: ${{ secrets.OMDB_KEY_1 }}
+          OMDB_KEY_2: ${{ secrets.OMDB_KEY_2 }}
+          OMDB_KEY_3: ${{ secrets.OMDB_KEY_3 }}
+        run: node scripts/enrich-bollywood.js
+
+      # Step 3: RT backfill (scrapes rottentomatoes.com for missing RT scores)
+      - name: Run RT backfill
+        run: node scripts/enrich.js --limit 0 --rt-limit 300
 
       - name: Commit updated scores
         run: |
