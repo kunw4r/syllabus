@@ -10,7 +10,7 @@ import { getLibrary, removeFromLibrary } from '@/lib/api/library';
 import {
   getTrendingMovies, getTrendingTV,
   getUpcomingMovies, getNowPlayingMovies, getPopularMovies, getTopRatedMovies,
-  getPopularTV, getTopRatedTV,
+  getPopularTV, getTopRatedTV, enrichWithLogos,
 } from '@/lib/api/tmdb';
 import { getTrendingBooks } from '@/lib/api/books';
 import { enrichItemsWithRatings, loadStaticScoreDB, applyStoredScores } from '@/lib/scoring';
@@ -138,6 +138,12 @@ export default function Home() {
     enrichItemsWithRatings(topRatedMoviesArr, 'movie').then(setTopRatedMovies);
     enrichItemsWithRatings(popularTVArr, 'tv').then(setPopularTV);
     enrichItemsWithRatings(topRatedTVArr, 'tv').then(setTopRatedTV);
+
+    // Fetch title logos for top 10 rows (non-blocking)
+    enrichWithLogos(scoredMovies.slice(0, 10), 'movie').then(() => setTrendingMovies([...scoredMovies]));
+    enrichWithLogos(scoredTV.slice(0, 10), 'tv').then(() => setTrendingTV([...scoredTV]));
+    enrichWithLogos(scoredTopRatedMovies.slice(0, 10), 'movie').then(() => setTopRatedMovies([...scoredTopRatedMovies]));
+    enrichWithLogos(scoredTopRatedTV.slice(0, 10), 'tv').then(() => setTopRatedTV([...scoredTopRatedTV]));
 
     if (user) {
       try {
@@ -305,23 +311,29 @@ export default function Home() {
                               </div>
                             )}
 
-                            {/* Bottom info bar */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5 pt-6">
-                              <p className="text-[13px] font-semibold text-white truncate leading-tight" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
-                                {item.title}
-                              </p>
-                              {pLabel && (
-                                <span className="text-[10px] text-white/50 mt-0.5 block">{pLabel}</span>
-                              )}
-                            </div>
-
                             {/* Progress bar — bottom edge */}
-                            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10">
+                            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 z-10">
                               <div
                                 className="h-full bg-accent rounded-r-full transition-all duration-500"
                                 style={{ width: `${pPercent}%` }}
                               />
                             </div>
+                          </div>
+
+                          {/* Info below card — title, episode, time */}
+                          <div className="mt-1.5 px-0.5">
+                            <p className="text-[12px] sm:text-[13px] font-semibold text-white truncate leading-tight">
+                              {item.title}
+                            </p>
+                            {mt === 'tv' && item.progress_season && item.progress_episode ? (
+                              <p className="text-[10px] sm:text-[11px] text-white/40 mt-0.5">
+                                Season {item.progress_season} Episode {item.progress_episode}
+                              </p>
+                            ) : pLabel ? (
+                              <p className="text-[10px] sm:text-[11px] text-white/40 mt-0.5">
+                                {pLabel}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       );
