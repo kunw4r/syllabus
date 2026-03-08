@@ -34,6 +34,7 @@ import QuickFactsCard from '@/components/details/QuickFactsCard';
 import { getRatingHex, getRatingBg, getRatingGlow, getRatingTextGlow, getRatingTrackGlow } from '@/lib/utils/rating-colors';
 import StreamingModal from '@/components/details/StreamingModal';
 import DownloadModal from '@/components/details/DownloadModal';
+import { useDownload } from '@/components/providers/DownloadProvider';
 
 // ─── Image base URLs ───
 const TMDB_LOGO = 'https://image.tmdb.org/t/p/w92';
@@ -1215,6 +1216,9 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 
   // Download modal state
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const { activeDownload, cancelDownload } = useDownload();
+  const isThisDownloading = activeDownload != null && activeDownload.tmdbId != null && String(activeDownload.tmdbId) === String(data?.id);
+  const dlProgress = isThisDownloading ? activeDownload!.progress : 0;
 
   // Check if already in library
   useEffect(() => {
@@ -1352,15 +1356,50 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
                   <Play size={18} fill="black" className="sm:w-5 sm:h-5" /> Watch Now
                 </button>
 
-                {/* Download button */}
-                <button
-                  onClick={() => setDownloadModalOpen(true)}
-                  disabled={!imdbId}
-                  className="inline-flex items-center gap-2 font-semibold text-sm px-5 py-2.5 rounded-lg transition-all shadow-lg border bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border-white/10"
-                >
-                  <Download size={16} />
-                  Download
-                </button>
+                {/* Download button / inline progress bar */}
+                {isThisDownloading ? (
+                  <button
+                    onClick={() => setDownloadModalOpen(true)}
+                    className="relative inline-flex items-center gap-2 font-semibold text-sm pl-5 pr-5 py-2.5 rounded-lg shadow-lg border border-accent/30 overflow-hidden min-w-[180px] backdrop-blur-sm"
+                  >
+                    {/* Progress fill */}
+                    <m.div
+                      className="absolute inset-0 bg-accent/25"
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${dlProgress}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                    <span className="relative z-10 flex items-center gap-2 text-white">
+                      {dlProgress >= 100 ? (
+                        <>
+                          <Check size={16} className="text-green-400" />
+                          Complete
+                        </>
+                      ) : (
+                        <>
+                          <Download size={16} className="text-accent animate-pulse" />
+                          {dlProgress}%
+                          {activeDownload!.dlSpeed > 0 && (
+                            <span className="text-[11px] text-white/40 font-normal">
+                              {activeDownload!.dlSpeed < 1024 * 1024
+                                ? `${(activeDownload!.dlSpeed / 1024).toFixed(0)} KB/s`
+                                : `${(activeDownload!.dlSpeed / (1024 * 1024)).toFixed(1)} MB/s`}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setDownloadModalOpen(true)}
+                    disabled={!imdbId}
+                    className="inline-flex items-center gap-2 font-semibold text-sm px-5 py-2.5 rounded-lg transition-all shadow-lg border bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border-white/10"
+                  >
+                    <Download size={16} />
+                    Download
+                  </button>
+                )}
 
                 {trailer && (
                   <button

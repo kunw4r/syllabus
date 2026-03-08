@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { homedir } from 'os';
-import { join } from 'path';
 
 export const dynamic = 'force-dynamic';
 
 const QB_BASE = 'http://localhost:8080/api/v2';
-const DOWNLOAD_PATH = join(homedir(), 'Downloads');
+// /host-downloads is Docker volume mapped to ~/Downloads on the Mac
+const DOWNLOAD_PATH = '/host-downloads';
 let sessionCookie: string | null = null;
 
 async function qbAuth(): Promise<string> {
