@@ -1112,12 +1112,17 @@ function MovieTVDetails({ mediaType, id }: { mediaType: string; id: string }) {
 
       const imdbId = result.external_ids?.imdb_id || result.imdb_id;
       const resultTitle = result.name || result.title;
+      const resultYear = (result.release_date || result.first_air_date || '').slice(0, 4);
       if (imdbId) {
         const fetchRatings = async () => {
           let r = await getOMDbRatings(imdbId, resultTitle, mediaType).catch(() => null);
           if (!r) {
             await new Promise<void>((resolve) => setTimeout(resolve, 2000));
             r = await getOMDbRatings(imdbId, resultTitle, mediaType).catch(() => null);
+          }
+          // Validate: if OMDb returned a different year's movie, discard the result
+          if (r && r._year && resultYear && Math.abs(parseInt(r._year) - parseInt(resultYear)) > 1) {
+            return null;
           }
           return r;
         };
