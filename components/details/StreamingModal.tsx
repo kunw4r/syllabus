@@ -5,6 +5,7 @@ import { X, Play, Check, Server, ChevronDown, ChevronLeft, ChevronRight, Refresh
 import { m, AnimatePresence } from 'framer-motion';
 import VideoPlayer, { SubtitleTrack, SourceOption } from '@/components/ui/VideoPlayer';
 import { searchSubtitles, fetchSubtitleAsVttUrl } from '@/lib/api/opensubtitles';
+import { updateLibraryItem, getLibraryItemByMediaId } from '@/lib/api/library';
 
 const TMDB_BACKDROP = 'https://image.tmdb.org/t/p/w1280';
 const TMDB_STILL = 'https://image.tmdb.org/t/p/w300';
@@ -50,6 +51,7 @@ interface StreamingModalProps {
   backdropPath?: string;
   backdropImages?: string[];
   seasons?: SeasonInfo[];
+  libraryItemId?: string | null;
   onEpisodeChange?: (season: number, episode: number) => void;
   onStartWatching?: () => void;
 }
@@ -58,6 +60,7 @@ export default function StreamingModal({
   isOpen, onClose, tmdbId, imdbId, mediaType, title, year,
   season: initialSeason, episode: initialEpisode,
   backdropPath, backdropImages, seasons,
+  libraryItemId,
   onEpisodeChange, onStartWatching,
 }: StreamingModalProps) {
   const [phase, setPhase] = useState<'resolving' | 'playing'>('resolving');
@@ -90,6 +93,11 @@ export default function StreamingModal({
   // TV episode state
   const [currentSeason, setCurrentSeason] = useState(initialSeason || 1);
   const [currentEpisode, setCurrentEpisode] = useState(initialEpisode || 1);
+
+  // Continue watching state
+  const [startPosition, setStartPosition] = useState(0);
+  const lastSaveRef = useRef(0);
+  const currentTimeRef = useRef(0);
 
   const allBackdrops = (backdropImages?.length ? backdropImages : (backdropPath ? [backdropPath] : []))
     .map(p => `${TMDB_BACKDROP}${p}`);
@@ -126,6 +134,59 @@ export default function StreamingModal({
       setCurrentEpisode(initialEpisode || 1);
     }
   }, [isOpen, initialSeason, initialEpisode]);
+
+  // ─── Load stored progress for continue watching ───
+  useEffect(() => {
+    if (!isOpen) return;
+    // Try to load progress from library item
+    if (libraryItemId) {
+      // We already have the item id, fetch the item to get progress
+      getLibraryItemByMediaId({ tmdb_id: parseInt(tmdbId) }).then((item) => {
+        if (item?.progress_timestamp && item.progress_timestamp > 30) {
+          // If TV, check if same season/episode
+          if (mediaType === 'tv') {
+            if (item.progress_season === currentSeason && item.progress_episode === currentEpisode) {
+              setStartPosition(item.progress_timestamp);
+            }
+          } else {
+            setStartPosition(item.progress_timestamp);
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [isOpen, libraryItemId, tmdbId]);
+
+  // ─── Auto-save progress (throttled to every 15s) ───
+  const saveProgress = useCallback((time: number) => {
+    if (!libraryItemId || time < 5) return;
+    const now = Date.now();
+    if (now - lastSaveRef.current < 15000) return;
+    lastSaveRef.current = now;
+    const updates: Record<string, unknown> = {
+      progress_timestamp: Math.floor(time),
+    };
+    if (mediaType === 'tv') {
+      updates.progress_season = currentSeason;
+      updates.progress_episode = currentEpisode;
+    }
+    updateLibraryItem(libraryItemId, updates).catch(() => {});
+  }, [libraryItemId, mediaType, currentSeason, currentEpisode]);
+
+  // Save progress on unmount/close
+  useEffect(() => {
+    return () => {
+      if (libraryItemId && currentTimeRef.current > 5) {
+        const updates: Record<string, unknown> = {
+          progress_timestamp: Math.floor(currentTimeRef.current),
+        };
+        if (mediaType === 'tv') {
+          updates.progress_season = currentSeason;
+          updates.progress_episode = currentEpisode;
+        }
+        updateLibraryItem(libraryItemId, updates).catch(() => {});
+      }
+    };
+  }, [libraryItemId, mediaType, currentSeason, currentEpisode]);
 
   // ─── Load OpenSubtitles ───
   const loadSubtitles = useCallback(async (s?: number, e?: number) => {
@@ -283,15 +344,18 @@ export default function StreamingModal({
     resolveStream();
   }, [isOpen]); // Only on initial open
 
-  // ─── Skip intro/outro detection ───
+  // ─── Skip intro/outro detection + progress saving ───
   const handleTimeUpdate = useCallback((time: number, _dur: number) => {
+    currentTimeRef.current = time;
     if (skipData?.intro) {
       setShowSkipIntro(time >= skipData.intro.start && time < skipData.intro.end);
     }
     if (skipData?.outro) {
       setShowSkipOutro(time >= skipData.outro.start && time < skipData.outro.end);
     }
-  }, [skipData]);
+    // Auto-save progress
+    saveProgress(time);
+  }, [skipData, saveProgress]);
 
   const handleSkipIntro = useCallback(() => {
     if (skipData?.intro) {
@@ -360,6 +424,8 @@ export default function StreamingModal({
     setCurrentSeason(s);
     setCurrentEpisode(e);
     setShowEpisodes(false);
+    setStartPosition(0); // Reset position for new episode
+    currentTimeRef.current = 0;
     onEpisodeChange?.(s, e);
     resolveStream(s, e);
   };
@@ -555,6 +621,7 @@ export default function StreamingModal({
             title={displayTitle}
             subtitle={episodeTitle}
             posterUrl={allBackdrops[0]}
+            startPositionSeconds={startPosition}
             subtitleTracks={subtitleTracks}
             sourceOptions={sourceOptions}
             onTimeUpdate={handleTimeUpdate}

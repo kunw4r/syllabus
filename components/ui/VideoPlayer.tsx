@@ -365,6 +365,108 @@ export default function VideoPlayer({
   }, [activeSubtitle, allSubtitles]);
 
   // ─── PiP with subtitles (canvas-based) ───
+  const pipCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pipVideoRef = useRef<HTMLVideoElement>(null);
+  const pipRafRef = useRef<number>(0);
+  const subtitleTextRef = useRef('');
+
+  // Keep subtitleTextRef in sync
+  useEffect(() => {
+    subtitleTextRef.current = subtitleText;
+  }, [subtitleText]);
+
+  const startCanvasPip = useCallback(async () => {
+    const v = videoRef.current;
+    const canvas = pipCanvasRef.current;
+    if (!v || !canvas) return;
+
+    canvas.width = v.videoWidth || 1280;
+    canvas.height = v.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw loop: composite video frame + subtitle text
+    const draw = () => {
+      if (!v.paused && !v.ended) {
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        const subText = subtitleTextRef.current;
+        if (subText && activeSubtitle) {
+          const fontSize = Math.round(canvas.height * 0.04);
+          ctx.font = `bold ${fontSize}px ${subStyle.fontFamily}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+
+          // Strip HTML tags for canvas rendering
+          const cleanText = subText.replace(/<[^>]+>/g, '');
+          const lines = cleanText.split('\n');
+          const lineHeight = fontSize * 1.3;
+          const y = canvas.height - fontSize * 1.2;
+
+          for (let i = lines.length - 1; i >= 0; i--) {
+            const lineY = y - (lines.length - 1 - i) * lineHeight;
+            // Background
+            const metrics = ctx.measureText(lines[i]);
+            const pad = fontSize * 0.3;
+            ctx.fillStyle = subStyle.background === 'transparent' ? 'rgba(0,0,0,0)' : subStyle.background;
+            ctx.fillRect(
+              canvas.width / 2 - metrics.width / 2 - pad,
+              lineY - fontSize - pad / 2,
+              metrics.width + pad * 2,
+              fontSize + pad
+            );
+            // Text shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.8)';
+            ctx.fillText(lines[i], canvas.width / 2 + 2, lineY + 2);
+            // Text
+            ctx.fillStyle = subStyle.color;
+            ctx.fillText(lines[i], canvas.width / 2, lineY);
+          }
+        }
+      }
+      pipRafRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    // Create a stream from canvas and pipe to a hidden video for PiP
+    const stream = canvas.captureStream(30);
+    // Also pipe audio from the original video
+    const audioCtx = new AudioContext();
+    const source = audioCtx.createMediaElementSource(v);
+    const dest = audioCtx.createMediaStreamDestination();
+    source.connect(dest);
+    source.connect(audioCtx.destination); // Keep audio playing in main page too
+
+    for (const track of dest.stream.getAudioTracks()) {
+      stream.addTrack(track);
+    }
+
+    const pipVideo = pipVideoRef.current;
+    if (pipVideo) {
+      pipVideo.srcObject = stream;
+      await pipVideo.play().catch(() => {});
+      try {
+        await pipVideo.requestPictureInPicture();
+        setIsPip(true);
+      } catch {
+        // Cleanup on failure
+        cancelAnimationFrame(pipRafRef.current);
+        source.disconnect();
+        audioCtx.close();
+      }
+
+      // Listen for PiP exit on the pip video
+      const onLeave = () => {
+        cancelAnimationFrame(pipRafRef.current);
+        pipVideo.srcObject = null;
+        source.disconnect();
+        audioCtx.close().catch(() => {});
+        setIsPip(false);
+      };
+      pipVideo.addEventListener('leavepictureinpicture', onLeave, { once: true });
+    }
+  }, [activeSubtitle, subStyle]);
+
   const togglePip = async () => {
     const v = videoRef.current;
     if (!v) return;
@@ -372,7 +474,14 @@ export default function VideoPlayer({
     if (document.pictureInPictureElement) {
       await document.exitPictureInPicture().catch(() => {});
       setIsPip(false);
+      return;
+    }
+
+    // If subtitles are active, use canvas-based PiP to burn them in
+    if (activeSubtitle && subtitleText) {
+      await startCanvasPip();
     } else {
+      // Simple PiP without subtitle overlay
       try {
         await v.requestPictureInPicture();
         setIsPip(true);
@@ -382,17 +491,21 @@ export default function VideoPlayer({
     }
   };
 
-  // Listen for PiP events
+  // Listen for PiP events on main video
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     const onEnterPip = () => setIsPip(true);
-    const onLeavePip = () => setIsPip(false);
+    const onLeavePip = () => {
+      setIsPip(false);
+      cancelAnimationFrame(pipRafRef.current);
+    };
     v.addEventListener('enterpictureinpicture', onEnterPip);
     v.addEventListener('leavepictureinpicture', onLeavePip);
     return () => {
       v.removeEventListener('enterpictureinpicture', onEnterPip);
       v.removeEventListener('leavepictureinpicture', onLeavePip);
+      cancelAnimationFrame(pipRafRef.current);
     };
   }, []);
 
@@ -931,6 +1044,10 @@ export default function VideoPlayer({
         resetHideTimer();
       }}
     >
+      {/* Hidden canvas + video for PiP with subtitles */}
+      <canvas ref={pipCanvasRef} className="hidden" />
+      <video ref={pipVideoRef} className="hidden" playsInline muted />
+
       {/* Hidden file input for subtitle upload */}
       <input
         ref={fileInputRef}

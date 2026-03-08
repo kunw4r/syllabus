@@ -152,6 +152,101 @@ async function extractMovieWeb(
   return results;
 }
 
+// ─── Autoembed extractor (scrapes autoembed.cc API for direct streams) ───
+
+async function extractAutoembed(
+  tmdbId: string,
+  mediaType: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    const url = mediaType === 'movie'
+      ? `https://player.autoembed.cc/api/getVideoSource?type=movie&id=${tmdbId}`
+      : `https://player.autoembed.cc/api/getVideoSource?type=tv&id=${tmdbId}/${season || '1'}/${episode || '1'}`;
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Referer': 'https://player.autoembed.cc/',
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    // AutoEmbed returns { videoSource: "url", subtitles: [...] }
+    if (data?.videoSource) {
+      const isHls = data.videoSource.includes('.m3u8');
+      return {
+        url: data.videoSource,
+        format: isHls ? 'hls' : 'mp4',
+        provider: 'AutoEmbed',
+        subtitles: (data.subtitles || []).map((sub: any, i: number) => ({
+          label: sub.label || sub.lang || `Subtitle ${i + 1}`,
+          file: sub.url || sub.file,
+          language: sub.lang || 'en',
+        })),
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('[extract] AutoEmbed failed:', err);
+    return null;
+  }
+}
+
+// ─── Multiembed extractor ───
+
+async function extractMultiembed(
+  tmdbId: string,
+  mediaType: string,
+  season?: string,
+  episode?: string,
+): Promise<ExtractedStream | null> {
+  try {
+    const url = mediaType === 'movie'
+      ? `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1`
+      : `https://multiembed.mov/directstream.php?video_id=${tmdbId}&tmdb=1&s=${season || '1'}&e=${episode || '1'}`;
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      },
+      signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
+    });
+
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    // Look for m3u8 or mp4 URLs in the response
+    const m3u8Match = html.match(/["'](https?:\/\/[^"']+\.m3u8[^"']*?)["']/);
+    if (m3u8Match) {
+      return {
+        url: m3u8Match[1],
+        format: 'hls',
+        provider: 'SuperEmbed',
+      };
+    }
+
+    const mp4Match = html.match(/["'](https?:\/\/[^"']+\.mp4[^"']*?)["']/);
+    if (mp4Match) {
+      return {
+        url: mp4Match[1],
+        format: 'mp4',
+        provider: 'SuperEmbed',
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.error('[extract] MultiEmbed failed:', err);
+    return null;
+  }
+}
+
 // ─── Main handler ───
 
 export async function GET(req: NextRequest) {
@@ -167,10 +262,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing tmdbId' }, { status: 400 });
   }
 
-  // Run VidSrc (proven working) and movie-web providers in parallel
-  const [vidsrcResult, movieWebResults] = await Promise.allSettled([
+  // Run all extractors in parallel
+  const [vidsrcResult, movieWebResults, autoembedResult, multiembedResult] = await Promise.allSettled([
     extractVidsrc(tmdbId, mediaType, season, episode),
     extractMovieWeb(tmdbId, mediaType, title, year, season, episode),
+    extractAutoembed(tmdbId, mediaType, season, episode),
+    extractMultiembed(tmdbId, mediaType, season, episode),
   ]);
 
   const streams: ExtractedStream[] = [];
@@ -183,6 +280,16 @@ export async function GET(req: NextRequest) {
   // Then any movie-web results
   if (movieWebResults.status === 'fulfilled') {
     streams.push(...movieWebResults.value);
+  }
+
+  // AutoEmbed
+  if (autoembedResult.status === 'fulfilled' && autoembedResult.value) {
+    streams.push(autoembedResult.value);
+  }
+
+  // MultiEmbed / SuperEmbed
+  if (multiembedResult.status === 'fulfilled' && multiembedResult.value) {
+    streams.push(multiembedResult.value);
   }
 
   console.log(`[extract-stream] ${tmdbId} (${mediaType}): ${streams.length} streams — ${streams.map(s => s.provider).join(', ') || 'none'}`);
